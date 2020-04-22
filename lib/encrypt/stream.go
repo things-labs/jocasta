@@ -8,7 +8,7 @@ import (
 	"crypto/rc4"
 	"encoding/binary"
 
-	"github.com/Yawning/chacha20"
+	"gitlab.com/yawning/chacha20.git"
 	"golang.org/x/crypto/blowfish"
 	"golang.org/x/crypto/cast5"
 	"golang.org/x/crypto/salsa20/salsa"
@@ -111,11 +111,11 @@ func newRC4MD5Stream(key, iv []byte, _ bool) (cipher.Stream, error) {
 }
 
 func newChaCha20Stream(key, iv []byte, _ bool) (cipher.Stream, error) {
-	return chacha20.NewCipher(key, iv)
+	return chacha20.New(key, iv)
 }
 
 func newChaCha20IETFStream(key, iv []byte, _ bool) (cipher.Stream, error) {
-	return chacha20.NewCipher(key, iv)
+	return chacha20.New(key, iv)
 }
 
 func newSalsa20Stream(key, iv []byte, _ bool) (cipher.Stream, error) {
