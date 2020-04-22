@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/golang/snappy v0.0.1
 	github.com/klauspost/cpuid v1.2.3 // indirect
+	github.com/lucas-clemente/quic-go v0.15.4
 	github.com/orcaman/concurrent-map v0.0.0-20190826125027-8c72a8bb44f6
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/xid v1.2.1
