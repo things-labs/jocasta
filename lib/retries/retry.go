@@ -1,4 +1,4 @@
-package assist
+package retries
 
 import (
 	"context"
