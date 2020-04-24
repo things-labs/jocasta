@@ -12,19 +12,21 @@ var ErrClosed = errors.New("use of closed network connection")
 type Retries struct {
 	Delay    time.Duration // 重试延时时间
 	MaxCount int           // 为0表示无限重试
-	count    int           // 计数
 }
 
 func (sf Retries) Do(ctx context.Context, f func() error) error {
 	t := time.NewTimer(sf.Delay)
 	defer t.Stop()
+	count := 0
 	for {
-		if err := f(); err == nil {
+		err := f()
+		if err == nil {
 			return nil
-		} else if strings.Contains(err.Error(), "use of closed network connection") {
+		}
+		if strings.Contains(err.Error(), "use of closed network connection") {
 			return err
 		}
-		if sf.count++; sf.MaxCount > 0 && sf.count >= sf.MaxCount {
+		if count++; sf.MaxCount > 0 && count >= sf.MaxCount {
 			return errors.New("reach max count")
 		}
 
