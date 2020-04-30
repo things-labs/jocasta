@@ -35,24 +35,20 @@ func New(c net.Conn, opts ...Options) *Conn {
 // Read ...
 func (sf *Conn) Read(p []byte) (int, error) {
 	n, err := sf.Conn.Read(p)
-	if err != nil {
+	if err != nil || sf.rLimiter == nil {
 		return n, err
 	}
-	if sf.rLimiter == nil {
-		return n, err
-	}
+
 	return n, sf.rLimiter.WaitN(sf.ctx, n)
 }
 
 // Write ...
 func (sf *Conn) Write(p []byte) (int, error) {
 	n, err := sf.Conn.Write(p)
-	if err != nil {
+	if err != nil || sf.wLimiter == nil {
 		return n, err
 	}
-	if sf.wLimiter == nil {
-		return sf.Conn.Write(p)
-	}
+
 	return n, sf.wLimiter.WaitN(sf.ctx, n)
 }
 
