@@ -4,17 +4,22 @@ go 1.14
 
 require (
 	github.com/golang/snappy v0.0.1
-	github.com/klauspost/cpuid v1.2.3 // indirect
-	github.com/lucas-clemente/quic-go v0.15.4
+	github.com/klauspost/cpuid v1.3.1 // indirect
+	github.com/klauspost/reedsolomon v1.9.9 // indirect
+	github.com/lucas-clemente/quic-go v0.17.3 // indirect
+	github.com/mmcloughlin/avo v0.0.0-20200523190732-4439b6b2c061 // indirect
 	github.com/orcaman/concurrent-map v0.0.0-20190826125027-8c72a8bb44f6
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/xid v1.2.1
-	github.com/tjfoc/gmsm v1.3.0 // indirect
-	github.com/xtaci/kcp-go/v5 v5.5.12
+	github.com/templexxx/cpu v0.0.7 // indirect
+	github.com/tjfoc/gmsm v1.3.2 // indirect
+	github.com/xtaci/kcp-go/v5 v5.5.14
 	gitlab.com/yawning/chacha20.git v0.0.0-20190903091407-6d1cb28dc72c
 	go.uber.org/atomic v1.6.0
-	golang.org/x/crypto v0.0.0-20200420201142-3c4aac89819a
-	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
-	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect
-	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
+	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
+	golang.org/x/net v0.0.0-20200707034311-ab3426394381
+	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
+	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
+	golang.org/x/tools v0.0.0-20200715235423-130c9f19d3fe // indirect
+	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
