@@ -111,7 +111,7 @@ func (sf *Jumper) dialHTTPS(address string, timeout time.Duration) (net.Conn, er
 	_, err = conn.Write(pb.Bytes())
 	if err != nil {
 		conn.Close()
-		return nil, fmt.Errorf("connecting to proxy, %w", err)
+		return nil, fmt.Errorf("connecting to proxy, %#v", err)
 	}
 
 	reply := make([]byte, 1024)
@@ -120,7 +120,7 @@ func (sf *Jumper) dialHTTPS(address string, timeout time.Duration) (net.Conn, er
 	conn.SetDeadline(time.Time{})
 	if err != nil {
 		conn.Close()
-		return nil, fmt.Errorf("ead reply from proxy, %w", err)
+		return nil, fmt.Errorf("ead reply from proxy, %#v", err)
 	}
 	if !bytes.Contains(reply[:n], []byte("200")) {
 		conn.Close()
