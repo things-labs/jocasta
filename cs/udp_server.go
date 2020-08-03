@@ -4,7 +4,7 @@ import (
 	"net"
 	"runtime/debug"
 
-	"github.com/thinkgos/ppcore/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gpool"
 )
 
 type Message struct {

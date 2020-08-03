@@ -1,4 +1,4 @@
-module github.com/thinkgos/ppcore
+module github.com/thinkgos/jocasta
 
 go 1.14
 

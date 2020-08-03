@@ -8,8 +8,8 @@ import (
 
 	"github.com/xtaci/kcp-go/v5"
 
-	"github.com/thinkgos/ppcore/connection/csnappy"
-	"github.com/thinkgos/ppcore/lib/gpool"
+	"github.com/thinkgos/jocasta/connection/csnappy"
+	"github.com/thinkgos/jocasta/lib/gpool"
 )
 
 // KCP 传输,可选snappy压缩

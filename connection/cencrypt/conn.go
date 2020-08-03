@@ -5,7 +5,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/thinkgos/ppcore/lib/encrypt"
+	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
 // Conn conn with encrypt.Cipher

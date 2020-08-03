@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/thinkgos/ppcore/lib/encrypt"
+	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
 func TestTCP(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/xtaci/kcp-go/v5"
 
-	"github.com/thinkgos/ppcore/connection/csnappy"
+	"github.com/thinkgos/jocasta/connection/csnappy"
 )
 
 func DialKcp(address string, cfg KcpConfig) (net.Conn, error) {

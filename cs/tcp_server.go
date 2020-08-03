@@ -9,10 +9,10 @@ import (
 	"runtime/debug"
 	"strconv"
 
-	"github.com/thinkgos/ppcore/connection/cencrypt"
-	"github.com/thinkgos/ppcore/connection/csnappy"
-	"github.com/thinkgos/ppcore/lib/encrypt"
-	"github.com/thinkgos/ppcore/lib/gpool"
+	"github.com/thinkgos/jocasta/connection/cencrypt"
+	"github.com/thinkgos/jocasta/connection/csnappy"
+	"github.com/thinkgos/jocasta/lib/encrypt"
+	"github.com/thinkgos/jocasta/lib/gpool"
 )
 
 const (
