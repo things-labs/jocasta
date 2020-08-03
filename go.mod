@@ -10,6 +10,7 @@ require (
 	github.com/orcaman/concurrent-map v0.0.0-20190826125027-8c72a8bb44f6
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/xid v1.2.1
+	github.com/stretchr/testify v1.6.1
 	github.com/templexxx/cpu v0.0.7 // indirect
 	github.com/tjfoc/gmsm v1.3.2 // indirect
 	github.com/xtaci/kcp-go/v5 v5.5.14
@@ -20,5 +21,4 @@ require (
 	golang.org/x/sys v0.0.0-20200802091954-4b90ce9b60b3 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	golang.org/x/tools v0.0.0-20200731060945-b5fad4ed8dd6 // indirect
-	gopkg.in/yaml.v2 v2.2.4 // indirect
 )

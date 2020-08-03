@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 )
 
@@ -20,15 +21,10 @@ func TestFlow(t *testing.T) {
 	}
 
 	count := uint64(10240)
-	_, _ = c.Write(make([]byte, count))
-	_, _ = c.Read(make([]byte, count))
-	if got := wc.Load(); got != count {
-		t.Fatalf("write count want %d,but %d", count, got)
-	}
-	if got := rc.Load(); got != count {
-		t.Fatalf("read count want %d,but %d", count, got)
-	}
-	if got := tc.Load(); got != count*2 {
-		t.Fatalf("total count want %d,but %d", count, got)
-	}
+	c.Write(make([]byte, count)) // nolint: errcheck
+	c.Read(make([]byte, count))  // nolint: errcheck
+
+	require.Equal(t, count, wc.Load())
+	require.Equal(t, count, rc.Load())
+	require.Equal(t, count*2, tc.Load())
 }

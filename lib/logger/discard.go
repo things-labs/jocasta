@@ -6,12 +6,23 @@ type Discard struct{}
 
 var _ Logger = (*Discard)(nil)
 
-// NewDiscard a discard logger
+// NewDiscard a discard logger on which always succeed without doing anything
 func NewDiscard() Discard { return Discard{} }
 
-func (sf Discard) Debugf(string, ...interface{})  {}
-func (sf Discard) Infof(string, ...interface{})   {}
-func (sf Discard) Errorf(string, ...interface{})  {}
-func (sf Discard) Warnf(string, ...interface{})   {}
+// Debugf implement Logger interface.
+func (sf Discard) Debugf(string, ...interface{}) {}
+
+// Infof implement Logger interface.
+func (sf Discard) Infof(string, ...interface{}) {}
+
+// Errorf implement Logger interface.
+func (sf Discard) Errorf(string, ...interface{}) {}
+
+// Warnf implement Logger interface.
+func (sf Discard) Warnf(string, ...interface{}) {}
+
+// DPanicf implement Logger interface.
 func (sf Discard) DPanicf(string, ...interface{}) {}
-func (sf Discard) Fatalf(string, ...interface{})  {}
+
+// Fatalf implement Logger interface.
+func (sf Discard) Fatalf(string, ...interface{}) {}

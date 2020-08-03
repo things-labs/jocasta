@@ -1,11 +1,13 @@
 package cs
 
 import (
-	"bytes"
 	"crypto/tls"
 	"net"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/thinkgos/ppcore/lib/encrypt"
 )
@@ -16,46 +18,34 @@ func TestTCP(t *testing.T) {
 		s, err := NewTcp(":", compress, func(inconn net.Conn) {
 			buf := make([]byte, 2048)
 			_, err := inconn.Read(buf)
-			if err != nil {
-				t.Error(err)
+			if !assert.NoError(t, err) {
 				return
 			}
 			_, err = inconn.Write([]byte("okay"))
-			if err != nil {
-				t.Error(err)
+			if !assert.NoError(t, err) {
 				return
 			}
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
+		// server
 		go func() {
 			_ = s.ListenAndServe()
 		}()
-
-		if err = <-s.Status(); err != nil {
-			t.Fatal(err)
-		}
+		err = <-s.Status()
+		require.NoError(t, err)
 		defer s.Close()
 
+		// client
 		cli, err := DialTcpTimeout(s.Addr(), compress, 5*time.Second)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		defer cli.Close()
 
 		_, err = cli.Write([]byte("test"))
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		b := make([]byte, 20)
 		n, err := cli.Read(b)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(b[:n]) != "okay" {
-			t.Fatalf("client revecive okay excepted,revecived : %s", string(b[:n]))
-		}
+		require.NoError(t, err)
+		require.Equal(t, "okay", string(b[:n]), "client revecive okay excepted,revecived : %s", string(b[:n]))
 	}
 }
 
@@ -114,52 +104,40 @@ func TestTcpTls(t *testing.T) {
 		s, err := NewTcpTls(":", []byte(crt), []byte(key), nil, isSingle, func(inconn net.Conn) {
 			buf := make([]byte, 2048)
 			_, err := inconn.Read(buf)
-			if err != nil {
-				t.Error(err)
+			if !assert.NoError(t, err) {
 				return
 			}
 			_, err = inconn.Write([]byte("okay"))
-			if err != nil {
-				t.Error(err)
+			if !assert.NoError(t, err) {
 				return
 			}
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
+		//server
 		go func() {
 			_ = s.ListenAndServe()
 		}()
 
-		if err = <-s.Status(); err != nil {
-			t.Fatal(err)
-		}
+		err = <-s.Status()
+		require.NoError(t, err)
 		defer s.Close()
 
+		// client
 		var cli *tls.Conn
 		if isSingle {
 			cli, err = DialTcpSingleTlsTimeout(s.Addr(), []byte(crt), 5*time.Second)
 		} else {
 			cli, err = DialTcpTlsTimeout(s.Addr(), []byte(crt), []byte(key), nil, 5*time.Second)
 		}
-
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		defer cli.Close()
 
 		_, err = cli.Write([]byte("test"))
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		b := make([]byte, 20)
 		n, err := cli.Read(b)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(b[:n]) != "okay" {
-			t.Fatalf("client revecive okay excepted,revecived : %s", string(b[:n]))
-		}
+		require.NoError(t, err)
+		require.Equal(t, "okay", string(b[:n]))
 	}
 }
 
@@ -171,46 +149,33 @@ func TestSTCP(t *testing.T) {
 			s, err := NewStcp(":", method, password, compress, func(inconn net.Conn) {
 				buf := make([]byte, 2048)
 				_, err := inconn.Read(buf)
-				if err != nil {
-					t.Error(err)
+				if !assert.NoError(t, err) {
 					return
 				}
 				_, err = inconn.Write([]byte("okay"))
-				if err != nil {
-					t.Error(err)
+				if !assert.NoError(t, err) {
 					return
 				}
 			})
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 			go func() {
 				_ = s.ListenAndServe()
 			}()
 
-			if err = <-s.Status(); err != nil {
-				t.Fatal(err)
-			}
+			err = <-s.Status()
+			require.NoError(t, err)
 			defer s.Close()
 
 			cli, err := DialStcpTimeout(s.Addr(), method, password, compress, 5*time.Second)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 			defer cli.Close()
 
 			_, err = cli.Write([]byte("test"))
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 			b := make([]byte, 20)
 			n, err := cli.Read(b)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if string(b[:n]) != "okay" {
-				t.Fatalf("client revecive okay excepted,revecived : %s", string(b[:n]))
-			}
+			require.NoError(t, err)
+			require.Equal(t, "okay", string(b[:n]))
 		}
 	}
 }
@@ -223,47 +188,34 @@ func TestSSSSTCP(t *testing.T) {
 	s, err := NewStcp(":", method, password, compress, func(inconn net.Conn) {
 		buf := make([]byte, 2048)
 		n, err := inconn.Read(buf)
-		if err != nil {
-			t.Error(err)
+		if !assert.NoError(t, err) {
 			return
 		}
 		_, err = inconn.Write(buf[:n])
-		if err != nil {
-			t.Error(err)
+		if !assert.NoError(t, err) {
 			return
 		}
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+	// server
 	go func() {
 		_ = s.ListenAndServe()
 	}()
-
-	if err = <-s.Status(); err != nil {
-		t.Fatal(err)
-	}
+	err = <-s.Status()
+	require.NoError(t, err)
 	defer s.Close()
 
 	p := func() {
 		cli, err := DialStcpTimeout(s.Addr(), method, password, compress, 5*time.Second)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		defer cli.Close()
 		t.Log(cli.LocalAddr())
 		_, err = cli.Write(want)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		got := make([]byte, 2048)
 		n, err := cli.Read(got)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !bytes.Equal(got[:n], want) {
-			t.Fatalf("client revecive okay excepted,revecived : %s", string(got[:n]))
-		}
+		require.NoError(t, err)
+		require.Equal(t, want, got[:n])
 	}
 	for i := 0; i < 2; i++ {
 		p()

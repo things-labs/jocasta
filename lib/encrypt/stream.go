@@ -37,11 +37,13 @@ var ciphers = map[string]CipherInfo{
 	"salsa20":       {32, 8, newSalsa20Stream},
 }
 
+// GetCipherInfo 根据方法获得 Cipher information
 func GetCipherInfo(method string) (info CipherInfo, ok bool) {
 	info, ok = ciphers[method]
 	return
 }
 
+// CipherMethods 获取Cipher的所有支持方法
 func CipherMethods() []string {
 	keys := make([]string, 0, len(ciphers))
 	for k := range ciphers {
@@ -50,6 +52,7 @@ func CipherMethods() []string {
 	return keys
 }
 
+// HasCipherMethod 是否有method方法
 func HasCipherMethod(method string) (ok bool) {
 	_, ok = ciphers[method]
 	return

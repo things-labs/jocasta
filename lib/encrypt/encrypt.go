@@ -6,25 +6,27 @@ import (
 	"errors"
 )
 
+// Cipher write and read cipher.Stream
 type Cipher struct {
 	Write cipher.Stream
 	Read  cipher.Stream
 }
 
+// NewCipher new cipher
 // method support:
-// aes-128-cfb
-// aes-192-cfb
-// aes-256-cfb
-// aes-128-ctr
-// aes-192-ctr
-// aes-256-ctr
-// des-cfb
-// bf-cfb
-// cast5-cfb
-// rc4-md5
-// rc4-md5-6
-// chacha20
-// chacha20-ietf
+// 		aes-128-cfb
+// 		aes-192-cfb
+// 		aes-256-cfb
+// 		aes-128-ctr
+// 		aes-192-ctr
+// 		aes-256-ctr
+// 		des-cfb
+// 		bf-cfb
+// 		cast5-cfb
+// 		rc4-md5
+// 		rc4-md5-6
+// 		chacha20
+// 		chacha20-ietf
 func NewCipher(method, password string) (*Cipher, error) {
 	if password == "" {
 		return nil, errors.New("empty password")

@@ -27,6 +27,9 @@ func PCKSPadding(origData []byte, blockSize int) []byte {
 // PCKSUnPadding PKCS#5和PKCS#7 解填充
 func PCKSUnPadding(origData []byte) ([]byte, error) {
 	length := len(origData)
+	if length == 0 {
+		return nil, ErrUnPaddingSizeTooShort
+	}
 	unPadSize := int(origData[length-1])
 	if unPadSize > length {
 		return nil, ErrUnPaddingSizeTooShort

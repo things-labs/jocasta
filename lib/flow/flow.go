@@ -14,7 +14,7 @@ type Flow struct {
 	Tc *atomic.Uint64 // 读写统计
 }
 
-// Read ...
+// Read reads up to len(p) bytes into p.
 func (sf *Flow) Read(p []byte) (int, error) {
 	n, err := sf.ReadWriter.Read(p)
 	if n != 0 {
@@ -29,7 +29,7 @@ func (sf *Flow) Read(p []byte) (int, error) {
 	return n, err
 }
 
-// Write ...
+// Write writes len(p) bytes from p to the underlying data stream.
 func (sf *Flow) Write(p []byte) (int, error) {
 	n, err := sf.ReadWriter.Write(p)
 	if n != 0 {
