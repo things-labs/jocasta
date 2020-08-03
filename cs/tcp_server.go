@@ -124,6 +124,18 @@ func (sf *TCP) Addr() (addr string) {
 	return
 }
 
+func (sf *TCP) listenAndServeTcp() (err error) {
+	preFn := sf.handler
+	sf.handler = func(c net.Conn) {
+		// 压缩
+		if sf.special {
+			c = csnappy.New(c)
+		}
+		preFn(c)
+	}
+	return sf.listenRawTCP()
+}
+
 func (sf *TCP) listenAndServeStcp() error {
 	_, err := encrypt.NewCipher(string(sf.certOrMethod), string(sf.keyOrPassword))
 	if err != nil {
@@ -167,18 +179,6 @@ func (sf *TCP) listenAndServeTcpTls() (err error) {
 			sf.handler(conn)
 		})
 	}
-}
-
-func (sf *TCP) listenAndServeTcp() (err error) {
-	preFn := sf.handler
-	sf.handler = func(c net.Conn) {
-		// 压缩
-		if sf.special {
-			c = csnappy.New(c)
-		}
-		preFn(c)
-	}
-	return sf.listenRawTCP()
 }
 
 func (sf *TCP) listenRawTCP() (err error) {

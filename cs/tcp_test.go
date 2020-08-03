@@ -38,7 +38,7 @@ func TestTCP(t *testing.T) {
 		}
 		defer s.Close()
 
-		cli, err := DialTimeoutTcp(s.Addr(), compress, 5*time.Second)
+		cli, err := DialTcpTimeout(s.Addr(), compress, 5*time.Second)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -138,9 +138,9 @@ func TestTcpTls(t *testing.T) {
 
 		var cli *tls.Conn
 		if isSingle {
-			cli, err = DialTimeoutTcpSingleTls(s.Addr(), []byte(crt), 5*time.Second)
+			cli, err = DialTcpSingleTlsTimeout(s.Addr(), []byte(crt), 5*time.Second)
 		} else {
-			cli, err = DialTimeoutTcpTls(s.Addr(), []byte(crt), []byte(key), nil, 5*time.Second)
+			cli, err = DialTcpTlsTimeout(s.Addr(), []byte(crt), []byte(key), nil, 5*time.Second)
 		}
 
 		if err != nil {
@@ -193,7 +193,7 @@ func TestSTCP(t *testing.T) {
 			}
 			defer s.Close()
 
-			cli, err := DialTimeoutTcpS(s.Addr(), method, password, compress, 5*time.Second)
+			cli, err := DialStcpTimeout(s.Addr(), method, password, compress, 5*time.Second)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -246,7 +246,7 @@ func TestSSSSTCP(t *testing.T) {
 	defer s.Close()
 
 	p := func() {
-		cli, err := DialTimeoutTcpS(s.Addr(), method, password, compress, 5*time.Second)
+		cli, err := DialStcpTimeout(s.Addr(), method, password, compress, 5*time.Second)
 		if err != nil {
 			t.Fatal(err)
 		}

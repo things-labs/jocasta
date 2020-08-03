@@ -21,12 +21,12 @@ func New(conn net.Conn) *Conn {
 	}
 }
 
-func (sf *Conn) Read(p []byte) (n int, err error) {
+func (sf *Conn) Read(p []byte) (int, error) {
 	return sf.r.Read(p)
 }
 
-func (sf *Conn) Write(p []byte) (n int, err error) {
-	n, _ = sf.w.Write(p)
-	err = sf.w.Flush()
+func (sf *Conn) Write(p []byte) (int, error) {
+	n, _ := sf.w.Write(p)
+	err := sf.w.Flush()
 	return n, err
 }

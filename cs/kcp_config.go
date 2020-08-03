@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
+// KcpConfig kcp 配置
 type KcpConfig struct {
 	// 最大传输单元,协议不负责探测MTU,默认MTU: 1400字节
 	MTU int
@@ -22,7 +23,7 @@ type KcpConfig struct {
 	// 或在IPv6头设置 8bit Traffic Class.
 	// 默认0
 	DSCP int
-	// 是否不压缩: true: 不压缩, false: 压缩传输(默认)
+	// 是否不压缩: true: 不压缩, false: 压缩传输(默认) 采用snappy进行压缩传输
 	NoComp bool
 	// 接收到每一个包立即进行应答,默认true
 	AckNodelay bool
@@ -62,11 +63,12 @@ var blockCrypts = map[string]blockCryptInfo{
 	"aes":      {kcp.NewAESBlockCrypt, 32},
 }
 
-// NewKcpBlockCrypt 根据加密方法和key生成BlockCrypt
+// NewKcpBlockCrypt 根据method和key生成kcp.BlockCrypt
+// Note: key大于或等于对应加密方法key长度
 func NewKcpBlockCrypt(method string, key []byte) (kcp.BlockCrypt, error) {
 	bc, ok := blockCrypts[method]
 	if !ok {
-		return nil, errors.New("not support block crypt")
+		return nil, errors.New("not support block crypt method")
 	}
 	if len(key) < bc.keyLen {
 		return nil, fmt.Errorf("key length expect %d but %d", bc.keyLen, len(key))
@@ -74,18 +76,18 @@ func NewKcpBlockCrypt(method string, key []byte) (kcp.BlockCrypt, error) {
 	return bc.newBlockCrypt(key[:bc.keyLen])
 }
 
+// NewKcpBlockCryptWithPbkdf2 使用pbkdf2(给的password和salt)生成所需的key,通过指定method生成kcp.BlockCrypt
 func NewKcpBlockCryptWithPbkdf2(method, password, salt string) (kcp.BlockCrypt, error) {
-	pass := pbkdf2.Key([]byte(password), []byte(salt), 4096, 32, sha1.New)
-	return NewKcpBlockCrypt(method, pass)
+	return NewKcpBlockCrypt(method, pbkdf2.Key([]byte(password), []byte(salt), 4096, 32, sha1.New))
 }
 
-// 是否支持指定的加密方法
+// HasKcpBlockCrypt 是否支持指定的加密方法
 func HasKcpBlockCrypt(method string) (ok bool) {
 	_, ok = blockCrypts[method]
 	return
 }
 
-// 获得支持kcp加密方法
+// KcpBlockCryptMethods 获得支持kcp所有加密方法
 func KcpBlockCryptMethods() []string {
 	keys := make([]string, 0, len(blockCrypts))
 	for key := range blockCrypts {

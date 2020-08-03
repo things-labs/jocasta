@@ -13,7 +13,8 @@ import (
 	"github.com/thinkgos/ppcore/lib/encrypt"
 )
 
-func DialTimeoutTcp(address string, compress bool, timeout time.Duration) (net.Conn, error) {
+// DialTcpTimeout dial tcp with timeout
+func DialTcpTimeout(address string, compress bool, timeout time.Duration) (net.Conn, error) {
 	conn, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
 		return nil, err
@@ -24,7 +25,8 @@ func DialTimeoutTcp(address string, compress bool, timeout time.Duration) (net.C
 	return conn, nil
 }
 
-func DialTimeoutTcpTls(address string, cert, key, caCert []byte, timeout time.Duration) (*tls.Conn, error) {
+// DialTcpTlsTimeout dial tcp tls with timeout
+func DialTcpTlsTimeout(address string, cert, key, caCert []byte, timeout time.Duration) (*tls.Conn, error) {
 	conf, err := TlsConfig(cert, key, caCert)
 	if err != nil {
 		return nil, err
@@ -36,7 +38,8 @@ func DialTimeoutTcpTls(address string, cert, key, caCert []byte, timeout time.Du
 	return tls.Client(conn, conf), err
 }
 
-func DialTimeoutTcpSingleTls(address string, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
+// DialTcpSingleTlsTimeout dial single tls with timeout
+func DialTcpSingleTlsTimeout(address string, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
 	conf, err := SingleTlsConfig(caCertBytes)
 	if err != nil {
 		return nil, err
@@ -48,7 +51,8 @@ func DialTimeoutTcpSingleTls(address string, caCertBytes []byte, timeout time.Du
 	return tls.Client(conn, conf), err
 }
 
-func DialTimeoutTcpS(address, method, password string, compress bool, timeout time.Duration) (net.Conn, error) {
+// DialStcpTimeout dial tcps with timeout
+func DialStcpTimeout(address, method, password string, compress bool, timeout time.Duration) (net.Conn, error) {
 	cip, err := encrypt.NewCipher(method, password)
 	if err != nil {
 		return nil, err
@@ -63,6 +67,7 @@ func DialTimeoutTcpS(address, method, password string, compress bool, timeout ti
 	return cencrypt.New(conn, cip), nil
 }
 
+// TlsConfig tls config
 func TlsConfig(cert, key, caCert []byte) (*tls.Config, error) {
 	certificate, err := tls.X509KeyPair(cert, key)
 	if err != nil {
@@ -107,6 +112,7 @@ func TlsConfig(cert, key, caCert []byte) (*tls.Config, error) {
 	}, nil
 }
 
+// SingleTlsConfig single tls config
 func SingleTlsConfig(caCertBytes []byte) (*tls.Config, error) {
 	if len(caCertBytes) == 0 {
 		return nil, errors.New("invalid root certificate")

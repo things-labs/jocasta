@@ -67,17 +67,21 @@ func (sf *KCP) ListenAndServe() error {
 			return err
 		}
 		sf.submit(func() {
+			var c net.Conn
+
 			conn.SetStreamMode(true)
 			conn.SetWriteDelay(true)
 			conn.SetNoDelay(sf.cfg.NoDelay, sf.cfg.Interval, sf.cfg.Resend, sf.cfg.NoCongestion)
 			conn.SetMtu(sf.cfg.MTU)
 			conn.SetWindowSize(sf.cfg.SndWnd, sf.cfg.RcvWnd)
 			conn.SetACKNoDelay(sf.cfg.AckNodelay)
+
 			if sf.cfg.NoComp {
-				sf.handler(conn)
+				c = conn
 			} else {
-				sf.handler(csnappy.New(conn))
+				c = csnappy.New(conn)
 			}
+			sf.handler(c)
 		})
 	}
 }
