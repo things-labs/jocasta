@@ -34,6 +34,7 @@ type Config struct {
 	Hash       func() hash.Hash // 加密所使用的hash函数, default sha256.New
 }
 
+// Conn conn with ...
 type Conn struct {
 	net.Conn
 	r io.Reader
@@ -82,10 +83,12 @@ func New(c net.Conn, cfg *Config) *Conn {
 	}
 }
 
+// Read reads data from the connection.
 func (sf *Conn) Read(p []byte) (int, error) {
 	return sf.r.Read(p)
 }
 
+// Write writes data to the connection.
 func (sf *Conn) Write(p []byte) (int, error) {
 	return sf.w.Write(p)
 }

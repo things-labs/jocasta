@@ -8,6 +8,7 @@ import (
 	"github.com/thinkgos/ppcore/lib/encrypt"
 )
 
+// Conn conn with encrypt.Cipher
 type Conn struct {
 	net.Conn
 	w io.Writer
@@ -23,10 +24,12 @@ func New(c net.Conn, cip *encrypt.Cipher) *Conn {
 	}
 }
 
+// Read reads data from the connection.
 func (sf *Conn) Read(b []byte) (n int, err error) {
 	return sf.r.Read(b)
 }
 
+// Write writes data to the connection.
 func (sf *Conn) Write(b []byte) (n int, err error) {
 	return sf.w.Write(b)
 }

@@ -1,3 +1,4 @@
+// 流字节统计
 package cflow
 
 import (
@@ -6,6 +7,7 @@ import (
 	"go.uber.org/atomic"
 )
 
+// Conn conn with read,write,total count
 type Conn struct {
 	net.Conn
 	Wc *atomic.Uint64 // 写统计
@@ -13,7 +15,7 @@ type Conn struct {
 	Tc *atomic.Uint64 // 读写统计
 }
 
-// Read ...
+// Read reads data from the connection.
 func (sf *Conn) Read(p []byte) (int, error) {
 	n, err := sf.Conn.Read(p)
 	if n != 0 {
@@ -28,7 +30,7 @@ func (sf *Conn) Read(p []byte) (int, error) {
 	return n, err
 }
 
-// Write ...
+// Write writes data to the connection.
 func (sf *Conn) Write(p []byte) (int, error) {
 	n, err := sf.Conn.Write(p)
 	if n != 0 {
