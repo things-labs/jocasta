@@ -1,13 +1,17 @@
 package encrypt
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestEncrypt(t *testing.T) {
+	_, err := NewCipher("invalid_method", "")
+	require.Error(t, err)
+	_, err = NewCipher("invalid_method", "pass_word")
+	require.Error(t, err)
+
 	for _, method := range CipherMethods() {
 		require.True(t, HasCipherMethod(method))
 
@@ -20,6 +24,6 @@ func TestEncrypt(t *testing.T) {
 		wantDst := make([]byte, len(dst))
 		cip.Read.XORKeyStream(wantDst, dst)
 
-		require.True(t, bytes.Equal(wantDst, src), "want '%s' but src '%s'", string(wantDst), string(src))
+		require.Equal(t, string(wantDst), string(src))
 	}
 }

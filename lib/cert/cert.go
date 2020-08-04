@@ -105,6 +105,7 @@ func CreateSign(rootCA *x509.Certificate, rootKey *rsa.PrivateKey, cfg Config) (
 	return
 }
 
+// CreateCAFile 生成ca证书文件
 func CreateCAFile(filenamePrefix string, cfg Config) (err error) {
 	ca, key, err := CreateCA(cfg)
 	if err != nil {
@@ -167,10 +168,28 @@ func ParseCrt(b []byte) (*x509.Certificate, error) {
 	return x509.ParseCertificate(caBlock.Bytes)
 }
 
+// ParseCrtFile 解析根证书文件
+func ParseCrtFile(filename string) (*x509.Certificate, error) {
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCrt(b)
+}
+
 // ParseKey 解析私钥
 func ParseKey(b []byte) (*rsa.PrivateKey, error) {
 	keyBlock, _ := pem.Decode(b)
 	return x509.ParsePKCS1PrivateKey(keyBlock.Bytes)
+}
+
+// ParseKeyFile 解析私钥文件
+func ParseKeyFile(filename string) (*rsa.PrivateKey, error) {
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return ParseKey(b)
 }
 
 // ParseCrtAndKey 解析根证书和私钥
@@ -183,33 +202,7 @@ func ParseCrtAndKey(crt, key []byte) (ca *x509.Certificate, privateKey *rsa.Priv
 	return
 }
 
-// ParseCrtFile 解析ca文件
-func ParseCrtFile(filename string) (*x509.Certificate, error) {
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCrt(b)
-}
-
-func ReadCrtFile(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filename)
-}
-
-// ParseKeyFile 解析私钥文件
-func ParseKeyFile(filename string) (*rsa.PrivateKey, error) {
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	return ParseKey(b)
-}
-
-func ReadKeyFile(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filename)
-}
-
-// ParseCrtAndKeyFile 解析ca和私钥文件
+// ParseCrtAndKeyFile 解析根证书文件和私钥文件
 func ParseCrtAndKeyFile(crtFilename, keyFilename string) (ca *x509.Certificate, key *rsa.PrivateKey, err error) {
 	ca, err = ParseCrtFile(crtFilename)
 	if err != nil {
@@ -219,17 +212,19 @@ func ParseCrtAndKeyFile(crtFilename, keyFilename string) (ca *x509.Certificate, 
 	return
 }
 
-// ReadCrtAndKeyFile ...
+// ReadCrtAndKeyFile 读取根证书文件和私钥文件
 func ReadCrtAndKeyFile(crtFilename, keyFilename string) (crt []byte, key []byte, err error) {
-	crt, err = ReadCrtFile(crtFilename)
+	crt, err = ioutil.ReadFile(crtFilename)
 	if err != nil {
 		return
 	}
-	key, err = ReadKeyFile(keyFilename)
+	key, err = ioutil.ReadFile(keyFilename)
 	return
 }
 
-// ParseTLS ...
+// ParseTLS 解析tls
+// 如果cert是"base64://"前缀,直接解析后面的字符串,否则认为这是个cert文件名
+// 如果key是"base64://"前缀,直接解析后面的字符串,否则认为这是个key文件名
 func ParseTLS(cert, key string) (certBytes, keyBytes []byte, err error) {
 	if strings.HasPrefix(cert, base64Prefix) {
 		certBytes, err = base64.StdEncoding.DecodeString(cert[len(base64Prefix):])

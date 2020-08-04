@@ -108,8 +108,8 @@ func newCast5Stream(key, iv []byte, isEncode bool) (cipher.Stream, error) {
 
 func newRC4MD5Stream(key, iv []byte, _ bool) (cipher.Stream, error) {
 	h := md5.New()
-	_, _ = h.Write(key)
-	_, _ = h.Write(iv)
+	h.Write(key) // nolint: errcheck
+	h.Write(iv)  // nolint: errcheck
 	return rc4.NewCipher(h.Sum(nil))
 }
 

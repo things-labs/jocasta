@@ -2,11 +2,12 @@ package encrypt
 
 import (
 	"crypto/cipher"
+	"crypto/md5"
 	"crypto/sha256"
 	"errors"
 )
 
-// Cipher write and read cipher.Stream
+// Cipher implement write and read cipher.Stream
 type Cipher struct {
 	Write cipher.Stream
 	Read  cipher.Stream
@@ -50,4 +51,29 @@ func NewCipher(method, password string) (*Cipher, error) {
 		return nil, err
 	}
 	return &Cipher{wr, rd}, nil
+}
+
+func Evp2Key(password string, keyLen int) (key []byte) {
+	const md5Len = 16
+
+	cnt := (keyLen-1)/md5Len + 1
+	m := make([]byte, cnt*md5Len)
+	copy(m, md5sum([]byte(password)))
+
+	// Repeatedly call md5 until bytes generated is enough.
+	// Each call to md5 uses data: prev md5 sum + password.
+	d := make([]byte, md5Len+len(password))
+	for start, i := 0, 1; i < cnt; i++ {
+		start += md5Len
+		copy(d, m[start-md5Len:start])
+		copy(d[md5Len:], password)
+		copy(m[start:], md5sum(d))
+	}
+	return m[:keyLen]
+}
+
+func md5sum(b []byte) []byte {
+	h := md5.New()
+	h.Write(b) // nolint: errcheck
+	return h.Sum(nil)
 }
