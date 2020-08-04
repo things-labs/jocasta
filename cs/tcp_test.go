@@ -100,7 +100,7 @@ TL44tBTU3E0Bl+fyBSRkAXbVVTcYsxTeHsSuYm3pARTpKsw=
 
 func TestTcpTls(t *testing.T) {
 	for _, isSingle := range []bool{true, false} {
-		t.Logf("tcp tls single: %t", isSingle)
+		// t.Logf("tcp tls single: %t", isSingle)
 		s, err := NewTCPTLS(":", []byte(crt), []byte(key), nil, isSingle, func(inconn net.Conn) {
 			buf := make([]byte, 2048)
 			_, err := inconn.Read(buf)
@@ -145,7 +145,7 @@ func TestSTCP(t *testing.T) {
 	password := "pass_word"
 	for _, method := range encrypt.CipherMethods() {
 		for _, compress := range []bool{true, false} {
-			t.Logf("stcp method: %s compress: %t", method, compress)
+			// t.Logf("stcp method: %s compress: %t", method, compress)
 			s, err := NewStcp(":", method, password, compress, func(inconn net.Conn) {
 				buf := make([]byte, 2048)
 				_, err := inconn.Read(buf)
@@ -209,9 +209,11 @@ func TestSSSSTCP(t *testing.T) {
 		cli, err := DialStcpTimeout(s.Addr(), method, password, compress, 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
-		t.Log(cli.LocalAddr())
+
+		// t.Log(cli.LocalAddr())
 		_, err = cli.Write(want)
 		require.NoError(t, err)
+
 		got := make([]byte, 2048)
 		n, err := cli.Read(got)
 		require.NoError(t, err)
