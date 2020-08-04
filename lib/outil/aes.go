@@ -1,5 +1,5 @@
 // package goaes cfb cbc encrypt and decrypt
-package goaes
+package outil
 
 import (
 	"bytes"

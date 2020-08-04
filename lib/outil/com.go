@@ -1,4 +1,4 @@
-package com
+package outil
 
 // SubStr sub string
 func SubStr(str string, start, length int) string {

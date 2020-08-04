@@ -1,4 +1,4 @@
-package goaes
+package outil
 
 import (
 	"testing"

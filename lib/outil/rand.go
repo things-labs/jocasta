@@ -1,4 +1,4 @@
-package com
+package outil
 
 import (
 	"crypto/sha1"
