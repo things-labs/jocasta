@@ -1,4 +1,4 @@
-// package flow 实现字节统计,读,写,读写统计,以字节为准. 三个参数为空时,无任何统计
+// Package flow 实现字节统计,读,写,读写统计,以字节为准. 三个参数为空时,无任何统计
 package flow
 
 import (

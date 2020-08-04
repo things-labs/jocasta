@@ -1,4 +1,4 @@
-// package goaes cfb cbc encrypt and decrypt
+// Package outil cfb cbc encrypt and decrypt
 package outil
 
 import (

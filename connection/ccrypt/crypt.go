@@ -1,4 +1,4 @@
-// 实现net.conn的加密conn接口 aes cfb加密码的连接,通过提供的配置使用pbkdf2生成key,
+// Package ccrypt 实现net.conn的加密conn接口 aes cfb加密码的连接,通过提供的配置使用pbkdf2生成key,
 // 依靠key和hash生成iv
 package ccrypt
 

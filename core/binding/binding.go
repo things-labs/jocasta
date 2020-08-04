@@ -1,4 +1,4 @@
-// package binding provide stream binding or package bind
+// Package binding provide stream binding or package bind
 package binding
 
 import (

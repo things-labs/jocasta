@@ -79,6 +79,7 @@ func SetLevel(l zapcore.Level) {
 	level.SetLevel(l)
 }
 
+// Level get logger level
 func Level() zapcore.Level {
 	return level.Level()
 }

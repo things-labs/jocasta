@@ -8,9 +8,10 @@ type logger struct {
 	*zap.Logger
 }
 
+// Logger global logger
 var Logger = logger{zap.NewNop()}
 
-// 调试
+// Debug 调试
 func Debug(msg string, fields ...zap.Field) {
 	Logger.Debug(msg, fields...)
 }

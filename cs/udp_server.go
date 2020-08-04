@@ -86,8 +86,10 @@ func (sf *UDP) submit(f func()) {
 	}
 }
 
+// UDPOption udp option
 type UDPOption func(udp *UDP)
 
+// WithUDPGPool with gpool.Pool
 func WithUDPGPool(pool gpool.Pool) UDPOption {
 	return func(p *UDP) {
 		if pool != nil {

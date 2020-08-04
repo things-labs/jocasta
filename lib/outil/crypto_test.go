@@ -4,6 +4,6 @@ import (
 	"testing"
 )
 
-func TestMD5Hex(t *testing.T) {
+func TestMD5Hex(_ *testing.T) {
 	MD5Hex("helloworld")
 }

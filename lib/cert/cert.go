@@ -1,4 +1,4 @@
-// ca 证书生成
+// Package cert ca 证书生成
 package cert
 
 import (

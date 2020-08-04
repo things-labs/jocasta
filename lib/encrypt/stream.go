@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/salsa20/salsa"
 )
 
+// CipherInfo cipher information
 type CipherInfo struct {
 	KeyLen    int
 	IvLen     int
@@ -61,9 +62,8 @@ func HasCipherMethod(method string) (ok bool) {
 func newStream(block cipher.Block, iv []byte, isEncode bool) (cipher.Stream, error) {
 	if isEncode {
 		return cipher.NewCFBEncrypter(block, iv), nil
-	} else {
-		return cipher.NewCFBDecrypter(block, iv), nil
 	}
+	return cipher.NewCFBDecrypter(block, iv), nil
 }
 
 func newAESCFBStream(key, iv []byte, isEncode bool) (cipher.Stream, error) {

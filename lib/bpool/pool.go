@@ -10,7 +10,7 @@ type Pool struct {
 	pool *sync.Pool
 }
 
-// NewBuffer creates a leaky buffer which can hold at most n buffer, each
+// NewPool creates a leaky buffer which can hold at most n buffer, each
 // with size bytes.
 func NewPool(size int) *Pool {
 	return &Pool{

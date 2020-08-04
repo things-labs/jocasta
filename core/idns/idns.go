@@ -1,4 +1,4 @@
-// package idns 本地 dns 解析服务
+// Package idns 本地 dns 解析服务
 package idns
 
 import (

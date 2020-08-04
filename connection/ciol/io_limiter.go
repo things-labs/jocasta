@@ -1,4 +1,4 @@
-// 实现 net.conn 网络io限速器接口
+// Package ciol 实现 net.conn 网络io限速器接口
 package ciol
 
 import (

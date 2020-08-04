@@ -53,6 +53,7 @@ func NewCipher(method, password string) (*Cipher, error) {
 	return &Cipher{wr, rd}, nil
 }
 
+// Evp2Key ...
 func Evp2Key(password string, keyLen int) (key []byte) {
 	const md5Len = 16
 

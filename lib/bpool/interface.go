@@ -1,4 +1,4 @@
-// Provides bpool buffer pool
+// Package bpool Provides bpool buffer pool
 package bpool
 
 // BufferPool buffer pool interface

@@ -1,4 +1,4 @@
-// package connection 管理key
+// Package connection 管理key
 package connection
 
 import (
