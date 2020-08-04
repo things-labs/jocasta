@@ -13,11 +13,11 @@ func TestIdns(t *testing.T) {
 	srv := New(publicDNSAddr, 3600)
 	assert.Equal(t, 3600, srv.TTL())
 	assert.Equal(t, publicDNSAddr, srv.PublicDNSAddr())
+
 	domain := "www.baidu.com"
 	ip, err := srv.Resolve(domain)
 	require.NoError(t, err)
 	t.Logf("resolve domain: %s - %s", domain, ip)
-
 	ip = srv.MustResolve(domain)
 	t.Logf("MustResolve domain: %s - %s", domain, ip)
 

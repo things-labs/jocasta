@@ -1,4 +1,4 @@
-// 本地 dns 解析服务
+// package idns 本地 dns 解析服务
 package idns
 
 import (
@@ -43,7 +43,7 @@ func (sf *Resolver) PublicDNSAddr() string {
 	return sf.publicDNSAddr
 }
 
-// MustResolve 域名解析,if address can not resolve it will return the input
+// MustResolve 域名解析,如果地址无法解析,将返回输入值
 func (sf *Resolver) MustResolve(address string) string {
 	ip, err := sf.Resolve(address)
 	if err != nil {
@@ -99,7 +99,7 @@ func (sf *Resolver) Resolve(domain string) (string, error) {
 		return "", err
 	}
 	if r.Rcode != dns.RcodeSuccess {
-		return "", fmt.Errorf(" *** invalid answer name %s after A query for %s", dstDomain, sf.publicDNSAddr)
+		return "", fmt.Errorf("invalid answer name %s after A query for %s", dstDomain, sf.publicDNSAddr)
 	}
 
 	for _, answer := range r.Answer {

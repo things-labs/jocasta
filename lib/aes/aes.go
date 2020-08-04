@@ -1,5 +1,4 @@
-// Playbook - http://play.golang.org/p/3wFl4lacjX
-
+// package goaes cfb cbc encrypt and decrypt
 package goaes
 
 import (
@@ -37,6 +36,7 @@ func PCKSUnPadding(origData []byte) ([]byte, error) {
 	return origData[:(length - unPadSize)], nil
 }
 
+// EncryptCFB encrypt cfb
 func EncryptCFB(key []byte, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -54,6 +54,7 @@ func EncryptCFB(key []byte, text []byte) ([]byte, error) {
 	return cipherText, nil
 }
 
+// DecryptCFB decrypt cfb
 func DecryptCFB(key []byte, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -70,7 +71,7 @@ func DecryptCFB(key []byte, text []byte) ([]byte, error) {
 	return PCKSUnPadding(msg)
 }
 
-// Encrypt 加密
+// Encrypt encrypt cbc
 func EncryptCBC(key, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -88,7 +89,7 @@ func EncryptCBC(key, text []byte) ([]byte, error) {
 	return out, nil
 }
 
-// Decrypt 解密
+// Decrypt decrypt cbc
 func DecryptCBC(key, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
