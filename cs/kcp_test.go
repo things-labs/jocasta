@@ -15,7 +15,7 @@ func TestKcp(t *testing.T) {
 
 	for _, method := range KcpBlockCryptMethods() {
 		for _, compress := range []bool{true, false} {
-			t.Logf("kcp crypt method: %s compress: %t", method, compress)
+			// t.Logf("kcp crypt method: %s compress: %t", method, compress)
 			config := KcpConfig{
 				MTU:          1400,
 				SndWnd:       32,

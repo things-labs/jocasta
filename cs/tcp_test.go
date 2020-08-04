@@ -14,7 +14,7 @@ import (
 
 func TestTCP(t *testing.T) {
 	for _, compress := range []bool{true, false} {
-		t.Logf("tcp compress: %t", compress)
+		// t.Logf("tcp compress: %t", compress)
 		s, err := NewTCP(":", compress, func(inconn net.Conn) {
 			buf := make([]byte, 2048)
 			_, err := inconn.Read(buf)
