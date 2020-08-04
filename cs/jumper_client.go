@@ -39,7 +39,7 @@ func NewJumper(proxyURL string) (*Jumper, error) {
 	return &Jumper{proxyURL: u}, nil
 }
 
-func (sf *Jumper) DialTimeoutTCP(address string, timeout time.Duration) (net.Conn, error) {
+func (sf *Jumper) DialTCPTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	switch sf.proxyURL.Scheme {
 	case "https":
 		return sf.dialHTTPS(address, timeout)
@@ -50,24 +50,24 @@ func (sf *Jumper) DialTimeoutTCP(address string, timeout time.Duration) (net.Con
 	}
 }
 
-func (sf *Jumper) DialTimeoutTCPTLS(address string, certBytes, keyBytes, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
+func (sf *Jumper) DialTCPTLSTimeout(address string, certBytes, keyBytes, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
 	conf, err := TLSConfig(certBytes, keyBytes, caCertBytes)
 	if err != nil {
 		return nil, err
 	}
-	conn, err := sf.DialTimeoutTCP(address, timeout)
+	conn, err := sf.DialTCPTimeout(address, timeout)
 	if err != nil {
 		return nil, err
 	}
 	return tls.Client(conn, conf), nil
 }
 
-func (sf *Jumper) DialTimeoutTTCPSingleTLS(address string, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
+func (sf *Jumper) DialTCPSingleTLSTimeout(address string, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
 	conf, err := SingleTLSConfig(caCertBytes)
 	if err != nil {
 		return nil, err
 	}
-	conn, err := sf.DialTimeoutTCP(address, timeout)
+	conn, err := sf.DialTCPTimeout(address, timeout)
 	if err != nil {
 		return nil, err
 
@@ -75,12 +75,12 @@ func (sf *Jumper) DialTimeoutTTCPSingleTLS(address string, caCertBytes []byte, t
 	return tls.Client(conn, conf), nil
 }
 
-func (sf *Jumper) DialTimeoutStcp(address, method, password string, compress bool, timeout time.Duration) (net.Conn, error) {
+func (sf *Jumper) DialStcpTimeout(address, method, password string, compress bool, timeout time.Duration) (net.Conn, error) {
 	cip, err := encrypt.NewCipher(method, password)
 	if err != nil {
 		return nil, err
 	}
-	conn, err := sf.DialTimeoutTCP(address, timeout)
+	conn, err := sf.DialTCPTimeout(address, timeout)
 	if err != nil {
 		return nil, err
 	}
