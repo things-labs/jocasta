@@ -131,7 +131,7 @@ func (sf *Center) VerifyFromLocal(user, pwd string) bool {
 // VerifyFromURL verify only from url basic server
 func (sf *Center) VerifyFromURL(user, pwd, userIP, localIP, target string) (err error) {
 	if sf.url == "" {
-		return errors.New("invalid url")
+		return errors.New("invalid remote basic auth url")
 	}
 
 	URL := sf.url
@@ -156,7 +156,7 @@ func (sf *Center) VerifyFromURL(user, pwd, userIP, localIP, target string) (err 
 	return backoff.Retry(func() error {
 		body, code, err := httpGet(getURL, sf.timeout, domain)
 		if err != nil {
-			return fmt.Errorf("auth fail from url %s,resonse %s , %s -> %s", URL, err, userIP, localIP)
+			return fmt.Errorf("auth fail from url %s,response %s , %s -> %s", URL, err, userIP, localIP)
 		}
 		if code == sf.successCode {
 			return nil
@@ -164,7 +164,7 @@ func (sf *Center) VerifyFromURL(user, pwd, userIP, localIP, target string) (err 
 		if len(body) > 50 {
 			body = body[:50]
 		}
-		return fmt.Errorf("auth fail from url %s,resonse code: %d, except: %d , %s -> %s, %s",
+		return fmt.Errorf("auth fail from url %s,response code: %d, except: %d , %s -> %s, %s",
 			URL, code, sf.successCode, userIP, localIP, string(body))
 	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), uint64(sf.retry)))
 }
@@ -174,10 +174,15 @@ func httpGet(url string, timeout time.Duration, host ...string) (body []byte, co
 	tr := &http.Transport{}
 	if strings.Contains(url, "https://") {
 		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	} else if !strings.Contains(url, "http://") {
+		url = "http://" + url
 	}
 	defer tr.CloseIdleConnections()
 
-	req, err := http.NewRequest("GET", url, nil)
+	var req *http.Request
+	var resp *http.Response
+
+	req, err = http.NewRequest("GET", url, nil)
 	if err != nil {
 		return
 	}
@@ -186,7 +191,7 @@ func httpGet(url string, timeout time.Duration, host ...string) (body []byte, co
 	}
 
 	client := &http.Client{Timeout: timeout, Transport: tr}
-	resp, err := client.Do(req)
+	resp, err = client.Do(req)
 	if err != nil {
 		return
 	}

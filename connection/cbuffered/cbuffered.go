@@ -8,7 +8,7 @@ import (
 // Conn conn with bufio.Reader
 type Conn struct {
 	net.Conn
-	r *bufio.Reader
+	reader *bufio.Reader
 }
 
 // New with net.Conn and a new Reader whose buffer has at least the specified size
@@ -24,24 +24,25 @@ func New(c net.Conn, sizes ...int) *Conn {
 // also returns an error explaining why the read is short. The error is
 // ErrBufferFull if n is larger than b's buffer size.
 func (sf *Conn) Peek(n int) ([]byte, error) {
-	return sf.r.Peek(n)
+	return sf.reader.Peek(n)
 }
 
+// Read reads data into p.
 func (sf *Conn) Read(p []byte) (int, error) {
-	return sf.r.Read(p)
+	return sf.reader.Read(p)
 }
 
 // ReadByte reads and returns a single byte.
 func (sf *Conn) ReadByte() (byte, error) {
-	return sf.r.ReadByte()
+	return sf.reader.ReadByte()
 }
 
 // UnreadByte unreads the last byte. Only the most recently read byte can be unread.
 func (sf *Conn) UnreadByte() error {
-	return sf.r.UnreadByte()
+	return sf.reader.UnreadByte()
 }
 
 // Buffered returns the number of bytes that can be read from the current buffer.
 func (sf *Conn) Buffered() int {
-	return sf.r.Buffered()
+	return sf.reader.Buffered()
 }

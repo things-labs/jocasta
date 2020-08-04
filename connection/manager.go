@@ -1,3 +1,4 @@
+// package connection 管理key
 package connection
 
 import (
@@ -7,6 +8,7 @@ import (
 	cmap "github.com/orcaman/concurrent-map"
 )
 
+// Manager 管理key
 type Manager struct {
 	cmap.ConcurrentMap
 	interval time.Duration
@@ -14,6 +16,9 @@ type Manager struct {
 	gcIterCb func(key string, value interface{}, now time.Time) bool
 }
 
+// New a manager
+// gcInterval: 回收间隔
+// gcIterCb: 回收回调函数, 当间隔到后,检查所有的key,value,返回true将删除对应的key
 func New(gcInterval time.Duration, gcIterCb func(key string, value interface{}, now time.Time) bool) *Manager {
 	return &Manager{
 		cmap.New(),
@@ -22,6 +27,7 @@ func New(gcInterval time.Duration, gcIterCb func(key string, value interface{}, 
 	}
 }
 
+// RunWatch watch interval
 func (sf *Manager) RunWatch(ctx context.Context) {
 	if sf.interval <= 0 {
 		return
@@ -36,7 +42,7 @@ func (sf *Manager) RunWatch(ctx context.Context) {
 			return
 		case now = <-timer.C:
 		}
-
+		// TODO: 优化删除策略
 		for k, v := range sf.Items() {
 			if sf.gcIterCb(k, v, now) {
 				sf.Remove(k)
