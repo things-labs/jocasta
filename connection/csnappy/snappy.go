@@ -1,4 +1,4 @@
-// 采用snappy压缩实现的net.conn接口
+// Package csnappy 采用snappy压缩实现的net.conn接口
 package csnappy
 
 import (

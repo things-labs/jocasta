@@ -15,7 +15,7 @@ import (
 func TestTCP(t *testing.T) {
 	for _, compress := range []bool{true, false} {
 		t.Logf("tcp compress: %t", compress)
-		s, err := NewTcp(":", compress, func(inconn net.Conn) {
+		s, err := NewTCP(":", compress, func(inconn net.Conn) {
 			buf := make([]byte, 2048)
 			_, err := inconn.Read(buf)
 			if !assert.NoError(t, err) {
@@ -36,7 +36,7 @@ func TestTCP(t *testing.T) {
 		defer s.Close()
 
 		// client
-		cli, err := DialTcpTimeout(s.Addr(), compress, 5*time.Second)
+		cli, err := DialTCPTimeout(s.Addr(), compress, 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 
@@ -101,7 +101,7 @@ TL44tBTU3E0Bl+fyBSRkAXbVVTcYsxTeHsSuYm3pARTpKsw=
 func TestTcpTls(t *testing.T) {
 	for _, isSingle := range []bool{true, false} {
 		t.Logf("tcp tls single: %t", isSingle)
-		s, err := NewTcpTls(":", []byte(crt), []byte(key), nil, isSingle, func(inconn net.Conn) {
+		s, err := NewTCPTLS(":", []byte(crt), []byte(key), nil, isSingle, func(inconn net.Conn) {
 			buf := make([]byte, 2048)
 			_, err := inconn.Read(buf)
 			if !assert.NoError(t, err) {
@@ -125,9 +125,9 @@ func TestTcpTls(t *testing.T) {
 		// client
 		var cli *tls.Conn
 		if isSingle {
-			cli, err = DialTcpSingleTlsTimeout(s.Addr(), []byte(crt), 5*time.Second)
+			cli, err = DialTCPSingleTLSTimeout(s.Addr(), []byte(crt), 5*time.Second)
 		} else {
-			cli, err = DialTcpTlsTimeout(s.Addr(), []byte(crt), []byte(key), nil, 5*time.Second)
+			cli, err = DialTCPTLSTimeout(s.Addr(), []byte(crt), []byte(key), nil, 5*time.Second)
 		}
 		require.NoError(t, err)
 		defer cli.Close()

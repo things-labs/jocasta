@@ -74,7 +74,7 @@ func newAESCFBStream(key, iv []byte, isEncode bool) (cipher.Stream, error) {
 	return newStream(block, iv, isEncode)
 }
 
-func newAESCTRStream(key, iv []byte, isEncode bool) (cipher.Stream, error) {
+func newAESCTRStream(key, iv []byte, _ bool) (cipher.Stream, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err

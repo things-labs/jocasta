@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/rs/xid"
+
+	"github.com/thinkgos/jocasta/internal/bytesconv"
 )
 
 func SubStr(str string, start, length int) string {
@@ -41,6 +43,6 @@ func SubBytes(b []byte, start, length int) []byte {
 func UniqueId() string {
 	str := fmt.Sprintf("%d%s", time.Now().UnixNano(), xid.New().String())
 	hash := sha1.New()
-	hash.Write([]byte(str))
+	hash.Write(bytesconv.Str2Bytes(str)) // nolint: errcheck
 	return hex.EncodeToString(hash.Sum(nil))
 }

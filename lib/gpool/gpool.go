@@ -1,7 +1,7 @@
-// 提供一个协程池接口
+// package gpool 提供一个协程池接口
 package gpool
 
-// 协程池接口
+// Pool 协程池接口
 type Pool interface {
 	// 提交任务
 	Submit(f func()) error

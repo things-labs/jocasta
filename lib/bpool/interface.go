@@ -1,7 +1,7 @@
-// Provides leaky buffer, based on the example in Effective Go.
-// set https://studygolang.com/articles/1976
+// Provides bpool buffer pool
 package bpool
 
+// BufferPool buffer pool interface
 type BufferPool interface {
 	Get() []byte
 	Put([]byte)

@@ -13,8 +13,8 @@ import (
 	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
-// DialTcpTimeout dial tcp with timeout
-func DialTcpTimeout(address string, compress bool, timeout time.Duration) (net.Conn, error) {
+// DialTCPTimeout dial tcp with timeout
+func DialTCPTimeout(address string, compress bool, timeout time.Duration) (net.Conn, error) {
 	conn, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
 		return nil, err
@@ -25,9 +25,9 @@ func DialTcpTimeout(address string, compress bool, timeout time.Duration) (net.C
 	return conn, nil
 }
 
-// DialTcpTlsTimeout dial tcp tls with timeout
-func DialTcpTlsTimeout(address string, cert, key, caCert []byte, timeout time.Duration) (*tls.Conn, error) {
-	conf, err := TlsConfig(cert, key, caCert)
+// DialTCPTLSTimeout dial tcp tls with timeout
+func DialTCPTLSTimeout(address string, cert, key, caCert []byte, timeout time.Duration) (*tls.Conn, error) {
+	conf, err := TLSConfig(cert, key, caCert)
 	if err != nil {
 		return nil, err
 	}
@@ -38,9 +38,9 @@ func DialTcpTlsTimeout(address string, cert, key, caCert []byte, timeout time.Du
 	return tls.Client(conn, conf), err
 }
 
-// DialTcpSingleTlsTimeout dial single tls with timeout
-func DialTcpSingleTlsTimeout(address string, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
-	conf, err := SingleTlsConfig(caCertBytes)
+// DialTCPSingleTLSTimeout dial single tls with timeout
+func DialTCPSingleTLSTimeout(address string, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
+	conf, err := SingleTLSConfig(caCertBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +67,8 @@ func DialStcpTimeout(address, method, password string, compress bool, timeout ti
 	return cencrypt.New(conn, cip), nil
 }
 
-// TlsConfig tls config
-func TlsConfig(cert, key, caCert []byte) (*tls.Config, error) {
+// TLSConfig tls config
+func TLSConfig(cert, key, caCert []byte) (*tls.Config, error) {
 	certificate, err := tls.X509KeyPair(cert, key)
 	if err != nil {
 		return nil, err
@@ -112,8 +112,8 @@ func TlsConfig(cert, key, caCert []byte) (*tls.Config, error) {
 	}, nil
 }
 
-// SingleTlsConfig single tls config
-func SingleTlsConfig(caCertBytes []byte) (*tls.Config, error) {
+// SingleTLSConfig single tls config
+func SingleTLSConfig(caCertBytes []byte) (*tls.Config, error) {
 	if len(caCertBytes) == 0 {
 		return nil, errors.New("invalid root certificate")
 	}

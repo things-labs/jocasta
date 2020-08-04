@@ -219,6 +219,7 @@ func ParseCrtAndKeyFile(crtFilename, keyFilename string) (ca *x509.Certificate, 
 	return
 }
 
+// ReadCrtAndKeyFile ...
 func ReadCrtAndKeyFile(crtFilename, keyFilename string) (crt []byte, key []byte, err error) {
 	crt, err = ReadCrtFile(crtFilename)
 	if err != nil {
@@ -228,7 +229,8 @@ func ReadCrtAndKeyFile(crtFilename, keyFilename string) (crt []byte, key []byte,
 	return
 }
 
-func ParseTls(cert, key string) (certBytes, keyBytes []byte, err error) {
+// ParseTLS ...
+func ParseTLS(cert, key string) (certBytes, keyBytes []byte, err error) {
 	if strings.HasPrefix(cert, base64Prefix) {
 		certBytes, err = base64.StdEncoding.DecodeString(cert[len(base64Prefix):])
 	} else {

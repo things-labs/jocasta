@@ -1,11 +1,12 @@
 package bpool
 
+// Buffer leaky buffer
 type Buffer struct {
 	size     int // size of each buffer
 	freeList chan []byte
 }
 
-// New creates a leaky buffer which can hold at most n buffer, each
+// NewBuffer creates a leaky buffer which can hold at most n buffer, each
 // with size bytes.
 func NewBuffer(maxFreeSize, size int) *Buffer {
 	return &Buffer{

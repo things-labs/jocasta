@@ -7,6 +7,7 @@ import (
 	"go.uber.org/atomic"
 )
 
+// Flow io流统计
 type Flow struct {
 	io.ReadWriter
 	Wc *atomic.Uint64 // 写统计

@@ -20,7 +20,7 @@ type UDP struct {
 	gPool   gpool.Pool
 }
 
-func NewUDP(addr string, handler func(listen *net.UDPConn, message Message), opts ...UdpOption) (*UDP, error) {
+func NewUDP(addr string, handler func(listen *net.UDPConn, message Message), opts ...UDPOption) (*UDP, error) {
 	c, err := newCommon(addr)
 	if err != nil {
 		return nil, err
@@ -86,9 +86,9 @@ func (sf *UDP) submit(f func()) {
 	}
 }
 
-type UdpOption func(udp *UDP)
+type UDPOption func(udp *UDP)
 
-func WithUdpGPool(pool gpool.Pool) UdpOption {
+func WithUDPGPool(pool gpool.Pool) UDPOption {
 	return func(p *UDP) {
 		if pool != nil {
 			p.gPool = pool

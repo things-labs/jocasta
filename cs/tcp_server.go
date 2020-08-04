@@ -33,7 +33,7 @@ type TCP struct {
 	gPool         gpool.Pool
 }
 
-func NewTcp(addr string, compress bool, handler func(conn net.Conn), opts ...TcpOption) (*TCP, error) {
+func NewTCP(addr string, compress bool, handler func(conn net.Conn), opts ...TCPOption) (*TCP, error) {
 	c, err := newCommon(addr)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func NewTcp(addr string, compress bool, handler func(conn net.Conn), opts ...Tcp
 	return p, nil
 }
 
-func NewStcp(addr, method, password string, compress bool, handler func(conn net.Conn), opts ...TcpOption) (*TCP, error) {
+func NewStcp(addr, method, password string, compress bool, handler func(conn net.Conn), opts ...TCPOption) (*TCP, error) {
 	if method == "" || password == "" || !encrypt.HasCipherMethod(method) {
 		return nil, errors.New("invalid method or password")
 	}
@@ -75,7 +75,7 @@ func NewStcp(addr, method, password string, compress bool, handler func(conn net
 	return p, nil
 }
 
-func NewTcpTls(addr string, certBytes, keyBytes, caCertBytes []byte, single bool, handler func(conn net.Conn), opts ...TcpOption) (*TCP, error) {
+func NewTCPTLS(addr string, certBytes, keyBytes, caCertBytes []byte, single bool, handler func(conn net.Conn), opts ...TCPOption) (*TCP, error) {
 	com, err := newCommon(addr)
 	if err != nil {
 		return nil, err
@@ -98,11 +98,11 @@ func NewTcpTls(addr string, certBytes, keyBytes, caCertBytes []byte, single bool
 func (sf *TCP) ListenAndServe() error {
 	switch sf.who {
 	case tcp:
-		return sf.listenAndServeTcp()
+		return sf.listenAndServeTCP()
 	case stcp:
 		return sf.listenAndServeStcp()
 	case tcptls:
-		return sf.listenAndServeTcpTls()
+		return sf.listenAndServeTCPTLS()
 	default:
 		err := fmt.Errorf("unknown listen and serve who(%d)", sf.who)
 		sf.status <- err
@@ -110,6 +110,7 @@ func (sf *TCP) ListenAndServe() error {
 	}
 }
 
+// Close close tcp
 func (sf *TCP) Close() (err error) {
 	if sf.ln != nil {
 		err = sf.ln.Close()
@@ -117,6 +118,7 @@ func (sf *TCP) Close() (err error) {
 	return
 }
 
+// Addr return address
 func (sf *TCP) Addr() (addr string) {
 	if sf.ln != nil {
 		addr = sf.ln.Addr().String()
@@ -124,7 +126,7 @@ func (sf *TCP) Addr() (addr string) {
 	return
 }
 
-func (sf *TCP) listenAndServeTcp() (err error) {
+func (sf *TCP) listenAndServeTCP() (err error) {
 	preFn := sf.handler
 	sf.handler = func(c net.Conn) {
 		// 压缩
@@ -157,8 +159,8 @@ func (sf *TCP) listenAndServeStcp() error {
 	return sf.listenRawTCP()
 }
 
-func (sf *TCP) listenAndServeTcpTls() (err error) {
-	sf.ln, err = sf.listenTcpTls()
+func (sf *TCP) listenAndServeTCPTLS() (err error) {
+	sf.ln, err = sf.listenTCPTLS()
 	if err != nil {
 		sf.status <- err
 		return err
@@ -206,7 +208,7 @@ func (sf *TCP) listenRawTCP() (err error) {
 	}
 }
 
-func (sf *TCP) listenTcpTls() (ln net.Listener, err error) {
+func (sf *TCP) listenTCPTLS() (ln net.Listener, err error) {
 	var cert tls.Certificate
 
 	cert, err = tls.X509KeyPair(sf.certOrMethod, sf.keyOrPassword)
@@ -239,9 +241,11 @@ func (sf *TCP) submit(f func()) {
 	}
 }
 
-type TcpOption func(*TCP)
+// TCPOption option for tcp
+type TCPOption func(*TCP)
 
-func WithTcpGPool(pool gpool.Pool) TcpOption {
+// WithTCPGPool wit gpool.Pool
+func WithTCPGPool(pool gpool.Pool) TCPOption {
 	return func(p *TCP) {
 		if pool != nil {
 			p.gPool = pool

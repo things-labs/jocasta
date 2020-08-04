@@ -1,7 +1,7 @@
 package builder
 
 var (
-	// BuildDate 编译日期 由外部ldflags指定
+	// BuildTime 编译日期 由外部ldflags指定
 	BuildTime = ""
 	// GitCommit git提交版本(短) 由外部ldflags指定
 	GitCommit = ""

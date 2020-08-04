@@ -39,7 +39,7 @@ func NewJumper(proxyURL string) (*Jumper, error) {
 	return &Jumper{proxyURL: u}, nil
 }
 
-func (sf *Jumper) DialTimeoutTcp(address string, timeout time.Duration) (net.Conn, error) {
+func (sf *Jumper) DialTimeoutTCP(address string, timeout time.Duration) (net.Conn, error) {
 	switch sf.proxyURL.Scheme {
 	case "https":
 		return sf.dialHTTPS(address, timeout)
@@ -50,24 +50,24 @@ func (sf *Jumper) DialTimeoutTcp(address string, timeout time.Duration) (net.Con
 	}
 }
 
-func (sf *Jumper) DialTimeoutTcpTls(address string, certBytes, keyBytes, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
-	conf, err := TlsConfig(certBytes, keyBytes, caCertBytes)
+func (sf *Jumper) DialTimeoutTCPTLS(address string, certBytes, keyBytes, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
+	conf, err := TLSConfig(certBytes, keyBytes, caCertBytes)
 	if err != nil {
 		return nil, err
 	}
-	conn, err := sf.DialTimeoutTcp(address, timeout)
+	conn, err := sf.DialTimeoutTCP(address, timeout)
 	if err != nil {
 		return nil, err
 	}
 	return tls.Client(conn, conf), nil
 }
 
-func (sf *Jumper) DialTimeoutTcpSingleTls(address string, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
-	conf, err := SingleTlsConfig(caCertBytes)
+func (sf *Jumper) DialTimeoutTTCPSingleTLS(address string, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
+	conf, err := SingleTLSConfig(caCertBytes)
 	if err != nil {
 		return nil, err
 	}
-	conn, err := sf.DialTimeoutTcp(address, timeout)
+	conn, err := sf.DialTimeoutTCP(address, timeout)
 	if err != nil {
 		return nil, err
 
@@ -80,7 +80,7 @@ func (sf *Jumper) DialTimeoutStcp(address, method, password string, compress boo
 	if err != nil {
 		return nil, err
 	}
-	conn, err := sf.DialTimeoutTcp(address, timeout)
+	conn, err := sf.DialTimeoutTCP(address, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -115,9 +115,9 @@ func (sf *Jumper) dialHTTPS(address string, timeout time.Duration) (net.Conn, er
 	}
 
 	reply := make([]byte, 1024)
-	conn.SetDeadline(time.Now().Add(timeout))
+	conn.SetDeadline(time.Now().Add(timeout)) // nolint: errcheck
 	n, err := conn.Read(reply)
-	conn.SetDeadline(time.Time{})
+	conn.SetDeadline(time.Time{}) // nolint: errcheck
 	if err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("ead reply from proxy, %#v", err)

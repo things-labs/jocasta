@@ -86,6 +86,7 @@ func (sf *KCP) ListenAndServe() error {
 	}
 }
 
+// Close close kcp
 func (sf *KCP) Close() (err error) {
 	if sf.l != nil {
 		err = sf.l.Close()
@@ -93,6 +94,7 @@ func (sf *KCP) Close() (err error) {
 	return
 }
 
+// Addr return address
 func (sf *KCP) Addr() (addr string) {
 	if sf.l != nil {
 		addr = sf.l.Addr().String()
@@ -115,8 +117,10 @@ func (sf *KCP) submit(f func()) {
 	}
 }
 
+// KcpOption kcp option for kcp
 type KcpOption func(*KCP)
 
+// WithKcpGPool with gpool.Pool
 func WithKcpGPool(pool gpool.Pool) KcpOption {
 	return func(k *KCP) {
 		if pool != nil {
