@@ -2,7 +2,9 @@ package cs
 
 import (
 	"net"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -10,7 +12,7 @@ import (
 
 func TestKcp(t *testing.T) {
 	var err error
-
+	runtime.GOMAXPROCS(2)
 	require.True(t, HasKcpBlockCrypt("blowfish"))
 
 	for _, method := range KcpBlockCryptMethods() {
@@ -51,6 +53,7 @@ func TestKcp(t *testing.T) {
 			go func() {
 				_ = s.ListenAndServe()
 			}()
+			time.Sleep(time.Millisecond * 10)
 			err = <-s.Status()
 			require.NoError(t, err)
 			defer s.Close()
