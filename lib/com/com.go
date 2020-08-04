@@ -1,48 +1,33 @@
 package com
 
-import (
-	"crypto/sha1"
-	"encoding/hex"
-	"fmt"
-	"time"
-
-	"github.com/rs/xid"
-
-	"github.com/thinkgos/jocasta/internal/bytesconv"
-)
-
+// SubStr sub string
 func SubStr(str string, start, length int) string {
 	if len(str) == 0 {
 		return ""
 	}
 	rs := []rune(str)
-	end := start + length - 1
 
 	if start < 0 {
 		start = 0
 	}
+	end := start + length
 	if end < 0 || end >= len(str) {
-		end = len(rs) - 1
+		end = len(rs)
 	}
 	return string(rs[start:end])
 }
 
+// SubBytes sub bytes
 func SubBytes(b []byte, start, length int) []byte {
 	if len(b) == 0 {
-		return []byte{}
+		return b
 	}
-
-	end := start + length - 1
-
+	if start < 0 {
+		start = 0
+	}
+	end := start + length
 	if end < 0 || end >= len(b) {
-		end = len(b) - 1
+		end = len(b)
 	}
 	return b[start:end]
-}
-
-func UniqueId() string {
-	str := fmt.Sprintf("%d%s", time.Now().UnixNano(), xid.New().String())
-	hash := sha1.New()
-	hash.Write(bytesconv.Str2Bytes(str)) // nolint: errcheck
-	return hex.EncodeToString(hash.Sum(nil))
 }

@@ -1,32 +1,49 @@
 package com
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
+
+	"github.com/rs/xid"
+
+	"github.com/thinkgos/jocasta/internal/bytesconv"
 )
 
+const codesString = "QWERTYUIOPLKJHGFDSAZXCVBNMabcdefghijklmnopqrstuvwxyz0123456789"
+const codesInt = "123456789"
+
+// RandString rand string  with give length
 func RandString(length int) string {
-	const codes = "QWERTYUIOPLKJHGFDSAZXCVBNMabcdefghijklmnopqrstuvwxyz0123456789"
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano() + rand.Int63() +
 		rand.Int63() + rand.Int63() + rand.Int63()))
 	result := make([]byte, 0, length)
 	for i := 0; i < length; i++ {
-		result = append(result, codes[r.Intn(len(codes))])
+		result = append(result, codesString[r.Intn(len(codesString))])
 	}
-	return string(result)
+	return bytesconv.Bytes2Str(result)
 }
 
-func RandInt(length int) (val int64) {
-	const codes = "123456789"
-
+// RandInt rand int with give length
+func RandInt(length int) int64 {
 	r := rand.New(rand.NewSource(time.Now().UnixNano() + rand.Int63() +
 		rand.Int63() + rand.Int63() + rand.Int63()))
 	result := make([]byte, 0, length)
 	for i := 0; i < length; i++ {
-		result = append(result, codes[r.Intn(len(codes))])
+		result = append(result, codesInt[r.Intn(len(codesInt))])
 	}
-	val, _ = strconv.ParseInt(string(result), 10, 64)
-	return
+	val, _ := strconv.ParseInt(bytesconv.Bytes2Str(result), 10, 64)
+	return val
+}
+
+// UniqueId unique id
+func UniqueId() string {
+	str := fmt.Sprintf("%d%s", time.Now().UnixNano(), xid.New().String())
+	hash := sha1.New()
+	hash.Write(bytesconv.Str2Bytes(str)) // nolint: errcheck
+	return hex.EncodeToString(hash.Sum(nil))
 }
