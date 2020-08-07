@@ -16,9 +16,7 @@ func TestBuffer(t *testing.T) {
 	p.Get()
 	p.Put(b)
 	p.Put(make([]byte, 2048))
-	require.Panics(t, func() {
-		p.Put([]byte{})
-	})
+	require.Panics(t, func() { p.Put([]byte{}) })
 }
 
 func TestSyncPool(t *testing.T) {
@@ -29,9 +27,7 @@ func TestSyncPool(t *testing.T) {
 	p.Put(b)
 	p.Get()
 	p.Put(b)
-	require.Panics(t, func() {
-		p.Put([]byte{})
-	})
+	require.Panics(t, func() { p.Put([]byte{}) })
 }
 
 func BenchmarkBuffer(b *testing.B) {

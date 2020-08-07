@@ -12,18 +12,21 @@ func TestEncrypt(t *testing.T) {
 	_, err = NewCipher("invalid_method", "pass_word")
 	require.Error(t, err)
 
+	password := "pass_word"
+	src := []byte("hello world")
 	for _, method := range CipherMethods() {
 		require.True(t, HasCipherMethod(method))
 
-		cip, err := NewCipher(method, "pass_word")
+		cip, err := NewCipher(method, password)
 		require.NoError(t, err)
 
-		src := []byte("hello world")
-		dst := make([]byte, len(src))
-		cip.Write.XORKeyStream(dst, src)
-		wantDst := make([]byte, len(dst))
-		cip.Read.XORKeyStream(wantDst, dst)
+		// encrypt
+		encVal := make([]byte, len(src))
+		cip.Write.XORKeyStream(encVal, src)
+		// decrypt
+		decVal := make([]byte, len(encVal))
+		cip.Read.XORKeyStream(decVal, encVal)
 
-		require.Equal(t, string(wantDst), string(src))
+		require.Equal(t, decVal, src)
 	}
 }

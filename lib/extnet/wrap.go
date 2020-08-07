@@ -5,23 +5,26 @@ import (
 	"time"
 )
 
+// WrapWriteTimeout wrap function with SetWriteDeadLine
 func WrapWriteTimeout(conn net.Conn, timeout time.Duration, f func(c net.Conn) error) error {
-	_ = conn.SetWriteDeadline(time.Now().Add(timeout))
+	conn.SetWriteDeadline(time.Now().Add(timeout)) // nolint: errcheck
 	err := f(conn)
-	_ = conn.SetWriteDeadline(time.Time{})
+	conn.SetWriteDeadline(time.Time{}) // nolint: errcheck
 	return err
 }
 
+// WrapReadTimeout wrap function with SetReadDeadline
 func WrapReadTimeout(conn net.Conn, timeout time.Duration, f func(c net.Conn) error) error {
-	_ = conn.SetReadDeadline(time.Now().Add(timeout))
+	conn.SetReadDeadline(time.Now().Add(timeout)) // nolint: errcheck
 	err := f(conn)
-	_ = conn.SetReadDeadline(time.Time{})
+	conn.SetReadDeadline(time.Time{}) // nolint: errcheck
 	return err
 }
 
+// WrapTimeout wrap function with SetDeadline
 func WrapTimeout(conn net.Conn, timeout time.Duration, f func(c net.Conn) error) error {
-	_ = conn.SetDeadline(time.Now().Add(timeout))
+	conn.SetDeadline(time.Now().Add(timeout)) // nolint: errcheck
 	err := f(conn)
-	_ = conn.SetDeadline(time.Time{})
+	conn.SetDeadline(time.Time{}) // nolint: errcheck
 	return err
 }
