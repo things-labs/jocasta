@@ -1,4 +1,5 @@
-// package sni (Server Name Indication)服务器名称指示,扩展TLS计算机联网协议
+// Package sni implement (Server Name Indication)服务器名称指示,扩展TLS计算机联网协议
+// see https://tools.ietf.org/html/rfc6066
 package sni
 
 import (
@@ -16,6 +17,7 @@ type bufferedConn struct {
 	r io.Reader
 }
 
+// Read reads data into p.
 func (b *bufferedConn) Read(p []byte) (int, error) {
 	return b.r.Read(p)
 }

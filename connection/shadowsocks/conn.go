@@ -1,10 +1,8 @@
 package shadowsocks
 
 import (
-	"fmt"
 	"io"
 	"net"
-	"strconv"
 
 	"github.com/thinkgos/jocasta/lib/bpool"
 )
@@ -36,47 +34,20 @@ func (c *Conn) Close() error {
 	return c.Conn.Close()
 }
 
-// ToRawAddr convert addr to protocol raw address []byte
-func ToRawAddr(addr string) (buf []byte, err error) {
-	host, portStr, err := net.SplitHostPort(addr)
-	if err != nil {
-		return nil, fmt.Errorf("shadowsocks: address error %s %v", addr, err)
-	}
-	port, err := strconv.Atoi(portStr)
-	if err != nil {
-		return nil, fmt.Errorf("shadowsocks: invalid port %s", addr)
-	}
-
-	length := 1 + 1 + len(host) + 2 // addrType(1) + hostLen(1) + host + port(2)
-	buf = make([]byte, 0, length)
-	// 3 means the address is domain name
-	// host address length  followed by host address
-	buf = append(buf, 3, byte(len(host)))
-	buf = append(buf, []byte(host)...)           // host
-	buf = append(buf, byte(port>>8), byte(port)) // port
-	return
-}
-
 // This is intended for use by users implementing a local socks proxy.
 // rawaddr shoud contain part of the data in socks request, starting from the
 // ATYP field. (Refer to rfc1928 for more information.)
-func DialWithRawAddr(rawaddr []byte, server string, cipher *Cipher) (*Conn, error) {
+func DialWithRawAddr(rawAddr []byte, server string, cipher *Cipher) (*Conn, error) {
 	conn, err := net.Dial("tcp", server)
 	if err != nil {
 		return nil, err
 	}
-
-	c := New(conn, cipher)
-	if _, err = c.write(rawaddr); err != nil {
-		c.Close()
-		return nil, err
-	}
-	return c, nil
+	return NewConnWithRawAddr(conn, rawAddr, cipher)
 }
 
 func NewConnWithRawAddr(rawConn net.Conn, rawaddr []byte, cipher *Cipher) (c *Conn, err error) {
 	c = New(rawConn, cipher)
-	if _, err = c.write(rawaddr); err != nil {
+	if _, err = c.Write(rawaddr); err != nil {
 		c.Close()
 		return nil, err
 	}
@@ -85,7 +56,7 @@ func NewConnWithRawAddr(rawConn net.Conn, rawaddr []byte, cipher *Cipher) (c *Co
 
 // addr should be in the form of host:port
 func Dial(addr, server string, cipher *Cipher) (c *Conn, err error) {
-	ra, err := ToRawAddr(addr)
+	ra, err := ParseAddrSpec(addr)
 	if err != nil {
 		return
 	}
@@ -135,21 +106,7 @@ func (c *Conn) Read(b []byte) (n int, err error) {
 }
 
 func (c *Conn) Write(b []byte) (n int, err error) {
-	nn := len(b)
-
-	headerLen := len(b) - nn
-
-	n, err = c.write(b)
-	// Make sure <= 0 <= len(b), where b is the slice passed in.
-	if n >= headerLen {
-		n -= headerLen
-	}
-	return
-}
-
-func (c *Conn) write(b []byte) (int, error) {
 	var iv []byte
-	var err error
 
 	if c.writer == nil {
 		if iv, err = c.initEncrypt(); err != nil {
@@ -172,5 +129,6 @@ func (c *Conn) write(b []byte) (int, error) {
 	}
 
 	c.encrypt(cipherData[len(iv):], b)
-	return c.Conn.Write(cipherData)
+	n, err = c.Conn.Write(cipherData)
+	return n - len(iv), err
 }

@@ -50,62 +50,77 @@ func (sf *Conn) Write(p []byte) (int, error) {
 
 // Close close the Conn
 func (sf *Conn) Close() (err error) {
-	if sf.Conn != nil {
-		err = sf.Conn.Close()
-		sf.Conn = nil
-		sf.rLimiter = nil
-		sf.wLimiter = nil
-		sf.ctx = nil
-	}
-	return
+	return sf.Conn.Close()
 }
 
 // ReadLimit returns the maximum overall event read rate.
 func (sf *Conn) ReadLimit() rate.Limit {
-	return sf.rLimiter.Limit()
+	if sf.rLimiter != nil {
+		return sf.rLimiter.Limit()
+	}
+	return 0
 }
 
 // SetReadLimit sets a new read Limit for the limiter.
 func (sf *Conn) SetReadLimit(newLimit rate.Limit) {
-	sf.rLimiter.SetLimit(newLimit)
+	if sf.rLimiter != nil {
+		sf.rLimiter.SetLimit(newLimit)
+	}
 }
 
 // SetReadLimitAt sets a new read Limit for the limiter.
 func (sf *Conn) SetReadLimitAt(now time.Time, newLimit rate.Limit) {
-	sf.rLimiter.SetLimitAt(now, newLimit)
+	if sf.rLimiter != nil {
+		sf.rLimiter.SetLimitAt(now, newLimit)
+	}
 }
 
 // SetReadBurst sets a new read burst size for the limiter.
 func (sf *Conn) SetReadBurst(newBurst int) {
-	sf.rLimiter.SetBurst(newBurst)
+	if sf.rLimiter != nil {
+		sf.rLimiter.SetBurst(newBurst)
+	}
 }
 
 // SetReadBurstAt sets a new read read size for the limiter.
 func (sf *Conn) SetReadBurstAt(now time.Time, newBurst int) {
-	sf.rLimiter.SetBurstAt(now, newBurst)
+	if sf.rLimiter != nil {
+		sf.rLimiter.SetBurstAt(now, newBurst)
+	}
 }
 
 // WriteLimit returns the maximum overall event write rate.
 func (sf *Conn) WriteLimit() rate.Limit {
-	return sf.wLimiter.Limit()
+	if sf.wLimiter != nil {
+		return sf.wLimiter.Limit()
+	}
+	return 0
 }
 
 // SetWriteLimit sets a new write Limit for the limiter.
 func (sf *Conn) SetWriteLimit(newLimit rate.Limit) {
-	sf.wLimiter.SetLimit(newLimit)
+	if sf.wLimiter != nil {
+		sf.wLimiter.SetLimit(newLimit)
+	}
 }
 
 // SetWriteLimitAt sets a new write Limit for the limiter.
 func (sf *Conn) SetWriteLimitAt(now time.Time, newLimit rate.Limit) {
-	sf.wLimiter.SetLimitAt(now, newLimit)
+	if sf.wLimiter != nil {
+		sf.wLimiter.SetLimitAt(now, newLimit)
+	}
 }
 
 // SetWriteBurst sets a new read write size for the limiter.
 func (sf *Conn) SetWriteBurst(newBurst int) {
-	sf.wLimiter.SetBurst(newBurst)
+	if sf.wLimiter != nil {
+		sf.wLimiter.SetBurst(newBurst)
+	}
 }
 
 // SetWriteBurstAt sets a new read write size for the limiter.
 func (sf *Conn) SetWriteBurstAt(now time.Time, newBurst int) {
-	sf.wLimiter.SetBurstAt(now, newBurst)
+	if sf.wLimiter != nil {
+		sf.wLimiter.SetBurstAt(now, newBurst)
+	}
 }
