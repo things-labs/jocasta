@@ -11,10 +11,11 @@ import (
 )
 
 func TestConn(t *testing.T) {
-	mconn := mock.New(new(bytes.Buffer))
-
 	password := "password"
 	data := []byte("hello world")
+
+	mconn := mock.New(new(bytes.Buffer))
+
 	for _, method := range encrypt.CipherMethods() {
 		cip, err := encrypt.NewCipher(method, password)
 		require.NoError(t, err)

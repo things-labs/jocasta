@@ -12,7 +12,6 @@ import (
 
 func mockWithConfig(t *testing.T, data []byte, cfg Config) {
 	mconn := mock.New(new(bytes.Buffer))
-
 	conn := New(mconn, cfg)
 
 	// write

@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/cenkalti/backoff/v4 v4.0.2
+	github.com/go-playground/assert/v2 v2.0.1
 	github.com/go-playground/validator/v10 v10.3.0
 	github.com/golang/snappy v0.0.1
 	github.com/klauspost/cpuid v1.3.1 // indirect
