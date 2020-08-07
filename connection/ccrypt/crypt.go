@@ -28,10 +28,10 @@ var (
 // Config PBKDF2 key 生成的参数配置
 type Config struct {
 	Password   string           // 用户加密密钥
-	Salt       []byte           // default DefaultSalt
+	Salt       []byte           // default: DefaultSalt
 	Iterations int              // 迭代次数,次数越多加密与解密所需时间越长, default: 2048
 	KeySize    int              // 期望密文长度,支持16,24,32, default: 32
-	Hash       func() hash.Hash // 加密所使用的hash函数, default sha256.New
+	Hash       func() hash.Hash // 加密所使用的hash函数, default: DefaultHash(sha256.New)
 }
 
 // Conn conn with ...
@@ -42,7 +42,7 @@ type Conn struct {
 }
 
 //New 创建一个aes cfb加密码的连接,通过提供的配置使用pbkdf2生成key,依靠key和hash生成iv
-func New(c net.Conn, cfg *Config) *Conn {
+func New(c net.Conn, cfg Config) *Conn {
 	//set defaults
 	if len(cfg.Salt) == 0 {
 		cfg.Salt = DefaultSalt
