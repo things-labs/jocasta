@@ -10,7 +10,6 @@ import (
 	"strconv"
 )
 
-// 1(addrType) + [4/16/(1+[255 max])] + 2(port) + 10(hmac-sha1)
 // AddrMask address type mask
 const AddrMask byte = 0x0f
 
@@ -22,6 +21,7 @@ const (
 )
 
 // ParseRequest parse request from Conn, get addr like host:port
+// 1(addrType) + [4/16/(1+[255 max])] + 2(port) + 10(hmac-sha1)
 //	+------+----------+--------+
 //	| ATYP |   ADDR   |  PORT  |
 //	+------+----------+--------+

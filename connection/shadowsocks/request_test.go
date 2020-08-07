@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestImproveCoverage(t *testing.T) {
+func TestImproveCoverage(_ *testing.T) {
 	str := []byte("abc")
 	HmacSha1(str, str)
 }

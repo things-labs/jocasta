@@ -10,7 +10,7 @@ import (
 	"net"
 )
 
-var malformedError = errors.New("SNI: malformed client hello")
+var errMalformed = errors.New("SNI: malformed client hello")
 
 type bufferedConn struct {
 	net.Conn
@@ -68,7 +68,7 @@ func getServername(c net.Conn) (hostname string, all []byte, err error) {
 	// Body
 	rest := all[5:]
 	if len(rest) == 0 {
-		return "", nil, malformedError
+		return "", nil, errMalformed
 	}
 
 	// ClientHello(1)
@@ -86,16 +86,16 @@ func getServername(c net.Conn) (hostname string, all []byte, err error) {
 	// Skip over GMT Unix timestamp and random number
 	current += 4 + 28
 	if current > len(rest) {
-		err = malformedError
+		err = errMalformed
 		return
 	}
 
 	// Skip over session ID(length + content)
 	sessionIDLength := int(rest[current])
-	current += 1
+	current++
 	current += sessionIDLength
 	if current+1 > len(rest) {
-		err = malformedError
+		err = errMalformed
 		return
 	}
 	// Skip over CipherSuiteList(length + content)
@@ -103,12 +103,12 @@ func getServername(c net.Conn) (hostname string, all []byte, err error) {
 	current += 2
 	current += cipherSuiteLength
 	if current > len(rest) {
-		err = malformedError
+		err = errMalformed
 		return
 	}
 	// Skip over CompressionMethod(length + content)
 	compressionMethodLength := int(rest[current])
-	current += 1
+	current++
 	current += compressionMethodLength
 	if current > len(rest) {
 		err = errors.New("SNI: no extensions")
@@ -130,24 +130,24 @@ func getServername(c net.Conn) (hostname string, all []byte, err error) {
 			// Skip over number of names as we're assuming there's just one
 			current += 2
 			if current > len(rest) {
-				err = malformedError
+				err = errMalformed
 				return
 			}
 			// name type
 			nameType := rest[current]
-			current += 1
+			current++
 			if nameType != 0 {
 				err = errors.New("SNI: extension not a hostname")
 				return
 			}
 			if current+1 > len(rest) {
-				err = malformedError
+				err = errMalformed
 				return
 			}
 			nameLen := (int(rest[current]) << 8) + int(rest[current+1])
 			current += 2
 			if current+nameLen > len(rest) {
-				err = malformedError
+				err = errMalformed
 				return
 			}
 			hostname = string(rest[current : current+nameLen])

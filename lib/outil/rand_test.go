@@ -7,5 +7,5 @@ import (
 func TestImproveCoverage(_ *testing.T) {
 	RandString(8)
 	RandInt(8)
-	UniqueId()
+	UniqueID()
 }

@@ -5,18 +5,17 @@ import (
 	"crypto/rand"
 	"errors"
 	"io"
-	"strings"
 
 	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
+// Cipher cipher
 type Cipher struct {
 	writer cipher.Stream
 	reader cipher.Stream
 	info   encrypt.CipherInfo
 	key    []byte // hold key
 	iv     []byte // hold iv
-	ota    bool   // one-time auth
 }
 
 // NewCipher creates a cipher that can be used in Dial() etc.
@@ -26,11 +25,6 @@ func NewCipher(method, password string) (c *Cipher, err error) {
 	if password == "" {
 		return nil, errors.New("empty password")
 	}
-	ota := false
-	if strings.HasSuffix(strings.ToLower(method), "-auth") {
-		method = method[:len(method)-5] // trim "-auth"
-		ota = true
-	}
 	cipInfo, ok := encrypt.GetCipherInfo(method)
 	if !ok {
 		return nil, errors.New("Unsupported encryption method: " + method)
@@ -39,7 +33,6 @@ func NewCipher(method, password string) (c *Cipher, err error) {
 	return &Cipher{
 		info: cipInfo,
 		key:  encrypt.Evp2Key(password, cipInfo.KeyLen),
-		ota:  ota,
 	}, nil
 }
 
@@ -77,9 +70,12 @@ func (c *Cipher) decrypt(dst, src []byte) {
 	c.reader.XORKeyStream(dst, src)
 }
 
-func (c *Cipher) Encrypt(src []byte) (cipherData []byte) {
+// Encrypt encrypt src data
+func (c *Cipher) Encrypt(src []byte) (cipherData []byte, err error) {
+	var iv []byte
+
 	cip := c.Clone()
-	iv, err := cip.initEncrypt()
+	iv, err = cip.initEncrypt()
 	if err != nil {
 		return
 	}
@@ -90,21 +86,20 @@ func (c *Cipher) Encrypt(src []byte) (cipherData []byte) {
 	return
 }
 
-func (c *Cipher) Decrypt(src []byte) (data []byte) {
-	var err error
-
+// Decrypt decrypt input data
+func (c *Cipher) Decrypt(input []byte) (data []byte, err error) {
 	cip := c.Clone()
-	if len(src) < c.info.IvLen {
+
+	if len(input) < c.info.IvLen {
+		err = errors.New("invalid input data")
 		return
 	}
-	iv := make([]byte, c.info.IvLen)
-	copy(iv, src[:c.info.IvLen])
-	cip.reader, err = c.info.NewStream(c.key, iv, false)
+	err = cip.initDecrypt(input[:c.info.IvLen])
 	if err != nil {
 		return
 	}
-	data = make([]byte, len(src)-len(iv))
-	cip.decrypt(data, src[c.info.IvLen:])
+	data = make([]byte, len(input)-c.info.IvLen)
+	cip.decrypt(data, input[c.info.IvLen:])
 	return
 }
 

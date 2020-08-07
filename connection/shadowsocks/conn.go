@@ -1,3 +1,4 @@
+// Package shadowsocks implement package shadowsocks protocol
 package shadowsocks
 
 import (
@@ -11,30 +12,38 @@ const bufferSize = 4108 // data.len(2) + hmacsha1(10) + data(4096)
 
 var bufferPool = bpool.NewPool(bufferSize)
 
+// Conn is a generic stream-oriented connection.
 type Conn struct {
 	net.Conn
 	*Cipher
-	readBuf  []byte
-	writeBuf []byte
 }
 
+// New new with a connection and cipher
 func New(c net.Conn, cipher *Cipher) *Conn {
 	return &Conn{
-		Conn:     c,
-		Cipher:   cipher,
-		readBuf:  bufferPool.Get(),
-		writeBuf: bufferPool.Get(),
+		Conn:   c,
+		Cipher: cipher,
 	}
 }
 
-// Close implement closer interface
-func (c *Conn) Close() error {
-	bufferPool.Put(c.readBuf)
-	bufferPool.Put(c.writeBuf)
-	return c.Conn.Close()
+// Close implement closer interface.
+func (sf *Conn) Close() error {
+	return sf.Conn.Close()
 }
 
-// This is intended for use by users implementing a local socks proxy.
+// NewConnWithRawAddr This is intended for use by users implementing a local socks proxy.
+// rawaddr shoud contain part of the data in socks request, starting from the
+// ATYP field. (Refer to rfc1928 for more information.)
+func NewConnWithRawAddr(rawConn net.Conn, rawaddr []byte, cipher *Cipher) (c *Conn, err error) {
+	c = New(rawConn, cipher)
+	if _, err = c.Write(rawaddr); err != nil {
+		c.Close()
+		return nil, err
+	}
+	return
+}
+
+// DialWithRawAddr This is intended for use by users implementing a local socks proxy.
 // rawaddr shoud contain part of the data in socks request, starting from the
 // ATYP field. (Refer to rfc1928 for more information.)
 func DialWithRawAddr(rawAddr []byte, server string, cipher *Cipher) (*Conn, error) {
@@ -45,15 +54,9 @@ func DialWithRawAddr(rawAddr []byte, server string, cipher *Cipher) (*Conn, erro
 	return NewConnWithRawAddr(conn, rawAddr, cipher)
 }
 
-func NewConnWithRawAddr(rawConn net.Conn, rawaddr []byte, cipher *Cipher) (c *Conn, err error) {
-	c = New(rawConn, cipher)
-	if _, err = c.Write(rawaddr); err != nil {
-		c.Close()
-		return nil, err
-	}
-	return
-}
-
+// Dial This is intended for use by users implementing a local socks proxy.
+// rawaddr shoud contain part of the data in socks request, starting from the
+// ATYP field. (Refer to rfc1928 for more information.)
 // addr should be in the form of host:port
 func Dial(addr, server string, cipher *Cipher) (c *Conn, err error) {
 	ra, err := ParseAddrSpec(addr)
@@ -63,58 +66,64 @@ func Dial(addr, server string, cipher *Cipher) (c *Conn, err error) {
 	return DialWithRawAddr(ra, server, cipher)
 }
 
-func (c *Conn) Iv() (iv []byte) {
-	iv = make([]byte, len(c.iv))
-	copy(iv, c.iv)
+// Iv return cipher iv
+func (sf *Conn) Iv() (iv []byte) {
+	iv = make([]byte, len(sf.iv))
+	copy(iv, sf.iv)
 	return
 }
 
-func (c *Conn) Key() (key []byte) {
-	key = make([]byte, len(c.key))
-	copy(key, c.key)
+// Key return cipher key
+func (sf *Conn) Key() (key []byte) {
+	key = make([]byte, len(sf.key))
+	copy(key, sf.key)
 	return
 }
 
-func (c *Conn) Ota() bool {
-	return c.ota
-}
-
-func (c *Conn) Read(b []byte) (n int, err error) {
-	if c.reader == nil {
-		iv := make([]byte, c.info.IvLen)
-		if _, err = io.ReadFull(c.Conn, iv); err != nil {
+// Read reads data from the connection.
+func (sf *Conn) Read(b []byte) (n int, err error) {
+	if sf.reader == nil {
+		iv := make([]byte, sf.info.IvLen)
+		if _, err = io.ReadFull(sf.Conn, iv); err != nil {
 			return
 		}
 		// init decrypt
-		if err = c.initDecrypt(iv); err != nil {
+		if err = sf.initDecrypt(iv); err != nil {
 			return
 		}
 	}
 
-	cipherData := c.readBuf
+	bp := bufferPool.Get()
+	defer bufferPool.Put(bp)
+
+	cipherData := bp
 	if cap(cipherData) < len(b) {
 		cipherData = make([]byte, len(b))
 	} else {
 		cipherData = cipherData[:len(b)]
 	}
 
-	n, err = c.Conn.Read(cipherData)
+	n, err = sf.Conn.Read(cipherData)
 	if n > 0 {
-		c.decrypt(b[:n], cipherData[:n])
+		sf.decrypt(b[:n], cipherData[:n])
 	}
 	return
 }
 
-func (c *Conn) Write(b []byte) (n int, err error) {
+// Write writes data to the connection.
+func (sf *Conn) Write(b []byte) (n int, err error) {
 	var iv []byte
 
-	if c.writer == nil {
-		if iv, err = c.initEncrypt(); err != nil {
+	if sf.writer == nil {
+		if iv, err = sf.initEncrypt(); err != nil {
 			return 0, err
 		}
 	}
 
-	cipherData := c.writeBuf
+	bp := bufferPool.Get()
+	defer bufferPool.Put(bp)
+
+	cipherData := bp
 	dataSize := len(b) + len(iv)
 	if cap(cipherData) < dataSize {
 		cipherData = make([]byte, dataSize)
@@ -128,7 +137,7 @@ func (c *Conn) Write(b []byte) (n int, err error) {
 		copy(cipherData, iv)
 	}
 
-	c.encrypt(cipherData[len(iv):], b)
-	n, err = c.Conn.Write(cipherData)
+	sf.encrypt(cipherData[len(iv):], b)
+	n, err = sf.Conn.Write(cipherData)
 	return n - len(iv), err
 }

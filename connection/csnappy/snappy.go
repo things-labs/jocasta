@@ -7,12 +7,14 @@ import (
 	"github.com/golang/snappy"
 )
 
+// Conn is a generic stream-oriented network connection with snappy
 type Conn struct {
 	net.Conn
 	w *snappy.Writer
 	r *snappy.Reader
 }
 
+// New new with snappy
 func New(conn net.Conn) *Conn {
 	return &Conn{
 		conn,

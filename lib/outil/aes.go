@@ -10,7 +10,7 @@ import (
 	"io"
 )
 
-// ErrInputNotFullBlocks input not full blocks
+// ErrInputNotMultipleBlocks input not full blocks
 var ErrInputNotMultipleBlocks = errors.New("decoded message length must be multiple of block size")
 
 // ErrUnPaddingSizeTooShort unPadding out of range
@@ -71,7 +71,7 @@ func DecryptCFB(key []byte, text []byte) ([]byte, error) {
 	return PCKSUnPadding(msg)
 }
 
-// Encrypt encrypt cbc
+// EncryptCBC encrypt cbc
 func EncryptCBC(key, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -89,7 +89,7 @@ func EncryptCBC(key, text []byte) ([]byte, error) {
 	return out, nil
 }
 
-// Decrypt decrypt cbc
+// DecryptCBC decrypt cbc
 func DecryptCBC(key, text []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {

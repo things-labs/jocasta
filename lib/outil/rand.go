@@ -40,8 +40,8 @@ func RandInt(length int) int64 {
 	return val
 }
 
-// UniqueId unique id
-func UniqueId() string {
+// UniqueID unique id
+func UniqueID() string {
 	str := fmt.Sprintf("%d%s", time.Now().UnixNano(), xid.New().String())
 	hash := sha1.New()
 	hash.Write(bytesconv.Str2Bytes(str)) // nolint: errcheck
