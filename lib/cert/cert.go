@@ -84,7 +84,8 @@ func CreateSign(rootCA *x509.Certificate, rootKey *rsa.PrivateKey, cfg Config) (
 	}
 
 	//生成公钥私钥对
-	priKey, err := rsa.GenerateKey(cryptoRand.Reader, 2048)
+	var priKey *rsa.PrivateKey
+	priKey, err = rsa.GenerateKey(cryptoRand.Reader, 2048)
 	if err != nil {
 		return
 	}
@@ -106,24 +107,25 @@ func CreateSign(rootCA *x509.Certificate, rootKey *rsa.PrivateKey, cfg Config) (
 }
 
 // CreateCAFile 生成ca证书文件
-func CreateCAFile(filenamePrefix string, cfg Config) (err error) {
+func CreateCAFile(filenamePrefix string, cfg Config) error {
 	ca, key, err := CreateCA(cfg)
 	if err != nil {
-		return
+		return err
 	}
 	err = ioutil.WriteFile(filenamePrefix+CertFileSuffix, ca, 0755)
 	if err != nil {
-		return
+		return err
 	}
-	err = ioutil.WriteFile(filenamePrefix+KeyFileSuffix, key, 0755)
-	return
+	return ioutil.WriteFile(filenamePrefix+KeyFileSuffix, key, 0755)
 }
 
 // CreateCA 生成ca证书
 func CreateCA(cfg Config) (ca []byte, key []byte, err error) {
-	privateKey, err := rsa.GenerateKey(cryptoRand.Reader, 2048)
+	var privateKey *rsa.PrivateKey
+
+	privateKey, err = rsa.GenerateKey(cryptoRand.Reader, 2048)
 	if err != nil {
-		return nil, nil, err
+		return
 	}
 
 	template := x509.Certificate{
@@ -145,7 +147,8 @@ func CreateCA(cfg Config) (ca []byte, key []byte, err error) {
 		IsCA:                  true,
 	}
 
-	crt, err := x509.CreateCertificate(cryptoRand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+	var crt []byte
+	crt, err = x509.CreateCertificate(cryptoRand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
 		return
 	}

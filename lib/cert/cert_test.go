@@ -1,6 +1,7 @@
 package cert
 
 import (
+	"encoding/base64"
 	"os"
 	"testing"
 
@@ -16,6 +17,15 @@ func TestGenerateCA(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// invalid ca file
+	_, _, err = ParseCrtAndKeyFile("invalid.crt", "ca.key")
+	require.Error(t, err)
+
+	// invalid key file
+	_, _, err = ParseCrtAndKeyFile("ca.crt", "invalid.key")
+	require.Error(t, err)
+
+	// ca key file
 	ca, key, err := ParseCrtAndKeyFile("ca.crt", "ca.key")
 	require.NoError(t, err)
 	require.Equal(t, "CN", ca.Subject.Country[0])
@@ -23,6 +33,15 @@ func TestGenerateCA(t *testing.T) {
 	err = key.Validate()
 	require.NoError(t, err)
 
+	// invalid ca file
+	_, _, err = ReadCrtAndKeyFile("invalid.crt", "ca.key")
+	require.Error(t, err)
+
+	// invalid key file
+	_, _, err = ReadCrtAndKeyFile("ca.crt", "invalid.key")
+	require.Error(t, err)
+
+	// ca key file
 	caBytes, keyBytes, err := ReadCrtAndKeyFile("ca.crt", "ca.key")
 	require.NoError(t, err)
 
@@ -33,12 +52,27 @@ func TestGenerateCA(t *testing.T) {
 	err = key.Validate()
 	require.NoError(t, err)
 
+	// file
 	caBytes, keyBytes, err = ParseTLS("ca.crt", "ca.key")
 	require.NoError(t, err)
 
 	ca, key, err = ParseCrtAndKey(caBytes, keyBytes)
 	require.NoError(t, err)
 	require.Equal(t, "CN", ca.Subject.Country[0])
+
+	// base64 string
+	caStr := base64Prefix + base64.StdEncoding.EncodeToString(caBytes)
+	keyStr := base64Prefix + base64.StdEncoding.EncodeToString(keyBytes)
+	caBytes, keyBytes, err = ParseTLS(caStr, keyStr)
+	require.NoError(t, err)
+
+	ca, key, err = ParseCrtAndKey(caBytes, keyBytes)
+	require.NoError(t, err)
+	require.Equal(t, "CN", ca.Subject.Country[0])
+
+	// invalid base64 string
+	_, _, err = ParseTLS(base64Prefix+"invalidbase64", base64Prefix+"invalidbase64")
+	require.Error(t, err)
 
 	err = key.Validate()
 	require.NoError(t, err)
