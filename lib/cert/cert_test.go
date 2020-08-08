@@ -53,17 +53,17 @@ func TestGenerateCA(t *testing.T) {
 	require.NoError(t, err)
 
 	// file
-	caBytes, keyBytes, err = ParseTLS("ca.crt", "ca.key")
+	caBytes, keyBytes, err = Parse("ca.crt", "ca.key")
 	require.NoError(t, err)
 
-	ca, key, err = ParseCrtAndKey(caBytes, keyBytes)
+	_, _, err = ParseCrtAndKey(caBytes, keyBytes)
 	require.NoError(t, err)
 	require.Equal(t, "CN", ca.Subject.Country[0])
 
 	// base64 string
 	caStr := base64Prefix + base64.StdEncoding.EncodeToString(caBytes)
 	keyStr := base64Prefix + base64.StdEncoding.EncodeToString(keyBytes)
-	caBytes, keyBytes, err = ParseTLS(caStr, keyStr)
+	caBytes, keyBytes, err = Parse(caStr, keyStr)
 	require.NoError(t, err)
 
 	ca, key, err = ParseCrtAndKey(caBytes, keyBytes)
@@ -71,7 +71,7 @@ func TestGenerateCA(t *testing.T) {
 	require.Equal(t, "CN", ca.Subject.Country[0])
 
 	// invalid base64 string
-	_, _, err = ParseTLS(base64Prefix+"invalidbase64", base64Prefix+"invalidbase64")
+	_, _, err = Parse(base64Prefix+"invalidbase64", base64Prefix+"invalidbase64")
 	require.Error(t, err)
 
 	err = key.Validate()

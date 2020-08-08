@@ -225,10 +225,10 @@ func ReadCrtAndKeyFile(crtFilename, keyFilename string) (crt []byte, key []byte,
 	return
 }
 
-// ParseTLS 解析tls
+// Parse 解析tls
 // 如果cert是"base64://"前缀,直接解析后面的字符串,否则认为这是个cert文件名
 // 如果key是"base64://"前缀,直接解析后面的字符串,否则认为这是个key文件名
-func ParseTLS(cert, key string) (certBytes, keyBytes []byte, err error) {
+func Parse(cert, key string) (certBytes, keyBytes []byte, err error) {
 	if strings.HasPrefix(cert, base64Prefix) {
 		certBytes, err = base64.StdEncoding.DecodeString(cert[len(base64Prefix):])
 	} else {
