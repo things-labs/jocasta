@@ -18,12 +18,13 @@ import (
 
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/idns"
-	"github.com/thinkgos/jocasta/core/through"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/encrypt"
+	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/captain"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
@@ -263,7 +264,7 @@ func (sf *TCP) proxyAny2UDP(inConn net.Conn) {
 		default:
 		}
 		// read client ---> write remote
-		srcAddr, body, err := through.ReadUdp(inConn)
+		da, err := captain.ParseStreamDatagram(inConn)
 		if err != nil {
 			sf.log.Warnf("[ TCP ] udp read from local conn fail, %v", err)
 			if strings.Contains(err.Error(), "n != int(") {
@@ -272,6 +273,7 @@ func (sf *TCP) proxyAny2UDP(inConn net.Conn) {
 			return
 		}
 
+		srcAddr := da.Addr.String()
 		itm, err, _ := sf.single.Do(srcAddr, func() (interface{}, error) {
 			if v, ok := sf.userConns.Get(srcAddr); ok {
 				return v, nil
@@ -310,7 +312,23 @@ func (sf *TCP) proxyAny2UDP(inConn net.Conn) {
 						return
 					}
 					atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-					err = through.WriteUdp(item.conn, sf.cfg.Timeout, item.srcAddr.String(), buf[:n])
+					err = extnet.WrapWriteTimeout(item.conn, sf.cfg.Timeout, func(c net.Conn) error {
+						as, err := captain.ParseAddrSpec(item.srcAddr.String())
+						if err != nil {
+							return err
+						}
+						sData := captain.StreamDatagram{
+							Addr: as,
+							Data: buf[:n],
+						}
+						header, err := sData.Header()
+						if err != nil {
+							return err
+						}
+						c.Write(header)     // nolint: errcheck
+						c.Write(sData.Data) // nolint: errcheck
+						return nil
+					})
 					if err != nil {
 						sf.log.Warnf("[ TCP ] udp write to local conn fail, %v", err)
 						return
@@ -325,7 +343,7 @@ func (sf *TCP) proxyAny2UDP(inConn net.Conn) {
 
 		item := itm.(*connItem)
 		atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-		_, err = item.targetConn.Write(body)
+		_, err = item.targetConn.Write(da.Data)
 		if err != nil {
 			sf.log.Errorf("[ TCP ] udp write to target conn fail, %s", err)
 			return

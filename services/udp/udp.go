@@ -15,12 +15,13 @@ import (
 
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/idns"
-	"github.com/thinkgos/jocasta/core/through"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/encrypt"
+	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/captain"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
@@ -198,7 +199,7 @@ func (sf *UDP) proxyUdp2Any(_ *net.UDPConn, msg cs.Message) {
 			}()
 
 			for {
-				_, body, err := through.ReadUdp(item.targetConn)
+				da, err := captain.ParseStreamDatagram(item.targetConn)
 				if err != nil {
 					sf.log.Errorf("[ UDP ] udp conn read from target conn fail, %s ", err)
 					if strings.Contains(err.Error(), "n != int(") {
@@ -207,7 +208,7 @@ func (sf *UDP) proxyUdp2Any(_ *net.UDPConn, msg cs.Message) {
 					return
 				}
 				atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-				_, err = sf.channel.WriteToUDP(body, item.srcAddr)
+				_, err = sf.channel.WriteToUDP(da.Data, item.srcAddr)
 				if err != nil {
 					sf.log.Errorf("[ UDP ] udp conn write to local conn fail, %s ", err)
 				}
@@ -221,7 +222,24 @@ func (sf *UDP) proxyUdp2Any(_ *net.UDPConn, msg cs.Message) {
 	}
 	item := itm.(*connItem)
 	atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-	err = through.WriteUdp(item.targetConn, sf.cfg.Timeout, srcAddr, msg.Data)
+
+	err = extnet.WrapWriteTimeout(item.targetConn, sf.cfg.Timeout, func(c net.Conn) error {
+		as, err := captain.ParseAddrSpec(srcAddr)
+		if err != nil {
+			return err
+		}
+		sData := captain.StreamDatagram{
+			Addr: as,
+			Data: msg.Data,
+		}
+		header, err := sData.Header()
+		if err != nil {
+			return err
+		}
+		c.Write(header)     // nolint: errcheck
+		c.Write(sData.Data) // nolint: errcheck
+		return nil
+	})
 	if err != nil {
 		sf.log.Errorf("[ UDP ] udp conn write to target conn fail, %s ", err)
 	}
