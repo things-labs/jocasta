@@ -1,0 +1,57 @@
+syntax = "proto3";
+option go_package = ".;ddt";
+
+
+enum NodeType {
+  Unknown = 0;
+  Server = 2;
+  Client = 3;
+}
+
+enum Network {
+  TCP = 0;
+  UDP =1;
+}
+
+message NegotiateRequest {
+  NodeType types = 1;
+  string secret_key = 2;
+  optional string id = 3;
+}
+
+message NegotiateResponse {
+  int32 status = 1;
+  optional string message = 2;
+}
+
+message ClientRequest {
+  string node_id = 1;
+  string Session_id = 2;
+  Network protocol = 3;
+  string remote_address = 4;
+  uint32 remote_port = 5;
+}
+
+
+
+// AddrType address type
+enum AddrType {
+  NotDefined = 0;
+  IPv4 = 1;
+  IPv6 = 2;
+  Domain = 3;
+}
+
+// Datagram udp datagram
+// UDP request/response is formed as follows:
+// +-------+----------+----------+----------+
+// |  ATYP |   ADDR   |   PORT   |   DATA   |
+// +-------+----------+----------+----------+
+// | X'00' | Variable |     2    | Variable |
+// +-------+----------+----------+----------+
+message Datagram {
+  AddrType addr_type = 3;
+  bytes addr = 4;
+  uint32 port = 5;
+  bytes payload = 255;
+}
