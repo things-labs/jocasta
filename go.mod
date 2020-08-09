@@ -7,7 +7,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/go-playground/assert/v2 v2.0.1
 	github.com/go-playground/validator/v10 v10.3.0
-	github.com/golang/protobuf v1.4.1
+	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.1
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/klauspost/reedsolomon v1.9.9 // indirect
@@ -19,6 +19,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/xid v1.2.1
 	github.com/stretchr/testify v1.6.1
+	github.com/takama/daemon v1.0.0 // indirect
 	github.com/templexxx/cpu v0.0.7 // indirect
 	github.com/thinkgos/go-socks5 v0.2.0
 	github.com/thinkgos/meter v0.0.4
@@ -32,9 +33,10 @@ require (
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	golang.org/x/sys v0.0.0-20200803210538-64077c9b5642 // indirect
+	golang.org/x/sys v0.0.0-20200808120158-1030fc2bf1d9 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	golang.org/x/tools v0.0.0-20200804011535-6c149bb5ef0d // indirect
+	golang.org/x/tools v0.0.0-20200809012840-6f4f008689da // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 )
