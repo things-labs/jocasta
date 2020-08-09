@@ -19,7 +19,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/xid v1.2.1
 	github.com/stretchr/testify v1.6.1
-	github.com/takama/daemon v1.0.0 // indirect
 	github.com/templexxx/cpu v0.0.7 // indirect
 	github.com/thinkgos/go-socks5 v0.2.0
 	github.com/thinkgos/meter v0.0.4
