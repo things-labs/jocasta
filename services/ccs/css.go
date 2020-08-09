@@ -6,9 +6,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/thinkgos/jocasta/pkg/sword"
-
 	"github.com/thinkgos/jocasta/cs"
+	"github.com/thinkgos/jocasta/pkg/sword"
 )
 
 type Config struct {

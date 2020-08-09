@@ -1,10 +1,9 @@
 package udp
 
 import (
+	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
-
-	"github.com/thinkgos/jocasta/core/idns"
 )
 
 type Option func(u *UDP)

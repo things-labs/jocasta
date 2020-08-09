@@ -25,6 +25,7 @@ import (
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/core/lb"
+	"github.com/thinkgos/jocasta/core/socks5"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
@@ -32,8 +33,6 @@ import (
 	"github.com/thinkgos/jocasta/lib/outil"
 	"github.com/thinkgos/jocasta/pkg/httpc"
 	"github.com/thinkgos/jocasta/pkg/sword"
-
-	"github.com/thinkgos/jocasta/core/socks5"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
 	"github.com/thinkgos/jocasta/services/skcp"

@@ -9,11 +9,10 @@ import (
 
 	"golang.org/x/net/proxy"
 
+	"github.com/thinkgos/jocasta/core/socks5"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
-
-	"github.com/thinkgos/jocasta/core/socks5"
 )
 
 func (sf *SPS) RunSSUDP(addr string) (err error) {

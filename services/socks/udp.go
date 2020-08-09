@@ -14,11 +14,10 @@ import (
 	"github.com/thinkgos/go-socks5/statute"
 	"golang.org/x/net/proxy"
 
+	"github.com/thinkgos/jocasta/core/socks5"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
-
-	"github.com/thinkgos/jocasta/core/socks5"
 )
 
 func (sf *Socks) proxyUDP(ctx context.Context, writer io.Writer, request *sockv5.Request) error {
