@@ -27,3 +27,11 @@ func WithGPool(pool sword.GoPool) Option {
 func WithDNSResolver(dns *idns.Resolver) Option {
 	return func(t *UDP) { t.dnsResolver = dns }
 }
+
+func WithUDPIdleTime(sec int64) Option {
+	return func(t *UDP) {
+		if sec > 0 {
+			t.udpIdleTime = sec
+		}
+	}
+}

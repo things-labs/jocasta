@@ -29,3 +29,11 @@ func WithDNSResolver(dns *idns.Resolver) Option {
 		}
 	}
 }
+
+func WithUDPIdleTime(sec int64) Option {
+	return func(t *TCP) {
+		if sec > 0 {
+			t.udpIdleTime = sec
+		}
+	}
+}

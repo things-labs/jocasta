@@ -29,7 +29,7 @@ import (
 	"github.com/thinkgos/jocasta/services/skcp"
 )
 
-const MaxUDPIdleTime = 10 // 单位s
+const defaultUDPIdleTime = 10 // 单位s
 
 type Config struct {
 	// parent
@@ -87,29 +87,33 @@ type TCP struct {
 	cancel      context.CancelFunc
 	ctx         context.Context
 	log         logger.Logger
+	udpIdleTime int64
 }
 
 var _ services.Service = (*TCP)(nil)
 
 func New(cfg Config, opts ...Option) *TCP {
 	t := &TCP{
-		cfg: cfg,
-		userConns: connection.New(time.Second,
-			func(key string, value interface{}, now time.Time) bool {
-				nowSeconds := now.Unix()
-				item := value.(*connItem)
-				if nowSeconds-atomic.LoadInt64(&item.lastActiveTime) > MaxUDPIdleTime {
-					item.conn.Close()
-					item.targetConn.Close()
-					return true
-				}
-				return false
-			}),
-		log: logger.NewDiscard(),
+		cfg:         cfg,
+		log:         logger.NewDiscard(),
+		udpIdleTime: defaultUDPIdleTime,
 	}
 	for _, opt := range opts {
 		opt(t)
 	}
+
+	t.userConns = connection.New(time.Second,
+		func(key string, value interface{}, now time.Time) bool {
+			nowSeconds := now.Unix()
+			item := value.(*connItem)
+			if nowSeconds-atomic.LoadInt64(&item.lastActiveTime) > t.udpIdleTime {
+				item.conn.Close()
+				item.targetConn.Close()
+				return true
+			}
+			return false
+		})
+
 	return t
 }
 
@@ -209,7 +213,7 @@ func (sf *TCP) handler(inConn net.Conn) {
 	defer inConn.Close()
 	switch sf.cfg.ParentType {
 	case "tcp", "tls", "stcp", "kcp":
-		sf.proxyAnyToAny(inConn)
+		sf.proxyStream2Stream(inConn)
 	case "udp":
 		sf.proxyStream2UDP(inConn)
 	default:
@@ -217,7 +221,7 @@ func (sf *TCP) handler(inConn net.Conn) {
 	}
 }
 
-func (sf *TCP) proxyAnyToAny(inConn net.Conn) {
+func (sf *TCP) proxyStream2Stream(inConn net.Conn) {
 	targetConn, err := sf.dialParent(sf.resolve(sf.cfg.Parent))
 	if err != nil {
 		sf.log.Errorf("[ TCP ] dial parent %s, %s", sf.cfg.Parent, err)

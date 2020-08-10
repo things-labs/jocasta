@@ -26,7 +26,7 @@ import (
 	"github.com/thinkgos/jocasta/services/skcp"
 )
 
-const MaxUDPIdleTime = 10 // 单位s
+const defaultUDPIdleTime = 10 // 单位s
 
 type Config struct {
 	// parent
@@ -73,29 +73,32 @@ type UDP struct {
 	cancel      context.CancelFunc
 	ctx         context.Context
 	log         logger.Logger
+	udpIdleTime int64
 }
 
 var _ services.Service = (*UDP)(nil)
 
 func New(cfg Config, opts ...Option) *UDP {
 	u := &UDP{
-		cfg: cfg,
-		conns: connection.New(time.Second,
-			func(key string, value interface{}, now time.Time) bool {
-				nowSeconds := now.Unix()
-				item := value.(*connItem)
-				if nowSeconds-atomic.LoadInt64(&item.lastActiveTime) > MaxUDPIdleTime {
-					item.targetConn.Close()
-					return true
-				}
-				return false
-			}),
-		log: logger.NewDiscard(),
+		cfg:         cfg,
+		log:         logger.NewDiscard(),
+		udpIdleTime: defaultUDPIdleTime,
 	}
 
 	for _, opt := range opts {
 		opt(u)
 	}
+
+	u.conns = connection.New(time.Second,
+		func(key string, value interface{}, now time.Time) bool {
+			nowSeconds := now.Unix()
+			item := value.(*connItem)
+			if nowSeconds-atomic.LoadInt64(&item.lastActiveTime) > u.udpIdleTime {
+				item.targetConn.Close()
+				return true
+			}
+			return false
+		})
 	return u
 }
 
