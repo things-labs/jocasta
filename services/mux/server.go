@@ -20,6 +20,7 @@ import (
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/lib/outil"
+	"github.com/thinkgos/jocasta/pkg/captain"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
@@ -290,7 +291,7 @@ func (sf *Server) runUDPReceive(key, id string) {
 
 	for {
 		// 从远端接收数据,发送到本地
-		_, body, err := through.ReadUdp(udpConnItem.conn)
+		da, err := captain.ParseStreamDatagram(udpConnItem.conn)
 		if err != nil {
 			if strings.Contains(err.Error(), "n != int(") {
 				continue
@@ -302,7 +303,7 @@ func (sf *Server) runUDPReceive(key, id string) {
 		}
 		atomic.StoreInt64(&udpConnItem.lastActiveTime, time.Now().Unix())
 		sf.gPool.Go(func() {
-			sf.channel.(*cs.UDP).WriteToUDP(body, udpConnItem.srcAddr)
+			sf.channel.(*cs.UDP).WriteToUDP(da.Data, udpConnItem.srcAddr)
 		})
 	}
 }
@@ -334,7 +335,26 @@ func (sf *Server) handleUDP(_ *net.UDPConn, msg cs.Message) {
 	}
 	// 读取本地数据, 发送数据到远端
 	atomic.StoreInt64(&udpConnItem.lastActiveTime, time.Now().Unix())
-	err := through.WriteUdp(udpConnItem.conn, sf.cfg.Timeout, srcAddr, msg.Data)
+
+	as, err := captain.ParseAddrSpec(srcAddr)
+	if err != nil {
+		return
+	}
+
+	sData := captain.StreamDatagram{
+		Addr: as,
+		Data: msg.Data,
+	}
+	header, err := sData.Header()
+	if err != nil {
+		return
+	}
+	buf := sword.Binding.Get()
+	defer sword.Binding.Put(buf)
+
+	tmpBuf := append(buf, header...)
+	tmpBuf = append(tmpBuf, sData.Data...)
+	_, err = udpConnItem.conn.Write(tmpBuf)
 	if err != nil {
 		sf.log.Errorf("write udp packet to %s fail, %s ", sf.cfg.Parent, err)
 	}

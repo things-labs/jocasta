@@ -1,13 +1,33 @@
-package ddt
+package through
 
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 )
 
-func ReadString(r io.Reader) (string, error) {
-	data, err := ReadByte(r)
+// 格式: data length(4字节) + data
+func readByte(r io.Reader) ([]byte, error) {
+	var length uint64
+
+	err := binary.Read(r, binary.LittleEndian, &length)
+	if err != nil {
+		return nil, err
+	}
+	if length == 0 || length > ^uint64(0) {
+		return nil, fmt.Errorf("data len out of range, %d", length)
+	}
+
+	data := make([]byte, length)
+	if _, err = io.ReadFull(r, data); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func readString(r io.Reader) (string, error) {
+	data, err := readByte(r)
 	if err != nil {
 		return "", err
 	}
@@ -15,7 +35,7 @@ func ReadString(r io.Reader) (string, error) {
 }
 
 // 格式 data length(4字节) + data
-func BuildStrings(data ...string) []byte {
+func BuildString(data ...string) []byte {
 	buf := new(bytes.Buffer)
 	for _, d := range data {
 		bs := []byte(d)
@@ -26,9 +46,9 @@ func BuildStrings(data ...string) []byte {
 }
 
 // non typed packet with string
-func ReadStrings(r io.Reader, data ...*string) (err error) {
+func ReadString(r io.Reader, data ...*string) (err error) {
 	for _, d := range data {
-		*d, err = ReadString(r)
+		*d, err = readString(r)
 		if err != nil {
 			return
 		}
@@ -56,7 +76,7 @@ func ReadStringsWithType(r io.Reader, packetType *uint8, data ...*string) (err e
 	}
 
 	for _, d := range data {
-		*d, err = ReadString(r)
+		*d, err = readString(r)
 		if err != nil {
 			return
 		}

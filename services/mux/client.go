@@ -18,6 +18,7 @@ import (
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/captain"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
@@ -230,18 +231,18 @@ func (sf *Client) proxyUDP(inConn *smux.Stream, localAddr, sessId string) {
 		default:
 		}
 		// 读远端数据,写到本地udpConn
-		srcAddr, body, err := through.ReadUdp(inConn)
+		da, err := captain.ParseStreamDatagram(inConn)
 		if err != nil {
 			if !extnet.IsErrDeadline(err) && err != io.EOF {
 				sf.log.Errorf("udp packet received from bridge, %s", err)
 			}
 			return
 		}
-		cacheSrcAddr = srcAddr
-		if v, ok := sf.udpConns.Get(srcAddr); ok {
+		cacheSrcAddr = da.Addr.String()
+		if v, ok := sf.udpConns.Get(cacheSrcAddr); ok {
 			item = v.(*ClientUDPConnItem)
 		} else {
-			_srcAddr, _ := net.ResolveUDPAddr("udp", srcAddr)
+			_srcAddr, _ := net.ResolveUDPAddr("udp", cacheSrcAddr)
 			zeroAddr, _ := net.ResolveUDPAddr("udp", ":")
 			_localAddr, _ := net.ResolveUDPAddr("udp", localAddr)
 			c, err := net.DialUDP("udp", zeroAddr, _localAddr)
@@ -256,15 +257,15 @@ func (sf *Client) proxyUDP(inConn *smux.Stream, localAddr, sessId string) {
 				localConn: c,
 				sessId:    sessId,
 			}
-			sf.udpConns.Set(srcAddr, item)
+			sf.udpConns.Set(cacheSrcAddr, item)
 			sf.gPool.Go(func() {
-				sf.runUdpReceive(srcAddr, sessId)
+				sf.runUdpReceive(cacheSrcAddr, sessId)
 			})
 		}
 
 		atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
 		sf.gPool.Go(func() {
-			item.localConn.Write(body)
+			item.localConn.Write(da.Data)
 		})
 	}
 }
@@ -330,9 +331,27 @@ func (sf *Client) runUdpReceive(key, id string) {
 		atomic.StoreInt64(&connItem.lastActiveTime, time.Now().Unix())
 		sf.gPool.Go(func() {
 			defer sword.Binding.Put(buf)
+			as, err := captain.ParseAddrSpec(connItem.srcAddr.String())
+			if err != nil {
+				connItem.localConn.Close()
+				return
+			}
 
-			err := through.WriteUdp(connItem.conn, sf.cfg.Timeout,
-				connItem.srcAddr.String(), buf[:n])
+			sData := captain.StreamDatagram{
+				Addr: as,
+				Data: buf[:n],
+			}
+			header, err := sData.Header()
+			if err != nil {
+				connItem.localConn.Close()
+				return
+			}
+			buf := sword.Binding.Get()
+			defer sword.Binding.Put(buf)
+
+			tmpBuf := append(buf, header...)
+			tmpBuf = append(tmpBuf, sData.Data...)
+			_, err = connItem.conn.Write(tmpBuf)
 			if err != nil {
 				connItem.localConn.Close()
 				return
