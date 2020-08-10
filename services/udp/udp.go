@@ -285,10 +285,9 @@ func (sf *UDP) proxyUdp2Udp(_ *net.UDPConn, msg cs.Message) {
 			for {
 				n, err := item.targetConn.Read(buf[:cap(buf)])
 				if err != nil {
-					if extnet.IsErrClosed(err) {
-						return
+					if !extnet.IsErrClosed(err) {
+						sf.log.Warnf("[ UDP ] udp conn read from parent conn fail, %s ", err)
 					}
-					sf.log.Warnf("[ UDP ] udp conn read from parent conn fail, %s ", err)
 					return
 				}
 				atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())

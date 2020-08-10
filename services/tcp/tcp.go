@@ -80,7 +80,7 @@ type TCP struct {
 	// parent type != "udp", udp -> net.conn 其它的绑定传输
 	// src地址对其它连接的绑定
 	userConns   *connection.Manager
-	single      *singleflight.Group
+	single      singleflight.Group
 	jumper      *cs.Jumper
 	dnsResolver *idns.Resolver
 	gPool       sword.GoPool
@@ -211,7 +211,7 @@ func (sf *TCP) handler(inConn net.Conn) {
 	case "tcp", "tls", "stcp", "kcp":
 		sf.proxyAnyToAny(inConn)
 	case "udp":
-		sf.proxyAny2UDP(inConn)
+		sf.proxyStream2UDP(inConn)
 	default:
 		sf.log.Errorf("unknown parent type %s", sf.cfg.ParentType)
 	}
@@ -247,7 +247,7 @@ func (sf *TCP) proxyAnyToAny(inConn net.Conn) {
 	}
 }
 
-func (sf *TCP) proxyAny2UDP(inConn net.Conn) {
+func (sf *TCP) proxyStream2UDP(inConn net.Conn) {
 	localAddr := inConn.LocalAddr().String()
 
 	targetAddr, err := net.ResolveUDPAddr("udp", sf.cfg.Parent)
@@ -270,13 +270,11 @@ func (sf *TCP) proxyAny2UDP(inConn net.Conn) {
 			}
 			return
 		}
-
 		srcAddr := da.Addr.String()
 		itm, err, _ := sf.single.Do(srcAddr, func() (interface{}, error) {
 			if v, ok := sf.userConns.Get(srcAddr); ok {
 				return v, nil
 			}
-
 			targetConn, err := net.DialUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0}, targetAddr)
 			if err != nil {
 				sf.log.Errorf("[ TCP ] connect target udp conn fail, %s", err)
@@ -306,7 +304,10 @@ func (sf *TCP) proxyAny2UDP(inConn net.Conn) {
 					// read remote ---> write client
 					n, err := item.targetConn.Read(buf[:cap(buf)])
 					if err != nil {
-						sf.log.Warnf("[ TCP ] udp read from target conn fail, %v", err)
+						if !extnet.IsErrClosed(err) {
+							sf.log.Warnf("[ TCP ] udp read from target conn fail, %v", err)
+						}
+
 						return
 					}
 					atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
@@ -323,8 +324,11 @@ func (sf *TCP) proxyAny2UDP(inConn net.Conn) {
 						if err != nil {
 							return err
 						}
-						c.Write(header)     // nolint: errcheck
-						c.Write(sData.Data) // nolint: errcheck
+						buf := sword.Binding.Get()
+						sword.Binding.Put(buf)
+						tmpBuf := append(buf, header...)
+						tmpBuf = append(tmpBuf, sData.Data...)
+						c.Write(tmpBuf) // nolint: errcheck
 						return nil
 					})
 					if err != nil {
