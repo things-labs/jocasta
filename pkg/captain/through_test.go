@@ -1,4 +1,4 @@
-package through
+package captain
 
 import (
 	"bytes"
@@ -43,67 +43,6 @@ func TestParseMessage(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotMsg, tt.wantMsg) {
 				t.Errorf("ParseMessage() gotMsg = %v, want %v", gotMsg, tt.wantMsg)
-			}
-		})
-	}
-}
-
-func TestDataLen2Bytes(t *testing.T) {
-	type args struct {
-		length int
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []byte
-		wantErr bool
-	}{
-		{
-			"large than 2097151",
-			args{2097152},
-			nil,
-			true,
-		},
-		{
-			"data < 0",
-			args{-1},
-			nil,
-			true,
-		},
-		{
-			"dataLen = 0",
-			args{0},
-			[]byte{0x00},
-			false,
-		},
-		{
-			"0 <= dataLen =< 127",
-			args{127},
-			[]byte{0x7f},
-			false,
-		},
-		{
-			"16383 >= dataLen >= 128",
-			args{128},
-			[]byte{0x80, 0x01},
-			false,
-		},
-		{
-			"2097151 >= dataLen >= 16384",
-			args{16384},
-			[]byte{0x80, 0x80, 0x01},
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := DataLen2Bytes(tt.args.length)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DataLen2Bytes() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DataLen2Bytes() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -70,7 +70,7 @@ type UDP struct {
 	// parent type != "udp", udp -> 其它的绑定传输
 	// src地址对其它连接的绑定
 	conns       *connection.Manager
-	single      *singleflight.Group
+	single      singleflight.Group
 	gPool       gpool.Pool
 	dnsResolver *idns.Resolver
 	cancel      context.CancelFunc
@@ -248,6 +248,7 @@ func (sf *UDP) proxyUdp2Any(_ *net.UDPConn, msg cs.Message) {
 func (sf *UDP) proxyUdp2Udp(_ *net.UDPConn, msg cs.Message) {
 	localAddr := msg.LocalAddr.String()
 	srcAddr := msg.SrcAddr.String()
+	sf.log.Debugf("[ UDP ] udp conn %s ---> %s request", srcAddr, localAddr)
 
 	itm, err, _ := sf.single.Do(srcAddr, func() (interface{}, error) {
 		if v, ok := sf.conns.Get(srcAddr); ok {
