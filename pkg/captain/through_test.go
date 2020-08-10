@@ -36,13 +36,13 @@ func TestParseMessage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotMsg, err := ParseThrough(tt.args.r)
+			gotMsg, err := ParseRawThrough(tt.args.r)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseThrough() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ParseRawThrough() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(gotMsg, tt.wantMsg) {
-				t.Errorf("ParseThrough() gotMsg = %v, want %v", gotMsg, tt.wantMsg)
+				t.Errorf("ParseRawThrough() gotMsg = %v, want %v", gotMsg, tt.wantMsg)
 			}
 		})
 	}

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/golang/protobuf/proto"
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
@@ -227,17 +226,13 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 
 		// through message
 		var data []byte
-		data, err = proto.Marshal(&ddt.NegotiateRequest{
-			SecretKey: sf.cfg.SecretKey,
-			Id:        sf.id,
-		})
-		if err != nil {
-			return
-		}
-		msg := captain.Through{
+		msg := captain.ThroughNegotiateRequest{
 			Types:   captain.TTypesServer,
 			Version: 1,
-			Data:    data,
+			Nego: ddt.NegotiateRequest{
+				SecretKey: sf.cfg.SecretKey,
+				Id:        sf.id,
+			},
 		}
 		data, err = msg.Bytes()
 		if err != nil {

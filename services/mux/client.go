@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/golang/protobuf/proto"
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
@@ -156,20 +155,16 @@ func (sf *Client) Start() (err error) {
 			defer pConn.Close()
 
 			// through message
-			data, err := proto.Marshal(&ddt.NegotiateRequest{
-				SecretKey: sf.cfg.SecretKey,
-				Id:        "reserved",
-			})
-			if err != nil {
-				return err
-			}
-			msg := captain.Through{
+			var data []byte
+			msg := captain.ThroughNegotiateRequest{
 				Types:   captain.TTypesClient,
 				Version: 1,
-				Data:    data,
+				Nego: ddt.NegotiateRequest{
+					SecretKey: sf.cfg.SecretKey,
+					Id:        "reserved",
+				},
 			}
-			data, err = msg.Bytes()
-			if err != nil {
+			if data, err = msg.Bytes(); err != nil {
 				return err
 			}
 			_, err = pConn.Write(data)

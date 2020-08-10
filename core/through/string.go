@@ -55,31 +55,3 @@ func ReadString(r io.Reader, data ...*string) (err error) {
 	}
 	return
 }
-
-// 生成一个pack
-// 格式: packetType+ (data length(4字节) + data)*n
-func BuildStringsWithType(packetType uint8, data ...string) []byte {
-	pkg := new(bytes.Buffer)
-	_ = binary.Write(pkg, binary.LittleEndian, packetType)
-	for _, d := range data {
-		bs := []byte(d)
-		_ = binary.Write(pkg, binary.LittleEndian, uint64(len(bs)))
-		_ = binary.Write(pkg, binary.LittleEndian, bs)
-	}
-	return pkg.Bytes()
-}
-
-//typed packet with string
-func ReadStringsWithType(r io.Reader, packetType *uint8, data ...*string) (err error) {
-	if err = binary.Read(r, binary.LittleEndian, packetType); err != nil {
-		return
-	}
-
-	for _, d := range data {
-		*d, err = readString(r)
-		if err != nil {
-			return
-		}
-	}
-	return
-}
