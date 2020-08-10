@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/golang/protobuf/proto"
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
@@ -21,6 +22,7 @@ import (
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/lib/outil"
 	"github.com/thinkgos/jocasta/pkg/captain"
+	"github.com/thinkgos/jocasta/pkg/captain/ddt"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
@@ -203,6 +205,7 @@ func (sf *Server) dialThroughRemote() (outConn net.Conn, sessId string, err erro
 		return
 	}
 	sessId = outil.UniqueID()
+
 	err = through.WriteStrings(outConn, sf.cfg.Timeout, sf.id, sessId, sf.cfg.remote)
 	if err != nil {
 		outConn.Close()
@@ -222,7 +225,25 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 			return
 		}
 
-		err = through.WriteConnType(pConn, sf.cfg.Timeout, typeServer, sf.cfg.SecretKey, sf.id)
+		// through message
+		var data []byte
+		data, err = proto.Marshal(&ddt.NegotiateRequest{
+			SecretKey: sf.cfg.SecretKey,
+			Id:        sf.id,
+		})
+		if err != nil {
+			return
+		}
+		msg := captain.Through{
+			Types:   captain.TTypesServer,
+			Version: 1,
+			Data:    data,
+		}
+		data, err = msg.Bytes()
+		if err != nil {
+			return
+		}
+		_, err = pConn.Write(data)
 		if err != nil {
 			_ = pConn.Close()
 			return

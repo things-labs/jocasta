@@ -5,22 +5,32 @@ import (
 	"io"
 )
 
-// Message through protocol message
+// 透传节点类型
+const (
+	TTypesUnknown = iota
+	TTypesClient
+	TTypesServer
+)
+
+// Through through protocol message
 // handshake request/response is formed as follows:
 // +---------+-------+------------+----------+
-// |  MTYPE  |  VER  |  DATA_LEN  |   DATA   |
+// |  TYPES  |  VER  |  DATA_LEN  |   DATA   |
 // +---------+-------+------------+----------+
 // |    1    |   1   |    1 - 3   | Variable |
 // +---------+-------+------------+----------+
+// TTYPES 底三位为节点类型,
+// VER 版本
 // DATA_LEN see data length defined
-type Message struct {
+// 数据
+type Through struct {
 	Types   byte
 	Version byte
 	Data    []byte
 }
 
-// ParseMessage parse to message
-func ParseMessage(r io.Reader) (msg Message, err error) {
+// ParseThrough parse to Through
+func ParseThrough(r io.Reader) (msg Through, err error) {
 	// read message type,version
 	tmp := []byte{0, 0}
 	if _, err = io.ReadFull(r, tmp); err != nil {
@@ -44,7 +54,7 @@ func ParseMessage(r io.Reader) (msg Message, err error) {
 	return
 }
 
-func (sf Message) Bytes() ([]byte, error) {
+func (sf Through) Bytes() ([]byte, error) {
 	ds, n, err := DataLen(len(sf.Data))
 	if err != nil {
 		return nil, err

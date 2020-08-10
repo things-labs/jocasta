@@ -10,14 +10,16 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/golang/protobuf/proto"
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
-	"github.com/thinkgos/jocasta/core/through"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/captain"
+	"github.com/thinkgos/jocasta/pkg/captain/ddt"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
@@ -148,19 +150,21 @@ func (sf *Bridge) Stop() {
 }
 
 func (sf *Bridge) handler(inConn net.Conn) {
-	var nodeType uint8
-	var nodeSecretKey string
-	var nodeId string
-
-	err := through.ReadConnType(inConn, sf.cfg.Timeout, &nodeType, &nodeSecretKey, &nodeId) // 连接类型和sk,节点id
+	msg, err := captain.ParseThrough(inConn)
 	if err != nil {
 		inConn.Close()
 		sf.log.Errorf("[ Bridge ] read ddt packet, %s", err)
 		return
 	}
-	sf.log.Debugf("[ Bridge ] node connected: type< %d >,sk< %s >,id< %s >", nodeType, nodeSecretKey, nodeId)
-	switch nodeType {
-	case typeServer:
+	nego := ddt.NegotiateRequest{}
+	err = proto.Unmarshal(msg.Data, &nego)
+	if err != nil {
+		return
+	}
+
+	sf.log.Debugf("[ Bridge ] node connected: type< %d >,sk< %s >,id< %s >", msg.Types, nego.SecretKey, nego.Id)
+	switch msg.Types {
+	case captain.TTypesServer:
 		defer inConn.Close()
 
 		session, err := smux.Server(inConn, nil)
@@ -177,9 +181,9 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			return newValue
 		})
 
-		sf.log.Infof("[ Bridge ] server %s connected -- sk< %s >", nodeId, nodeSecretKey)
+		sf.log.Infof("[ Bridge ] server %s connected -- sk< %s >", nego.Id, nego.SecretKey)
 		defer func() {
-			sf.log.Infof("[ Bridge ] server %s released -- sk< %s >", nodeId, nodeSecretKey)
+			sf.log.Infof("[ Bridge ] server %s released -- sk< %s >", nego.Id, nego.SecretKey)
 			sf.serverConns.Remove(inAddr)
 			_ = session.Close()
 		}()
@@ -190,11 +194,11 @@ func (sf *Bridge) handler(inConn net.Conn) {
 				return
 			}
 			sf.gPool.Go(func() {
-				sf.proxyStream(stream, nodeSecretKey, nodeId)
+				sf.proxyStream(stream, nego.SecretKey, nego.Id)
 			})
 		}
 
-	case typeClient:
+	case captain.TTypesClient:
 		session, err := smux.Client(inConn, nil)
 		if err != nil {
 			_ = inConn.Close()
@@ -202,15 +206,15 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			return
 		}
 
-		sf.clientConns.Upsert(nodeSecretKey, session, func(exist bool, valueInMap, newValue interface{}) interface{} {
+		sf.clientConns.Upsert(nego.SecretKey, session, func(exist bool, valueInMap, newValue interface{}) interface{} {
 			if exist {
 				_ = valueInMap.(*smux.Session).Close()
 			}
 			return newValue
 		})
-		sf.log.Infof("[ Bridge ] client connected -- sk< %s >", nodeSecretKey)
+		sf.log.Infof("[ Bridge ] client connected -- sk< %s >", nego.SecretKey)
 	default:
-		sf.log.Errorf("[ Bridge ] node type unknown < %d >", nodeType)
+		sf.log.Errorf("[ Bridge ] node type unknown < %d >", msg.Types)
 	}
 }
 

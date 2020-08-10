@@ -83,7 +83,7 @@ type Config struct {
 	DNSTTL     int    // 解析结果缓存时间,单位秒 default 300s
 	// 智能模式 代理过滤
 	// direct 不在blocked都直连
-	// parent 不在direct都走代理
+	// proxy 不在direct都走代理
 	// intelligent blocked和direct都没有,智能判断
 	// default intelligent
 	Intelligent string
@@ -240,7 +240,7 @@ func (sf *HTTP) InitService() (err error) {
 			sf.log.Debugf("auth data added from file %d , total:%d", n, sf.basicAuthCenter.Total())
 		}
 	}
-	//init lb
+	// init lb
 	if len(sf.cfg.Parent) > 0 {
 		sf.filters = filter.New(sf.cfg.Intelligent,
 			filter.WithTimeout(sf.cfg.HTTPTimeout),

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/golang/protobuf/proto"
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
@@ -19,6 +20,7 @@ import (
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/captain"
+	"github.com/thinkgos/jocasta/pkg/captain/ddt"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
@@ -152,7 +154,25 @@ func (sf *Client) Start() (err error) {
 				return err
 			}
 			defer pConn.Close()
-			err = through.WriteConnType(pConn, sf.cfg.Timeout, typeClient, sf.cfg.SecretKey, "reserved")
+
+			// through message
+			data, err := proto.Marshal(&ddt.NegotiateRequest{
+				SecretKey: sf.cfg.SecretKey,
+				Id:        "reserved",
+			})
+			if err != nil {
+				return err
+			}
+			msg := captain.Through{
+				Types:   captain.TTypesClient,
+				Version: 1,
+				Data:    data,
+			}
+			data, err = msg.Bytes()
+			if err != nil {
+				return err
+			}
+			_, err = pConn.Write(data)
 			if err != nil {
 				sf.log.Errorf("[ Client ] connection %s, retrying...", err)
 				return err

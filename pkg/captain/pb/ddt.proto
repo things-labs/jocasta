@@ -1,0 +1,27 @@
+syntax = "proto3";
+option go_package = ".;ddt";
+
+
+enum Network {
+  TCP = 0;
+  UDP = 1;
+}
+
+message NegotiateRequest {
+  string secret_key = 2;
+  string id = 3;
+}
+
+message NegotiateResponse {
+  int32 status = 1;
+  optional string message = 2;
+}
+
+message Request {
+  string node_id = 1;
+  string Session_id = 2;
+  Network protocol = 3;
+  string remote_address = 4;
+  uint32 remote_port = 5;
+}
+
