@@ -269,7 +269,9 @@ func hostname(domain string) string {
 }
 
 func (sf *Filter) goFunc(f func()) {
-	if sf.gPool == nil || sf.gPool.Submit(f) != nil {
+	if sf.gPool != nil {
+		sf.gPool.Go(f)
+	} else {
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {

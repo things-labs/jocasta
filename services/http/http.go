@@ -30,7 +30,6 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/httpc"
 	"github.com/thinkgos/jocasta/pkg/sword"
@@ -127,7 +126,7 @@ type HTTP struct {
 	ctx             context.Context
 	log             logger.Logger
 	jumper          *cs.Jumper
-	gPool           gpool.Pool
+	gPool           sword.GoPool
 }
 
 var _ services.Service = (*HTTP)(nil)
@@ -293,7 +292,7 @@ func (sf *HTTP) InitService() (err error) {
 			return fmt.Errorf("dial ssh fail, %s", err)
 		}
 		sf.sshClient.Store(sshClient)
-		sf.Go(func() {
+		sf.gPool.Go(func() {
 			t := time.NewTicker(time.Second * 10)
 			sf.log.Debugf("ssh keepalive started")
 			defer func() {
@@ -584,7 +583,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 		err = backoff.Retry(func() (er error) {
 			sshClient := sf.sshClient.Load().(*ssh.Client)
 			wait := make(chan struct{}, 1)
-			sf.Go(func() {
+			sf.gPool.Go(func() {
 				outConn, er = sshClient.Dial("tcp", address)
 				wait <- struct{}{}
 			})
@@ -647,18 +646,4 @@ func (sf *HTTP) isUseProxy(address string) bool {
 		}
 	}
 	return false
-}
-
-// 提交任务到协程池处理,如果协程池未定义或提交失败,将采用goroutine
-func (sf *HTTP) Go(f func()) {
-	if sf.gPool == nil || sf.gPool.Submit(f) != nil {
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					sf.log.DPanicf("crashed %s\nstack:\n%s", err, string(debug.Stack()))
-				}
-			}()
-			f()
-		}()
-	}
 }

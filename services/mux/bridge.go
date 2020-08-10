@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"runtime/debug"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -18,7 +17,6 @@ import (
 	"github.com/thinkgos/jocasta/core/through"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
-	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
@@ -57,7 +55,7 @@ type Bridge struct {
 	channel     cs.Channel
 	clientConns *connection.Manager // sk 对 session映射
 	serverConns cmap.ConcurrentMap  // address 对 session映射
-	gPool       gpool.Pool
+	gPool       sword.GoPool
 	cancel      context.CancelFunc
 	ctx         context.Context
 	log         logger.Logger
@@ -128,7 +126,7 @@ func (sf *Bridge) Start() (err error) {
 	if err != nil {
 		return
 	}
-	sf.Go(func() { sf.clientConns.RunWatch(sf.ctx) })
+	sf.gPool.Go(func() { sf.clientConns.RunWatch(sf.ctx) })
 	sf.log.Infof("[ Bridge ] use bridge %s on %s", sf.cfg.LocalType, sf.channel.Addr())
 	return
 }
@@ -191,7 +189,7 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			if err != nil {
 				return
 			}
-			sf.Go(func() {
+			sf.gPool.Go(func() {
 				sf.proxyStream(stream, nodeSecretKey, nodeId)
 			})
 		}
@@ -264,19 +262,5 @@ func (sf *Bridge) proxyStream(inStream *smux.Stream, sk, serverNodeId string) {
 	err = sword.Binding.Proxy(targetStream, inStream)
 	if err != nil && err != io.EOF {
 		sf.log.Errorf("[ Bridge ] proxying, %s", err)
-	}
-}
-
-// 提交任务到协程池处理,如果协程池未定义或提交失败,将采用goroutine
-func (sf *Bridge) Go(f func()) {
-	if sf.gPool == nil || sf.gPool.Submit(f) != nil {
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					sf.log.DPanicf("[ Bridge ] crashed %s\nstack:\n%s", err, string(debug.Stack()))
-				}
-			}()
-			f()
-		}()
 	}
 }

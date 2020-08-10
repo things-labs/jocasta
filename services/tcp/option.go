@@ -2,8 +2,8 @@ package tcp
 
 import (
 	"github.com/thinkgos/jocasta/core/idns"
-	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/sword"
 )
 
 type Option func(t *TCP)
@@ -16,11 +16,9 @@ func WithLogger(l logger.Logger) Option {
 	}
 }
 
-func WithGPool(pool gpool.Pool) Option {
+func WithGPool(pool sword.GoPool) Option {
 	return func(t *TCP) {
-		if pool != nil {
-			t.gPool = pool
-		}
+		t.gPool = pool
 	}
 }
 

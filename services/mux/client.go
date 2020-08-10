@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"runtime/debug"
 	"sync/atomic"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
@@ -64,7 +62,7 @@ type Client struct {
 	sessions *smux.Session
 	udpConns *connection.Manager
 	jumper   *cs.Jumper
-	gPool    gpool.Pool
+	gPool    sword.GoPool
 	cancel   context.CancelFunc
 	ctx      context.Context
 	log      logger.Logger
@@ -132,11 +130,11 @@ func (sf *Client) Start() (err error) {
 		return
 	}
 
-	sf.submit(func() {
+	sf.gPool.Go(func() {
 		sf.udpConns.RunWatch(sf.ctx)
 	})
 
-	sf.submit(func() {
+	sf.gPool.Go(func() {
 		boff := backoff.WithContext(&backoff.ExponentialBackOff{
 			InitialInterval:     time.Second,
 			RandomizationFactor: 0.5,
@@ -180,7 +178,7 @@ func (sf *Client) Start() (err error) {
 					sf.log.Infof("[ Client ] accept stream %s, retrying...", err)
 					return err
 				}
-				sf.submit(func() {
+				sf.gPool.Go(func() {
 					var serverNodeId, serverSessId, clientLocalAddr string
 
 					err = through.ReadStrings(stream, sf.cfg.Timeout, &serverNodeId, &serverSessId, &clientLocalAddr)
@@ -259,13 +257,13 @@ func (sf *Client) proxyUDP(inConn *smux.Stream, localAddr, sessId string) {
 				sessId:    sessId,
 			}
 			sf.udpConns.Set(srcAddr, item)
-			sf.submit(func() {
+			sf.gPool.Go(func() {
 				sf.runUdpReceive(srcAddr, sessId)
 			})
 		}
 
 		atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-		sf.submit(func() {
+		sf.gPool.Go(func() {
 			item.localConn.Write(body)
 		})
 	}
@@ -330,7 +328,7 @@ func (sf *Client) runUdpReceive(key, id string) {
 			return
 		}
 		atomic.StoreInt64(&connItem.lastActiveTime, time.Now().Unix())
-		sf.submit(func() {
+		sf.gPool.Go(func() {
 			defer sword.Binding.Put(buf)
 
 			err := through.WriteUdp(connItem.conn, sf.cfg.Timeout,
@@ -354,18 +352,4 @@ func (sf *Client) dialParent(address string) (net.Conn, error) {
 			Compress:     sf.cfg.Compress,
 			Jumper:       sf.jumper,
 		})
-}
-
-// 提交任务到协程池处理,如果协程池未定义或提交失败,将采用goroutine
-func (sf *Client) submit(f func()) {
-	if sf.gPool == nil || sf.gPool.Submit(f) != nil {
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					sf.log.DPanicf("[ Client ] crashed %s\nstack:\n%s", err, string(debug.Stack()))
-				}
-			}()
-			f()
-		}()
-	}
 }

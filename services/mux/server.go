@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -19,7 +18,6 @@ import (
 	"github.com/thinkgos/jocasta/core/through"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
-	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/lib/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
@@ -77,7 +75,7 @@ type Server struct {
 	udpConns *connection.Manager // 本地udp地址 -> 远端连接 映射
 	mu       sync.Mutex
 	jumper   *cs.Jumper
-	gPool    gpool.Pool
+	gPool    sword.GoPool
 	cancel   context.CancelFunc
 	ctx      context.Context
 	log      logger.Logger
@@ -169,14 +167,14 @@ func (sf *Server) Start() (err error) {
 	if err != nil {
 		return
 	}
-	sf.submit(func() { _ = sf.channel.ListenAndServe() })
+	sf.gPool.Go(func() { _ = sf.channel.ListenAndServe() })
 
 	if err = <-sf.channel.Status(); err != nil {
 		return
 	}
 
 	if sf.cfg.IsUDP {
-		sf.submit(func() {
+		sf.gPool.Go(func() {
 			sf.udpConns.RunWatch(sf.ctx)
 		})
 	}
@@ -235,7 +233,7 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 		}
 
 		sf.log.Infof("session[%s] created", sf.cfg.SecretKey)
-		sf.submit(func() {
+		sf.gPool.Go(func() {
 			t := time.NewTicker(time.Second * 5)
 			defer t.Stop()
 			for {
@@ -303,7 +301,7 @@ func (sf *Server) runUDPReceive(key, id string) {
 			return
 		}
 		atomic.StoreInt64(&udpConnItem.lastActiveTime, time.Now().Unix())
-		sf.submit(func() {
+		sf.gPool.Go(func() {
 			sf.channel.(*cs.UDP).WriteToUDP(body, udpConnItem.srcAddr)
 		})
 	}
@@ -330,7 +328,7 @@ func (sf *Server) handleUDP(_ *net.UDPConn, msg cs.Message) {
 		}
 		sf.udpConns.Set(srcAddr, udpConnItem)
 		// 从远端接收数据,发送到本地
-		sf.submit(func() {
+		sf.gPool.Go(func() {
 			sf.runUDPReceive(srcAddr, id)
 		})
 	}
@@ -371,19 +369,5 @@ func (sf *Server) handleTCP(inConn net.Conn) {
 	err = sword.Binding.Proxy(targetConn, inConn)
 	if err != nil && err != io.EOF {
 		sf.log.Errorf("[ Server ] proxying, %s", err)
-	}
-}
-
-// 提交任务到协程池处理,如果协程池未定义或提交失败,将采用goroutine
-func (sf *Server) submit(f func()) {
-	if sf.gPool == nil || sf.gPool.Submit(f) != nil {
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					sf.log.DPanicf("[ Server ] crashed %s\nstack:\n%s", err, string(debug.Stack()))
-				}
-			}()
-			f()
-		}()
 	}
 }

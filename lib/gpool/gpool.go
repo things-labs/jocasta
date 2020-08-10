@@ -4,7 +4,7 @@ package gpool
 // Pool 协程池接口
 type Pool interface {
 	// 提交任务
-	Submit(f func()) error
+	Go(f func())
 	// 动态调整池大小
 	Tune(size int)
 	// 运行中的实例个数

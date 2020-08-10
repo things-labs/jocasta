@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -34,7 +33,6 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
@@ -122,7 +120,7 @@ type Socks struct {
 	sshClient             atomic.Value
 	userConns             cmap.ConcurrentMap
 	udpRelatedPacketConns cmap.ConcurrentMap
-	gPool                 gpool.Pool
+	gPool                 sword.GoPool
 	cancel                context.CancelFunc
 	ctx                   context.Context
 	log                   logger.Logger
@@ -290,7 +288,7 @@ func (sf *Socks) initService() (err error) {
 			return fmt.Errorf("dial ssh fail, %s", err)
 		}
 		sf.sshClient.Store(sshClient)
-		sf.Go(func() {
+		sf.gPool.Go(func() {
 			sf.log.Debugf("[ Socks ] ssh keepalive started")
 			t := time.NewTicker(time.Second * 10)
 			defer func() {
@@ -352,7 +350,7 @@ func (sf *Socks) Start() (err error) {
 	}
 	opts = append(opts,
 		socks5.WithConnectHandle(sf.proxyTCP),
-		socks5.WithGPool(sword.GPool))
+		socks5.WithGPool(sword.AntsPool))
 	sf.socks5Srv = socks5.NewServer(opts...)
 
 	sf.channel, err = ccs.ListenAndServeAny(sf.cfg.LocalType, sf.cfg.Local, sf.handle,
@@ -463,8 +461,8 @@ func (sf *Socks) proxyTCP(ctx context.Context, writer io.Writer, request *socks5
 	// start proxying
 	eCh1 := make(chan error, 1)
 	eCh2 := make(chan error, 1)
-	sf.Go(func() { eCh1 <- sf.socks5Srv.Proxy(targetConn, request.Reader) })
-	sf.Go(func() { eCh2 <- sf.socks5Srv.Proxy(writer, targetConn) })
+	sf.gPool.Go(func() { eCh1 <- sf.socks5Srv.Proxy(targetConn, request.Reader) })
+	sf.gPool.Go(func() { eCh2 <- sf.socks5Srv.Proxy(writer, targetConn) })
 	// Wait
 	select {
 	case err = <-eCh1:
@@ -598,7 +596,7 @@ func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
 		err = backoff.Retry(func() (er error) {
 			sshClient := sf.sshClient.Load().(*ssh.Client)
 			wait := make(chan struct{}, 1)
-			sword.Submit(func() {
+			sword.Go(func() {
 				outConn, er = sshClient.Dial("tcp", targetAddr)
 				wait <- struct{}{}
 			})
@@ -675,20 +673,6 @@ func (sf *Socks) isUseProxy(addr string) bool {
 		}
 	}
 	return false
-}
-
-// 提交任务到协程池处理,如果协程池未定义或提交失败,将采用goroutine
-func (sf *Socks) Go(f func()) {
-	if sf.gPool == nil || sf.gPool.Submit(f) != nil {
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					sf.log.DPanicf("[ Socks ] crashed %s\nstack:\n%s", err, string(debug.Stack()))
-				}
-			}()
-			f()
-		}()
-	}
 }
 
 type Credential struct {

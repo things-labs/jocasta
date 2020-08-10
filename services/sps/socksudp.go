@@ -166,7 +166,7 @@ func (sf *SPS) proxyUDP(inConn net.Conn, serverConn *socks5.Server) {
 				continue
 			}
 			sf.udpRelatedPacketConns.Set(srcAddr.String(), outUDPConn)
-			sword.Submit(func() {
+			sword.Go(func() {
 				defer func() {
 					sf.udpRelatedPacketConns.Remove(srcAddr.String())
 				}()

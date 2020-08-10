@@ -51,7 +51,7 @@ func (sf *UDP) ListenAndServe() (err error) {
 			return err
 		}
 		data := buf[0:n]
-		sf.submit(func() {
+		sf.goFunc(func() {
 			defer func() {
 				if e := recover(); e != nil {
 					sf.log.Errorf("UDP handler crashed, %s , \ntrace: %s", e, string(debug.Stack()))
@@ -80,8 +80,10 @@ func (sf *UDP) Addr() (addr string) {
 	return
 }
 
-func (sf *UDP) submit(f func()) {
-	if sf.gPool == nil || sf.gPool.Submit(f) != nil {
+func (sf *UDP) goFunc(f func()) {
+	if sf.gPool == nil {
+		sf.gPool.Go(f)
+	} else {
 		go f()
 	}
 }

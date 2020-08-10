@@ -1,8 +1,8 @@
 package mux
 
 import (
-	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/sword"
 )
 
 type ServerOption func(b *Server)
@@ -15,10 +15,8 @@ func WithServerLogger(l logger.Logger) ServerOption {
 	}
 }
 
-func WithServerGPool(pool gpool.Pool) ServerOption {
+func WithServerGPool(pool sword.GoPool) ServerOption {
 	return func(b *Server) {
-		if pool != nil {
-			b.gPool = pool
-		}
+		b.gPool = pool
 	}
 }

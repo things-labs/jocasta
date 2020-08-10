@@ -66,7 +66,7 @@ func (sf *KCP) ListenAndServe() error {
 		if err != nil {
 			return err
 		}
-		sf.submit(func() {
+		sf.goFunc(func() {
 			var c net.Conn
 
 			conn.SetStreamMode(true)
@@ -103,7 +103,7 @@ func (sf *KCP) Addr() (addr string) {
 }
 
 // 提交任务到协程
-func (sf *KCP) submit(f func()) {
+func (sf *KCP) goFunc(f func()) {
 	fn := func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -112,7 +112,9 @@ func (sf *KCP) submit(f func()) {
 		}()
 		f()
 	}
-	if sf.gPool == nil || sf.gPool.Submit(fn) != nil {
+	if sf.gPool != nil {
+		sf.gPool.Go(fn)
+	} else {
 		go fn()
 	}
 }

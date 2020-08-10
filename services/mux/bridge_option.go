@@ -1,8 +1,8 @@
 package mux
 
 import (
-	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/sword"
 )
 
 type BridgeOption func(b *Bridge)
@@ -15,10 +15,8 @@ func WithBridgeLogger(l logger.Logger) BridgeOption {
 	}
 }
 
-func WithBridgeGPool(pool gpool.Pool) BridgeOption {
+func WithBridgeGPool(pool sword.GoPool) BridgeOption {
 	return func(b *Bridge) {
-		if pool != nil {
-			b.gPool = pool
-		}
+		b.gPool = pool
 	}
 }

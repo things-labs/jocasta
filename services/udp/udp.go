@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"runtime/debug"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -19,7 +18,6 @@ import (
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/encrypt"
 	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/captain"
 	"github.com/thinkgos/jocasta/pkg/sword"
@@ -71,7 +69,7 @@ type UDP struct {
 	// src地址对其它连接的绑定
 	conns       *connection.Manager
 	single      singleflight.Group
-	gPool       gpool.Pool
+	gPool       sword.GoPool
 	dnsResolver *idns.Resolver
 	cancel      context.CancelFunc
 	ctx         context.Context
@@ -142,7 +140,7 @@ func (sf *UDP) Start() (err error) {
 		return
 	}
 
-	sf.Go(func() { sf.conns.RunWatch(sf.ctx) })
+	sf.gPool.Go(func() { sf.conns.RunWatch(sf.ctx) })
 	sf.log.Infof("[ UDP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)
 	sf.log.Infof("[ UDP ] use proxy udp on %s", sf.channel.Addr())
 	return
@@ -190,7 +188,7 @@ func (sf *UDP) proxyUdp2Any(_ *net.UDPConn, msg cs.Message) {
 			targetAddr: msg.LocalAddr,
 		}
 		sf.conns.Set(srcAddr, item)
-		sword.Submit(func() {
+		sword.Go(func() {
 			sf.log.Infof("[ UDP ] udp conn %s ---> %s connected", srcAddr, targetConn.RemoteAddr().String())
 			defer func() {
 				sf.conns.Remove(srcAddr)
@@ -271,7 +269,7 @@ func (sf *UDP) proxyUdp2Udp(_ *net.UDPConn, msg cs.Message) {
 			targetAddr: targetAddr,
 		}
 		sf.conns.Set(srcAddr, item)
-		sf.Go(func() {
+		sf.gPool.Go(func() {
 			sf.log.Infof("[ UDP ] udp conn %s ---> %s connected", srcAddr, localAddr)
 			buf := sword.Binding.Get()
 			defer func() {
@@ -326,18 +324,4 @@ func (sf *UDP) resolve(address string) string {
 		return sf.dnsResolver.MustResolve(address)
 	}
 	return address
-}
-
-// 提交任务到协程池处理,如果协程池未定义或提交失败,将采用goroutine
-func (sf *UDP) Go(f func()) {
-	if sf.gPool == nil || sf.gPool.Submit(f) != nil {
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					sf.log.DPanicf("[ UDP ] crashed %s\nstack:\n%s", err, string(debug.Stack()))
-				}
-			}()
-			f()
-		}()
-	}
 }

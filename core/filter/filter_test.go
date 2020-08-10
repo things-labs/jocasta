@@ -89,9 +89,8 @@ func TestItem_isNeedLivenessProde(t *testing.T) {
 
 type mockGoPool struct{}
 
-func (g mockGoPool) Submit(f func()) error {
+func (g mockGoPool) Go(f func()) {
 	go f()
-	return nil
 }
 func (g mockGoPool) Tune(int)     {}
 func (g mockGoPool) Running() int { return 0 }

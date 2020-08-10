@@ -124,7 +124,7 @@ func (sf *SPS) RunSSUDP(addr string) (err error) {
 					return
 				}
 				sf.udpRelatedPacketConns.Set(srcAddr.String(), outUDPConn)
-				sword.Submit(func() {
+				sword.Go(func() {
 					defer func() {
 						sf.udpRelatedPacketConns.Remove(srcAddr.String())
 					}()

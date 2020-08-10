@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"runtime/debug"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -22,7 +21,6 @@ import (
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/encrypt"
 	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/captain"
 	"github.com/thinkgos/jocasta/pkg/sword"
@@ -85,7 +83,7 @@ type TCP struct {
 	single      *singleflight.Group
 	jumper      *cs.Jumper
 	dnsResolver *idns.Resolver
-	gPool       gpool.Pool
+	gPool       sword.GoPool
 	cancel      context.CancelFunc
 	ctx         context.Context
 	log         logger.Logger
@@ -180,7 +178,7 @@ func (sf *TCP) Start() (err error) {
 	}
 
 	if sf.cfg.ParentType == "udp" {
-		sf.Go(func() { sf.userConns.RunWatch(sf.ctx) })
+		sf.gPool.Go(func() { sf.userConns.RunWatch(sf.ctx) })
 	}
 
 	sf.log.Infof("[ TCP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)
@@ -293,7 +291,7 @@ func (sf *TCP) proxyAny2UDP(inConn net.Conn) {
 				targetConn: targetConn,
 			}
 			sf.userConns.Set(srcAddr, item)
-			sf.Go(func() {
+			sf.gPool.Go(func() {
 				sf.log.Infof("[ TCP ] udp conn %s ---> %s connected", srcAddr, localAddr)
 				buf := sword.Binding.Get()
 				defer func() {
@@ -370,18 +368,4 @@ func (sf *TCP) resolve(address string) string {
 		return sf.dnsResolver.MustResolve(address)
 	}
 	return address
-}
-
-// 提交任务到协程池处理,如果协程池未定义或提交失败,将采用goroutine
-func (sf *TCP) Go(f func()) {
-	if sf.gPool == nil || sf.gPool.Submit(f) != nil {
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					sf.log.DPanicf("[ TCP ] crashed %s\nstack:\n%s", err, string(debug.Stack()))
-				}
-			}()
-			f()
-		}()
-	}
 }

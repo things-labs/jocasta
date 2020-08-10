@@ -79,7 +79,7 @@ func ListenAndServeAny(protocol, address string, handler func(conn net.Conn), c 
 		return nil, err
 	}
 
-	sword.Submit(func() { _ = channel.ListenAndServe() })
+	sword.Go(func() { _ = channel.ListenAndServe() })
 
 	t := time.NewTimer(time.Second)
 	defer t.Stop()
@@ -96,7 +96,7 @@ func ListenAndServeUDP(address string, handler func(listen *net.UDPConn, message
 	if err != nil {
 		return nil, err
 	}
-	sword.Submit(func() { _ = channel.ListenAndServe() })
+	sword.Go(func() { _ = channel.ListenAndServe() })
 
 	t := time.NewTimer(time.Second)
 	defer t.Stop()

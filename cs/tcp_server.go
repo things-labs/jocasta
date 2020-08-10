@@ -172,7 +172,7 @@ func (sf *TCP) listenAndServeTCPTLS() (err error) {
 		if err != nil {
 			return err
 		}
-		sf.submit(func() {
+		sf.goFunc(func() {
 			defer func() {
 				if e := recover(); e != nil {
 					sf.log.Errorf("tls connection handler crashed, %s , \ntrace:%s", e, string(debug.Stack()))
@@ -197,7 +197,7 @@ func (sf *TCP) listenRawTCP() (err error) {
 		if err != nil {
 			return err
 		}
-		sf.submit(func() {
+		sf.goFunc(func() {
 			defer func() {
 				if e := recover(); e != nil {
 					sf.log.Errorf("tcp connection handler crashed, %s , \ntrace:%s", e, string(debug.Stack()))
@@ -235,8 +235,10 @@ func (sf *TCP) listenTCPTLS() (ln net.Listener, err error) {
 	return tls.Listen("tcp", net.JoinHostPort(sf.ip, strconv.Itoa(sf.port)), config)
 }
 
-func (sf *TCP) submit(f func()) {
-	if sf.gPool == nil || sf.gPool.Submit(f) != nil {
+func (sf *TCP) goFunc(f func()) {
+	if sf.gPool != nil {
+		sf.gPool.Go(f)
+	} else {
 		go f()
 	}
 }
