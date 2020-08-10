@@ -9,9 +9,6 @@ import (
 	"github.com/thinkgos/jocasta/pkg/izap"
 )
 
-// AntsPool ants pool instance
-var AntsPool, _ = ants.NewPool(500000)
-
 // GPool goroutine pool
 var GPool = GoPool{AntsPool}
 

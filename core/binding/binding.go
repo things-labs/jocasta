@@ -32,8 +32,8 @@ func New(size int, opts ...Option) *Forward {
 func (sf *Forward) Proxy(rw1, rw2 io.ReadWriter) (err error) {
 	ech1 := make(chan error, 1)
 	ech2 := make(chan error, 1)
-	sf.gPool.Go(func() { ech1 <- sf.Copy(rw1, rw2) })
-	sf.gPool.Go(func() { ech2 <- sf.Copy(rw2, rw1) })
+	sf.goFunc(func() { ech1 <- sf.Copy(rw1, rw2) })
+	sf.goFunc(func() { ech2 <- sf.Copy(rw2, rw1) })
 	select {
 	case err = <-ech1:
 	case err = <-ech2:
@@ -74,5 +74,13 @@ func (sf *Forward) RunUDPCopy(dst, src *net.UDPConn, dstAddr net.Addr, readTimeo
 			}
 			continue
 		}
+	}
+}
+
+func (sf Forward) goFunc(f func()) {
+	if sf.gPool != nil {
+		sf.gPool.Go(f)
+	} else {
+		go f()
 	}
 }
