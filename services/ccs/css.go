@@ -24,7 +24,7 @@ type Config struct {
 	// stcp支持压缩
 	Compress bool // 是否压缩
 	// 支持tcp,stcp,tls
-	*cs.Jumper //only client used
+	Jumper *cs.Jumper //only client used
 }
 
 func DialTimeout(protocol, address string, timeout time.Duration, c Config) (net.Conn, error) {

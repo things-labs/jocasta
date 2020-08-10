@@ -8,7 +8,7 @@ import (
 )
 
 // BindingSize binding buffer size
-const BindingSize = 2048
+const BindingSize = 4096
 
 // Binding binding
 var Binding = binding.New(BindingSize, binding.WithGPool(&GPool))

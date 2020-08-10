@@ -31,19 +31,19 @@ const MaxUDPIdleTime = 10 // 单位s
 type Config struct {
 	// parent
 	ParentType     string `validate:"required,oneof=tcp tls stcp kcp udp"` // 父级协议,tcp|tls|stcp|kcp|udp default empty
-	Parent         string // 父级地址,格式addr:port default empty
-	ParentCompress bool   // default false
+	Parent         string // 父级地址,格式addr:port, default: empty
+	ParentCompress bool   // 父级是否传输压缩, default: false
 	// local
 	Local string // 本地监听地址 default :28080
 	// tls有效
 	CertFile   string // cert文件名
 	KeyFile    string // key文件名
-	CaCertFile string // ca文件 default empty
+	CaCertFile string // ca文件, default: empty
 	// kcp有效
 	SKCPConfig *skcp.Config
 	// stcp有效
-	STCPMethod   string `validate:"required"` // default aes-192-cfb
-	STCPPassword string // default thinkgos's_goproxy
+	STCPMethod   string `validate:"required"` // default: aes-192-cfb
+	STCPPassword string // default: thinkgos's_goproxy
 	// 其它
 	Timeout             time.Duration `validate:"required"` // tcp连接父级代理超时时间 单位ms
 	CheckParentInterval int           // TODO: not used 确认代理是否正常间隔,0表示不检查, default 3 单位s
@@ -56,7 +56,6 @@ type Config struct {
 type connItem struct {
 	targetConn     net.Conn
 	srcAddr        *net.UDPAddr
-	targetAddr     *net.UDPAddr
 	lastActiveTime int64
 }
 
@@ -162,7 +161,7 @@ func (sf *UDP) Stop() {
 func (sf *UDP) handle(ln *net.UDPConn, msg cs.Message) {
 	switch sf.cfg.ParentType {
 	case "tcp", "tls", "stcp", "kcp":
-		sf.proxyUdp2Any(ln, msg)
+		sf.proxyUdp2Stream(ln, msg)
 	case "udp":
 		sf.proxyUdp2Udp(ln, msg)
 	default:
@@ -170,36 +169,38 @@ func (sf *UDP) handle(ln *net.UDPConn, msg cs.Message) {
 	}
 }
 
-func (sf *UDP) proxyUdp2Any(_ *net.UDPConn, msg cs.Message) {
+func (sf *UDP) proxyUdp2Stream(_ *net.UDPConn, msg cs.Message) {
 	srcAddr := msg.SrcAddr.String()
 
 	itm, err, _ := sf.single.Do(srcAddr, func() (interface{}, error) {
 		if v, ok := sf.conns.Get(srcAddr); ok {
 			return v, nil
 		}
+
 		targetConn, err := sf.dialParent(sf.resolve(sf.cfg.Parent))
 		if err != nil {
-			sf.log.Errorf("[ UDP ] connect to target %s fail, %s", sf.cfg.Parent, err)
+			sf.log.Errorf("[ UDP ] connect to stream parent< %s > fail, %s", sf.cfg.Parent, err)
 			return nil, err
 		}
 		item := &connItem{
-			targetConn: targetConn,
-			srcAddr:    msg.SrcAddr,
-			targetAddr: msg.LocalAddr,
+			targetConn,
+			msg.SrcAddr,
+			time.Now().Unix(),
 		}
 		sf.conns.Set(srcAddr, item)
-		sword.Go(func() {
-			sf.log.Infof("[ UDP ] udp conn %s ---> %s connected", srcAddr, targetConn.RemoteAddr().String())
+		// src ---> parent
+		sf.gPool.Go(func() {
+			sf.log.Infof("[ UDP ] udp conn %s ---> stream %s  connected", srcAddr, targetConn.RemoteAddr().String())
 			defer func() {
 				sf.conns.Remove(srcAddr)
 				item.targetConn.Close()
-				sf.log.Infof("[ UDP ] udp conn %s ---> %s released", srcAddr, targetConn.RemoteAddr().String())
+				sf.log.Infof("[ UDP ] udp conn %s ---> stream %s released", srcAddr, targetConn.RemoteAddr().String())
 			}()
 
 			for {
 				da, err := captain.ParseStreamDatagram(item.targetConn)
 				if err != nil {
-					sf.log.Errorf("[ UDP ] udp conn read from target conn fail, %s ", err)
+					sf.log.Errorf("[ UDP ] udp conn read from stream parent conn fail, %s ", err)
 					if strings.Contains(err.Error(), "n != int(") {
 						continue
 					}
@@ -218,9 +219,10 @@ func (sf *UDP) proxyUdp2Any(_ *net.UDPConn, msg cs.Message) {
 	if err != nil {
 		return
 	}
+
+	// parent ---> src
 	item := itm.(*connItem)
 	atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-
 	err = extnet.WrapWriteTimeout(item.targetConn, sf.cfg.Timeout, func(c net.Conn) error {
 		as, err := captain.ParseAddrSpec(srcAddr)
 		if err != nil {
@@ -234,54 +236,59 @@ func (sf *UDP) proxyUdp2Any(_ *net.UDPConn, msg cs.Message) {
 		if err != nil {
 			return err
 		}
-		c.Write(header)     // nolint: errcheck
-		c.Write(sData.Data) // nolint: errcheck
+		buf := sword.Binding.Get()
+		defer sword.Binding.Put(buf)
+		tmpBuf := append(buf, header...)
+		tmpBuf = append(tmpBuf, sData.Data...)
+		c.Write(tmpBuf) // nolint: errcheck
 		return nil
 	})
 	if err != nil {
-		sf.log.Errorf("[ UDP ] udp conn write to target conn fail, %s ", err)
+		sf.log.Errorf("[ UDP ] udp conn write to stream parent conn fail, %s ", err)
 	}
 }
 
 func (sf *UDP) proxyUdp2Udp(_ *net.UDPConn, msg cs.Message) {
-	localAddr := msg.LocalAddr.String()
 	srcAddr := msg.SrcAddr.String()
-	sf.log.Debugf("[ UDP ] udp conn %s ---> %s request", srcAddr, localAddr)
 
 	itm, err, _ := sf.single.Do(srcAddr, func() (interface{}, error) {
 		if v, ok := sf.conns.Get(srcAddr); ok {
 			return v, nil
 		}
+
 		targetAddr, err := net.ResolveUDPAddr("udp", sf.cfg.Parent)
 		if err != nil {
-			sf.log.Errorf("[ UDP ] resolve udp addr %s fail, %+v", sf.cfg.Parent, err)
+			sf.log.Errorf("[ UDP ] resolve udp parent addr< %s > fail, %+v", sf.cfg.Parent, err)
 			return nil, err
 		}
 		targetConn, err := net.DialUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0}, targetAddr)
 		if err != nil {
-			sf.log.Errorf("[ UDP ] connect to udp target conn %s fail, %+v", targetAddr.String(), err)
+			sf.log.Errorf("[ UDP ] connect to udp parent addr< %s > fail, %+v", targetAddr, err)
 			return nil, err
 		}
-
 		item := &connItem{
-			targetConn: targetConn,
-			srcAddr:    msg.SrcAddr,
-			targetAddr: targetAddr,
+			targetConn,
+			msg.SrcAddr,
+			time.Now().Unix(),
 		}
 		sf.conns.Set(srcAddr, item)
+		// parent ---> src
 		sf.gPool.Go(func() {
-			sf.log.Infof("[ UDP ] udp conn %s ---> %s connected", srcAddr, localAddr)
+			sf.log.Infof("[ UDP ] udp conn %s ---> %s connected", srcAddr, targetAddr.String())
 			buf := sword.Binding.Get()
 			defer func() {
 				sword.Binding.Put(buf)
 				sf.conns.Remove(srcAddr)
 				item.targetConn.Close()
-				sf.log.Infof("[ UDP ] udp conn %s ---> %s released", srcAddr, localAddr)
+				sf.log.Infof("[ UDP ] udp conn %s ---> %s released", srcAddr, targetAddr.String())
 			}()
 			for {
 				n, err := item.targetConn.Read(buf[:cap(buf)])
 				if err != nil {
-					sf.log.Warnf("[ UDP ] udp conn read from target conn fail, %s ", err)
+					if extnet.IsErrClosed(err) {
+						return
+					}
+					sf.log.Warnf("[ UDP ] udp conn read from parent conn fail, %s ", err)
 					return
 				}
 				atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
@@ -297,11 +304,12 @@ func (sf *UDP) proxyUdp2Udp(_ *net.UDPConn, msg cs.Message) {
 	if err != nil {
 		return
 	}
+	// src ---> parent
 	item := itm.(*connItem)
 	atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-	_, err = item.targetConn.(*net.UDPConn).WriteToUDP(msg.Data, item.targetAddr)
+	_, err = item.targetConn.Write(msg.Data)
 	if err != nil {
-		sf.log.Warnf("[ UDP ] udp conn write to target conn fail, %s ", err)
+		sf.log.Warnf("[ UDP ] udp conn write to parent conn fail, %s ", err)
 	}
 }
 
