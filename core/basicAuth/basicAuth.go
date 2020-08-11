@@ -34,9 +34,9 @@ type Center struct {
 // 采用方法: GET
 // URL格式: url + ["&"] +"user=username&pass=pwd&ip=userIP&local_ip=localIP&target=target"
 // 其它参数建议:
-// successCode: 204
-// 超时时间: 1s
-// 重试次数: 3
+// 		successCode: 204
+// 		超时时间: 1s
+// 		重试次数: 3
 func New(opts ...Option) *Center {
 	center := &Center{passwords: cmap.New()}
 	for _, opt := range opts {
