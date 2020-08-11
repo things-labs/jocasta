@@ -18,7 +18,7 @@ func TestParseRawThroughRequest(t *testing.T) {
 			"data",
 			bytes.NewBuffer([]byte{0x5a, 0xa5, 0x05, 1, 2, 3, 4, 5}),
 			ThroughRequest{
-				0x5a, 0xa5, []byte{1, 2, 3, 4, 5},
+				0x5a & 0x07, 0xa5, []byte{1, 2, 3, 4, 5},
 			},
 			false,
 		},
@@ -26,7 +26,7 @@ func TestParseRawThroughRequest(t *testing.T) {
 			"invalid data length",
 			bytes.NewBuffer([]byte{0x5a, 0xa5, 0xff, 0xff, 0xff, 1, 2, 3}),
 			ThroughRequest{
-				0x5a, 0xa5, nil,
+				0x5a & 0x07, 0xa5, nil,
 			},
 			true,
 		},
@@ -61,25 +61,25 @@ func TestThroughRequest_Bytes(t *testing.T) {
 		{
 			"dataLen = 0",
 			ThroughRequest{0x5a, 0xa5, []byte{}},
-			[]byte{0x5a, 0xa5, 0x00},
+			[]byte{0x5a & 0x07, 0xa5, 0x00},
 			false,
 		},
 		{
 			"0 <= dataLen =< 127",
 			ThroughRequest{0x5a, 0xa5, make([]byte, 5)},
-			append([]byte{0x5a, 0xa5, 0x05}, make([]byte, 5)...),
+			append([]byte{0x5a & 0x07, 0xa5, 0x05}, make([]byte, 5)...),
 			false,
 		},
 		{
 			"16383 >= dataLen >= 128",
 			ThroughRequest{0x5a, 0xa5, make([]byte, 128)},
-			append([]byte{0x5a, 0xa5, 0x80, 0x01}, make([]byte, 128)...),
+			append([]byte{0x5a & 0x07, 0xa5, 0x80, 0x01}, make([]byte, 128)...),
 			false,
 		},
 		{
 			"2097151 >= dataLen >= 16384",
 			ThroughRequest{0x5a, 0xa5, make([]byte, 16384)},
-			append([]byte{0x5a, 0xa5, 0x80, 0x80, 0x01}, make([]byte, 16384)...),
+			append([]byte{0x5a & 0x07, 0xa5, 0x80, 0x80, 0x01}, make([]byte, 16384)...),
 			false,
 		},
 	}
