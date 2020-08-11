@@ -15,13 +15,13 @@ import (
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
+	"github.com/thinkgos/jocasta/core/captain"
+	"github.com/thinkgos/jocasta/core/captain/ddt"
 	"github.com/thinkgos/jocasta/core/through"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/lib/outil"
-	"github.com/thinkgos/jocasta/pkg/captain"
-	"github.com/thinkgos/jocasta/pkg/captain/ddt"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
@@ -241,6 +241,16 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 		_, err = pConn.Write(data)
 		if err != nil {
 			_ = pConn.Close()
+			return
+		}
+		var tr captain.ThroughReply
+		tr, err = captain.ParseRawThroughReply(pConn)
+		if err != nil {
+			_ = pConn.Close()
+			return
+		}
+		if tr.Status != captain.TRepSuccess {
+			err = errors.New("bridge response error")
 			return
 		}
 

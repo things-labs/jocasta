@@ -14,10 +14,10 @@ import (
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
+	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/logger"
-	"github.com/thinkgos/jocasta/pkg/captain"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
@@ -162,6 +162,7 @@ func (sf *Bridge) handler(inConn net.Conn) {
 
 		session, err := smux.Server(inConn, nil)
 		if err != nil {
+			inConn.Write([]byte{captain.TRepServerFailure, captain.TVersion}) // nolint: errcheck
 			sf.log.Errorf("[ Bridge ] node server session, %+v", err)
 			return
 		}
@@ -173,6 +174,8 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			}
 			return newValue
 		})
+
+		inConn.Write([]byte{captain.TRepSuccess, captain.TVersion}) // nolint: errcheck
 
 		sf.log.Infof("[ Bridge ] server %s connected -- sk< %s >", Negos.Nego.Id, Negos.Nego.SecretKey)
 		defer func() {
@@ -205,8 +208,10 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			}
 			return newValue
 		})
+		inConn.Write([]byte{captain.TRepSuccess, captain.TVersion}) // nolint: errcheck
 		sf.log.Infof("[ Bridge ] client connected -- sk< %s >", Negos.Nego.SecretKey)
 	default:
+		inConn.Write([]byte{captain.TRepTTypesNotSupport, captain.TVersion}) // nolint: errcheck
 		sf.log.Errorf("[ Bridge ] node type unknown < %d >", Negos.Types)
 	}
 }

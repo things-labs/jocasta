@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/thinkgos/jocasta/pkg/captain/ddt"
+	"github.com/thinkgos/jocasta/core/captain/ddt"
 )
 
 // TVersion 透传协议版本
@@ -19,7 +19,16 @@ const (
 	TTypesServer
 )
 
-// Through through protocol message
+const (
+	TRepSuccess            = iota // 成功
+	TRepFailure                   // 失败
+	TRepServerFailure             // 服务器问题
+	TRepNetworkUnreachable        // 网络不可达
+	TRepTTypesNotSupport          // 类型不支持
+	TRepConnectionRefused         // 连接拒绝
+)
+
+// ThroughRequest through protocol request
 // handshake request/response is formed as follows:
 // +---------+-------+------------+----------+
 // |  TYPES  |  VER  |  DATA_LEN  |   DATA   |
@@ -30,20 +39,20 @@ const (
 // VER 版本
 // DATA_LEN see data length defined
 // 数据
-type Through struct {
+type ThroughRequest struct {
 	Types   byte
 	Version byte
 	Data    []byte
 }
 
-// ParseRawThrough parse to Through
-func ParseRawThrough(r io.Reader) (msg Through, err error) {
+// ParseRawThroughRequest parse to ThroughRequest
+func ParseRawThroughRequest(r io.Reader) (msg ThroughRequest, err error) {
 	// read message type,version
 	tmp := []byte{0, 0}
 	if _, err = io.ReadFull(r, tmp); err != nil {
 		return
 	}
-	msg.Types, msg.Version = tmp[0], tmp[1]
+	msg.Types, msg.Version = tmp[0]&0x07, tmp[1]
 
 	// read remain data len
 	var length int
@@ -61,13 +70,13 @@ func ParseRawThrough(r io.Reader) (msg Through, err error) {
 	return
 }
 
-func (sf Through) Bytes() ([]byte, error) {
+func (sf ThroughRequest) Bytes() ([]byte, error) {
 	ds, n, err := DataLen(len(sf.Data))
 	if err != nil {
 		return nil, err
 	}
 	bs := make([]byte, 0, n+len(sf.Data))
-	bs = append(bs, sf.Types, sf.Version)
+	bs = append(bs, sf.Types&0x07, sf.Version)
 	bs = append(bs, ds[:n]...)
 	bs = append(bs, sf.Data...)
 	return bs, nil
@@ -80,7 +89,7 @@ type ThroughNegotiateRequest struct {
 }
 
 func ParseThroughNegotiateRequest(r io.Reader) (*ThroughNegotiateRequest, error) {
-	tr, err := ParseRawThrough(r)
+	tr, err := ParseRawThroughRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -102,10 +111,35 @@ func (sf *ThroughNegotiateRequest) Bytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	tr := Through{
+	tr := ThroughRequest{
 		Types:   sf.Types,
 		Version: sf.Version,
 		Data:    data,
 	}
 	return tr.Bytes()
+}
+
+// ThroughRequest through protocol reply
+// handshake request/response is formed as follows:
+// +---------+-------+
+// |  STATUS |  VER  |
+// +---------+-------+
+// |    1    |   1   |
+// +---------+-------+
+// STATUS 状态
+// VER 版本
+type ThroughReply struct {
+	Status  byte
+	Version byte
+}
+
+// ParseRawThroughReply parse to ThroughReply
+func ParseRawThroughReply(r io.Reader) (tr ThroughReply, err error) {
+	// read message type,version
+	tmp := []byte{0, 0}
+	if _, err = io.ReadFull(r, tmp); err != nil {
+		return
+	}
+	tr.Status, tr.Version = tmp[0], tmp[1]
+	return
 }

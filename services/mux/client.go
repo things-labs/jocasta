@@ -13,13 +13,13 @@ import (
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
+	"github.com/thinkgos/jocasta/core/captain"
+	"github.com/thinkgos/jocasta/core/captain/ddt"
 	"github.com/thinkgos/jocasta/core/through"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
-	"github.com/thinkgos/jocasta/pkg/captain"
-	"github.com/thinkgos/jocasta/pkg/captain/ddt"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
@@ -155,7 +155,6 @@ func (sf *Client) Start() (err error) {
 			defer pConn.Close()
 
 			// through message
-			var data []byte
 			msg := captain.ThroughNegotiateRequest{
 				Types:   captain.TTypesClient,
 				Version: 1,
@@ -164,12 +163,23 @@ func (sf *Client) Start() (err error) {
 					Id:        "reserved",
 				},
 			}
-			if data, err = msg.Bytes(); err != nil {
+			data, err := msg.Bytes()
+			if err != nil {
 				return err
 			}
 			_, err = pConn.Write(data)
 			if err != nil {
 				sf.log.Errorf("[ Client ] connection %s, retrying...", err)
+				return err
+			}
+
+			tr, err := captain.ParseRawThroughReply(pConn)
+			if err != nil {
+				return err
+			}
+			if tr.Status != captain.TRepSuccess {
+				err = errors.New("bridge response error")
+				sf.log.Errorf("[ Client ] bridge response %d, retrying...", tr.Status)
 				return err
 			}
 

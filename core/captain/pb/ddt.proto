@@ -12,11 +12,6 @@ message NegotiateRequest {
   string id = 3;
 }
 
-message NegotiateResponse {
-  int32 status = 1;
-  optional string message = 2;
-}
-
 message Request {
   string node_id = 1;
   string Session_id = 2;
