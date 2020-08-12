@@ -14,3 +14,11 @@ type Pool interface {
 	// 池总大小
 	Cap() int
 }
+
+func Go(goPool Pool, f func()) {
+	if goPool != nil {
+		goPool.Go(f)
+	} else {
+		go f()
+	}
+}

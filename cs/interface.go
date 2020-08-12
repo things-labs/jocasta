@@ -12,6 +12,7 @@ type Dialer interface {
 
 type Server interface {
 	io.Closer
+	LocalAddr() string
 	ListenAndServe() error
 }
 
@@ -23,4 +24,10 @@ type HandlerFunc func(c net.Conn)
 
 func (f HandlerFunc) ServerConn(c net.Conn) {
 	f(c)
+}
+
+func setStatus(Status chan<- error, err error) {
+	if Status != nil {
+		Status <- err
+	}
 }

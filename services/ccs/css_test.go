@@ -19,6 +19,8 @@ func TestStream_Stcp(t *testing.T) {
 			testFunc := func() {
 				config := Config{STCPMethod: method, STCPPassword: password, Compress: compress}
 				// t.Logf("stcp method: %s compress: %t", method, compress)
+
+				// server
 				srv := &Server{
 					Protocol: "stcp",
 					Addr:     ":",
@@ -37,13 +39,14 @@ func TestStream_Stcp(t *testing.T) {
 						}
 					}),
 				}
-				s, err := srv.ListenAndServe()
+				s, err := srv.RunListenAndServe()
+				require.NoError(t, err)
+				err = <-srv.Status()
 				require.NoError(t, err)
 
 				defer s.Close()
 
-				time.Sleep(time.Millisecond * 100)
-
+				// client
 				d := Dialer{config}
 				cli, err := d.DialTimeout("stcp", s.LocalAddr(), 5*time.Second)
 				require.NoError(t, err)

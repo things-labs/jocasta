@@ -7,7 +7,6 @@ import (
 
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/gpool"
-	"github.com/thinkgos/jocasta/pkg/sword"
 )
 
 type Config struct {
@@ -75,20 +74,24 @@ type Server struct {
 	Protocol string
 	Addr     string
 	Config
-	Handler cs.Handler
 	GoPool  gpool.Pool
+	Handler cs.Handler
+
+	status chan error
 }
 
-func (sf *Server) ListenAndServe() (cs.Channel, error) {
-	var srv cs.Channel
+func (sf *Server) RunListenAndServe() (cs.Server, error) {
+	var srv cs.Server
 
+	sf.status = make(chan error, 1)
 	switch sf.Protocol {
 	case "tcp":
 		srv = &cs.TCPServer{
 			Addr:     sf.Addr,
 			Compress: sf.Compress,
-			Handler:  sf.Handler,
+			Status:   sf.status,
 			GoPool:   sf.GoPool,
+			Handler:  sf.Handler,
 		}
 	case "tls":
 		srv = &cs.TCPTlsServer{
@@ -97,8 +100,9 @@ func (sf *Server) ListenAndServe() (cs.Channel, error) {
 			Cert:    sf.Cert,
 			Key:     sf.Key,
 			Single:  false,
-			Handler: sf.Handler,
+			Status:  sf.status,
 			GoPool:  sf.GoPool,
+			Handler: sf.Handler,
 		}
 	case "stcp":
 		srv = &cs.StcpServer{
@@ -106,21 +110,27 @@ func (sf *Server) ListenAndServe() (cs.Channel, error) {
 			Method:   sf.STCPMethod,
 			Password: sf.STCPPassword,
 			Compress: sf.Compress,
-			Handler:  sf.Handler,
+			Status:   sf.status,
 			GoPool:   sf.GoPool,
+			Handler:  sf.Handler,
 		}
 	case "kcp":
 		srv = &cs.KCPServer{
 			Addr:    sf.Addr,
 			Config:  sf.KcpConfig,
-			Handler: sf.Handler,
+			Status:  sf.status,
 			GoPool:  sf.GoPool,
+			Handler: sf.Handler,
 		}
 	default:
 		return nil, fmt.Errorf("not support protocol: %s", sf.Protocol)
 	}
 
-	sword.Go(func() { _ = srv.ListenAndServe() })
+	gpool.Go(sf.GoPool, func() { _ = srv.ListenAndServe() })
 
 	return srv, nil
+}
+
+func (sf *Server) Status() <-chan error {
+	return sf.status
 }

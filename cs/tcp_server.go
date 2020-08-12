@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"net"
+	"sync"
 
 	"github.com/thinkgos/jocasta/connection/cencrypt"
 	"github.com/thinkgos/jocasta/connection/csnappy"
@@ -12,110 +13,130 @@ import (
 	"github.com/thinkgos/jocasta/lib/gpool"
 )
 
+// TCPServer tcp server
 type TCPServer struct {
 	Addr     string
-	ln       net.Listener
 	Compress bool
-	Handler  Handler
+	Status   chan error
 	GoPool   gpool.Pool
+	Handler  Handler
+
+	mu sync.Mutex
+	ln net.Listener
 }
 
 func (sf *TCPServer) ListenAndServe() error {
-	preHandler := sf.Handler
-	sf.Handler = HandlerFunc(func(c net.Conn) {
-		// 压缩
-		if sf.Compress {
-			c = csnappy.New(c)
-		}
-		preHandler.ServerConn(c)
-	})
-	return sf.listenRawTCP()
-}
-
-func (sf *TCPServer) listenRawTCP() (err error) {
-	sf.ln, err = net.Listen("tcp", sf.Addr)
+	ln, err := net.Listen("tcp", sf.Addr)
 	if err != nil {
+		setStatus(sf.Status, err)
 		return err
 	}
-	defer sf.ln.Close()
+	defer ln.Close()
+
+	sf.mu.Lock()
+	sf.ln = ln
+	sf.mu.Unlock()
+	setStatus(sf.Status, nil)
 	for {
-		conn, err := sf.ln.Accept()
+		conn, err := ln.Accept()
 		if err != nil {
 			return err
 		}
-		goFunc(sf.GoPool, func() { sf.Handler.ServerConn(conn) })
+		gpool.Go(sf.GoPool, func() {
+			if sf.Compress {
+				conn = csnappy.New(conn)
+			}
+			sf.Handler.ServerConn(conn)
+		})
 	}
 }
 
+// LocalAddr local listen address
 func (sf *TCPServer) LocalAddr() (addr string) {
+	sf.mu.Lock()
 	if sf.ln != nil {
 		addr = sf.ln.Addr().String()
 	}
+	sf.mu.Unlock()
 	return
 }
 
+// Close close server
 func (sf *TCPServer) Close() (err error) {
+	sf.mu.Lock()
 	if sf.ln != nil {
 		err = sf.ln.Close()
 	}
+	sf.mu.Unlock()
 	return
 }
 
+// StcpServer stcp server
 type StcpServer struct {
 	Addr     string
-	ln       net.Listener
 	Method   string
 	Password string
 	Compress bool
-	Handler  Handler
+	Status   chan error
 	GoPool   gpool.Pool
+	Handler  Handler
+
+	mu sync.Mutex
+	ln net.Listener
 }
 
+// ListenAndServe listen and serve
 func (sf *StcpServer) ListenAndServe() error {
 	if sf.Method == "" || sf.Password == "" || !encrypt.HasCipherMethod(sf.Method) {
-		return errors.New("invalid method or password")
+		err := errors.New("invalid method or password")
+		setStatus(sf.Status, err)
+		return err
 	}
 	_, err := encrypt.NewCipher(sf.Method, sf.Password)
 	if err != nil {
+		setStatus(sf.Status, err)
 		return err
 	}
-	preFn := sf.Handler
-	sf.Handler = HandlerFunc(func(c net.Conn) {
-		// 压缩
-		if sf.Compress {
-			c = csnappy.New(c)
-		}
 
-		// 这里应永远不出错,加密
-		cip, _ := encrypt.NewCipher(sf.Method, sf.Password)
-		c = cencrypt.New(c, cip)
-		preFn.ServerConn(c)
-	})
-	return sf.listenRawTCP()
-}
-
-func (sf *StcpServer) listenRawTCP() (err error) {
-	sf.ln, err = net.Listen("tcp", sf.Addr)
+	ln, err := net.Listen("tcp", sf.Addr)
 	if err != nil {
+		setStatus(sf.Status, err)
 		return err
 	}
-	defer sf.ln.Close()
+	defer ln.Close()
 
+	sf.mu.Lock()
+	sf.ln = ln
+	sf.mu.Unlock()
+
+	setStatus(sf.Status, nil)
 	for {
 		conn, err := sf.ln.Accept()
 		if err != nil {
 			return err
 		}
-		goFunc(sf.GoPool, func() { sf.Handler.ServerConn(conn) })
+		gpool.Go(sf.GoPool, func() {
+			if sf.Compress {
+				conn = csnappy.New(conn)
+			}
+			// 这里应永远不出错,加密
+			cip, _ := encrypt.NewCipher(sf.Method, sf.Password)
+			sf.Handler.ServerConn(cencrypt.New(conn, cip))
+		})
 	}
 }
+
+// LocalAddr local listen address
 func (sf *StcpServer) LocalAddr() (addr string) {
+	sf.mu.Lock()
 	if sf.ln != nil {
 		addr = sf.ln.Addr().String()
 	}
+	sf.mu.Unlock()
 	return
 }
 
+// Close close the server
 func (sf *StcpServer) Close() (err error) {
 	if sf.ln != nil {
 		err = sf.ln.Close()
@@ -123,49 +144,62 @@ func (sf *StcpServer) Close() (err error) {
 	return
 }
 
+// TCPTlsServer tcp tls server
 type TCPTlsServer struct {
 	Addr    string
-	ln      net.Listener
 	CaCert  []byte
 	Cert    []byte
 	Key     []byte
 	Single  bool
-	Handler Handler
+	Status  chan error
 	GoPool  gpool.Pool
+	Handler Handler
+
+	mu sync.Mutex
+	ln net.Listener
 }
 
+// ListenAndServe listen and serve
 func (sf *TCPTlsServer) ListenAndServe() error {
-	var err error
-
-	sf.ln, err = sf.listenTCPTLS()
+	ln, err := sf.listenTCPTls()
 	if err != nil {
+		setStatus(sf.Status, err)
 		return err
 	}
-	defer sf.ln.Close()
+	defer ln.Close()
+	sf.mu.Lock()
+	sf.ln = ln
+	sf.mu.Unlock()
 	for {
-		conn, err := sf.ln.Accept()
+		conn, err := ln.Accept()
 		if err != nil {
 			return err
 		}
-		goFunc(sf.GoPool, func() { sf.Handler.ServerConn(conn) })
+		gpool.Go(sf.GoPool, func() { sf.Handler.ServerConn(conn) })
 	}
 }
 
+// LocalAddr local listen address
 func (sf *TCPTlsServer) LocalAddr() (addr string) {
+	sf.mu.Lock()
 	if sf.ln != nil {
 		addr = sf.ln.Addr().String()
 	}
+	sf.mu.Unlock()
 	return
 }
 
+// Close close the server
 func (sf *TCPTlsServer) Close() (err error) {
+	sf.mu.Lock()
 	if sf.ln != nil {
 		err = sf.ln.Close()
 	}
+	sf.mu.Unlock()
 	return
 }
 
-func (sf *TCPTlsServer) listenTCPTLS() (ln net.Listener, err error) {
+func (sf *TCPTlsServer) listenTCPTls() (ln net.Listener, err error) {
 	var cert tls.Certificate
 
 	cert, err = tls.X509KeyPair(sf.Cert, sf.Key)
@@ -190,12 +224,4 @@ func (sf *TCPTlsServer) listenTCPTLS() (ln net.Listener, err error) {
 		config.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 	return tls.Listen("tcp", sf.Addr, config)
-}
-
-func goFunc(goPool gpool.Pool, f func()) {
-	if goPool != nil {
-		goPool.Go(f)
-	} else {
-		go f()
-	}
 }

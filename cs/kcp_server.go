@@ -2,8 +2,10 @@ package cs
 
 import (
 	"net"
+	"sync"
 
 	"github.com/xtaci/kcp-go/v5"
+	"go.uber.org/multierr"
 
 	"github.com/thinkgos/jocasta/connection/csnappy"
 	"github.com/thinkgos/jocasta/lib/gpool"
@@ -12,38 +14,40 @@ import (
 // KCPServer 传输,可选snappy压缩
 type KCPServer struct {
 	Addr    string
-	l       net.Listener
 	Config  KcpConfig
-	Handler Handler
+	Status  chan error
 	GoPool  gpool.Pool
+	Handler Handler
+	mu      sync.Mutex
+	l       net.Listener
 }
 
 func (sf *KCPServer) ListenAndServe() error {
-	lis, err := kcp.ListenWithOptions(sf.Addr, sf.Config.Block, sf.Config.DataShard, sf.Config.ParityShard)
+	ln, err := kcp.ListenWithOptions(sf.Addr, sf.Config.Block, sf.Config.DataShard, sf.Config.ParityShard)
 	if err != nil {
+		setStatus(sf.Status, err)
 		return err
 	}
-	defer lis.Close()
-
-	if err = lis.SetDSCP(sf.Config.DSCP); err != nil {
+	defer ln.Close() // nolint: errcheck
+	err = multierr.Combine(
+		ln.SetDSCP(sf.Config.DSCP),
+		ln.SetReadBuffer(sf.Config.SockBuf),
+		ln.SetWriteBuffer(sf.Config.SockBuf),
+	)
+	if err != nil {
+		setStatus(sf.Status, err)
 		return err
 	}
-	if err = lis.SetReadBuffer(sf.Config.SockBuf); err != nil {
-		return err
-	}
-	if err = lis.SetWriteBuffer(sf.Config.SockBuf); err != nil {
-		return err
-	}
-
-	sf.l = lis
+	sf.mu.Lock()
+	sf.l = ln
+	sf.mu.Unlock()
+	setStatus(sf.Status, nil)
 	for {
-		conn, err := lis.AcceptKCP()
+		conn, err := ln.AcceptKCP()
 		if err != nil {
 			return err
 		}
-		sf.goFunc(func() {
-			var c net.Conn
-
+		gpool.Go(sf.GoPool, func() {
 			conn.SetStreamMode(true)
 			conn.SetWriteDelay(true)
 			conn.SetNoDelay(sf.Config.NoDelay, sf.Config.Interval, sf.Config.Resend, sf.Config.NoCongestion)
@@ -51,37 +55,31 @@ func (sf *KCPServer) ListenAndServe() error {
 			conn.SetWindowSize(sf.Config.SndWnd, sf.Config.RcvWnd)
 			conn.SetACKNoDelay(sf.Config.AckNodelay)
 
-			if sf.Config.NoComp {
-				c = conn
-			} else {
-				c = csnappy.New(conn)
+			var c net.Conn = conn
+			if !sf.Config.NoComp {
+				c = csnappy.New(c)
 			}
 			sf.Handler.ServerConn(c)
 		})
 	}
 }
 
-// Addr return address
+// LocalAddr return address
 func (sf *KCPServer) LocalAddr() (addr string) {
+	sf.mu.Lock()
 	if sf.l != nil {
 		addr = sf.l.Addr().String()
 	}
+	sf.mu.Unlock()
 	return
 }
 
 // Close close kcp
 func (sf *KCPServer) Close() (err error) {
+	sf.mu.Lock()
 	if sf.l != nil {
 		err = sf.l.Close()
 	}
+	sf.mu.Unlock()
 	return
-}
-
-// 提交任务到协程
-func (sf *KCPServer) goFunc(f func()) {
-	if sf.GoPool != nil {
-		sf.GoPool.Go(f)
-	} else {
-		go f()
-	}
 }
