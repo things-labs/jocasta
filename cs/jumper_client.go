@@ -36,10 +36,71 @@ func NewJumper(proxyURL string) (*Jumper, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Jumper{proxyURL: u}, nil
+	return &Jumper{u}, nil
 }
 
-func (sf *Jumper) DialTCPTimeout(address string, timeout time.Duration) (net.Conn, error) {
+type JumperTCP struct {
+	*Jumper
+}
+
+func (sf *JumperTCP) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
+	d := dialer{sf.Jumper}
+	return d.DialTimeout(address, timeout)
+}
+
+type JumperTCPTls struct {
+	*Jumper
+	CaCert []byte
+	Cert   []byte
+	Key    []byte
+	Single bool
+}
+
+func (sf *JumperTCPTls) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
+	var err error
+	var conf *tls.Config
+
+	if sf.Single {
+		conf, err = SingleTLSConfig(sf.CaCert)
+	} else {
+		conf, err = TLSConfig(sf.Cert, sf.Key, sf.CaCert)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	d := dialer{sf.Jumper}
+	conn, err := d.DialTimeout(address, timeout)
+	if err != nil {
+		return nil, err
+	}
+	return tls.Client(conn, conf), nil
+}
+
+type JumperStcp struct {
+	*Jumper
+	Method   string
+	Password string
+	Compress bool
+}
+
+func (sf *JumperStcp) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
+	cip, err := encrypt.NewCipher(sf.Method, sf.Password)
+	if err != nil {
+		return nil, err
+	}
+	d := dialer{sf.Jumper}
+	conn, err := d.DialTimeout(address, timeout)
+	if err != nil {
+		return nil, err
+	}
+	if sf.Compress {
+		conn = csnappy.New(conn)
+	}
+	return cencrypt.New(conn, cip), nil
+}
+
+func (sf *dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	switch sf.proxyURL.Scheme {
 	case "https":
 		return sf.dialHTTPS(address, timeout)
@@ -50,47 +111,11 @@ func (sf *Jumper) DialTCPTimeout(address string, timeout time.Duration) (net.Con
 	}
 }
 
-func (sf *Jumper) DialTCPTLSTimeout(address string, certBytes, keyBytes, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
-	conf, err := TLSConfig(certBytes, keyBytes, caCertBytes)
-	if err != nil {
-		return nil, err
-	}
-	conn, err := sf.DialTCPTimeout(address, timeout)
-	if err != nil {
-		return nil, err
-	}
-	return tls.Client(conn, conf), nil
+type dialer struct {
+	*Jumper
 }
 
-func (sf *Jumper) DialTCPSingleTLSTimeout(address string, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
-	conf, err := SingleTLSConfig(caCertBytes)
-	if err != nil {
-		return nil, err
-	}
-	conn, err := sf.DialTCPTimeout(address, timeout)
-	if err != nil {
-		return nil, err
-
-	}
-	return tls.Client(conn, conf), nil
-}
-
-func (sf *Jumper) DialStcpTimeout(address, method, password string, compress bool, timeout time.Duration) (net.Conn, error) {
-	cip, err := encrypt.NewCipher(method, password)
-	if err != nil {
-		return nil, err
-	}
-	conn, err := sf.DialTCPTimeout(address, timeout)
-	if err != nil {
-		return nil, err
-	}
-	if compress {
-		conn = csnappy.New(conn)
-	}
-	return cencrypt.New(conn, cip), nil
-}
-
-func (sf *Jumper) dialHTTPS(address string, timeout time.Duration) (net.Conn, error) {
+func (sf *dialer) dialHTTPS(address string, timeout time.Duration) (net.Conn, error) {
 	conn, err := net.DialTimeout("tcp", sf.proxyURL.Host, timeout)
 	if err != nil {
 		return nil, err
@@ -129,7 +154,7 @@ func (sf *Jumper) dialHTTPS(address string, timeout time.Duration) (net.Conn, er
 	return conn, nil
 }
 
-func (sf *Jumper) dialSOCKS5(address string, timeout time.Duration) (net.Conn, error) {
+func (sf *dialer) dialSOCKS5(address string, timeout time.Duration) (net.Conn, error) {
 	var auth *proxy.Auth
 
 	if sf.proxyURL.User != nil {

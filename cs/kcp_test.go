@@ -58,7 +58,8 @@ func TestKcp(t *testing.T) {
 		defer s.Close()
 
 		// client
-		cli, err := DialKcp(s.Addr(), config)
+		d := KCPDialer{config}
+		cli, err := d.DialTimeout(s.Addr(), time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 

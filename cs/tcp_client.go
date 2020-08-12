@@ -13,21 +13,37 @@ import (
 	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
-// DialTCPTimeout dial tcp with timeout
-func DialTCPTimeout(address string, compress bool, timeout time.Duration) (net.Conn, error) {
+type TCPDialer struct {
+	Compress bool
+}
+
+func (sf *TCPDialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	conn, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
 		return nil, err
 	}
-	if compress {
+	if sf.Compress {
 		conn = csnappy.New(conn)
 	}
 	return conn, nil
 }
 
-// DialTCPTLSTimeout dial tcp tls with timeout
-func DialTCPTLSTimeout(address string, cert, key, caCert []byte, timeout time.Duration) (*tls.Conn, error) {
-	conf, err := TLSConfig(cert, key, caCert)
+type TCPTlsDialer struct {
+	CaCert []byte
+	Cert   []byte
+	Key    []byte
+	Single bool
+}
+
+func (sf *TCPTlsDialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
+	var err error
+	var conf *tls.Config
+
+	if sf.Single {
+		conf, err = SingleTLSConfig(sf.CaCert)
+	} else {
+		conf, err = TLSConfig(sf.Cert, sf.Key, sf.CaCert)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -38,22 +54,14 @@ func DialTCPTLSTimeout(address string, cert, key, caCert []byte, timeout time.Du
 	return tls.Client(conn, conf), err
 }
 
-// DialTCPSingleTLSTimeout dial single tls with timeout
-func DialTCPSingleTLSTimeout(address string, caCertBytes []byte, timeout time.Duration) (*tls.Conn, error) {
-	conf, err := SingleTLSConfig(caCertBytes)
-	if err != nil {
-		return nil, err
-	}
-	conn, err := net.DialTimeout("tcp", address, timeout)
-	if err != nil {
-		return nil, err
-	}
-	return tls.Client(conn, conf), err
+type StcpDialer struct {
+	Method   string
+	Password string
+	Compress bool
 }
 
-// DialStcpTimeout dial tcps with timeout
-func DialStcpTimeout(address, method, password string, compress bool, timeout time.Duration) (net.Conn, error) {
-	cip, err := encrypt.NewCipher(method, password)
+func (sf *StcpDialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
+	cip, err := encrypt.NewCipher(sf.Method, sf.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +69,7 @@ func DialStcpTimeout(address, method, password string, compress bool, timeout ti
 	if err != nil {
 		return nil, err
 	}
-	if compress {
+	if sf.Compress {
 		conn = csnappy.New(conn)
 	}
 	return cencrypt.New(conn, cip), nil

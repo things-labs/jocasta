@@ -9,15 +9,17 @@ import (
 	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
-func TestAnyStcp(t *testing.T) {
+func TestStream_Stcp(t *testing.T) {
 	password := "pass_word"
 	want := []byte("1flkdfladnfadkfna;kdnga;kdnva;ldk;adkfpiehrqeiphr23r[ingkdnv;ifefqiefn")
 	for _, method := range encrypt.CipherMethods() {
 		for _, compress := range []bool{true, false} {
 			testFunc := func() {
-				cfg := Config{STCPMethod: method, STCPPassword: password, Compress: compress}
-				t.Logf("stcp method: %s compress: %t", method, compress)
-				s, err := ListenAndServeAny("stcp", ":", func(inconn net.Conn) {
+				config := Config{STCPMethod: method, STCPPassword: password, Compress: compress}
+				// t.Logf("stcp method: %s compress: %t", method, compress)
+
+				srv := Server{config}
+				s, err := srv.ListenAndServeAny("stcp", ":", func(inconn net.Conn) {
 					buf := make([]byte, 2048)
 					_, err := inconn.Read(buf)
 					if err != nil {
@@ -29,13 +31,14 @@ func TestAnyStcp(t *testing.T) {
 						t.Error(err)
 						return
 					}
-				}, cfg)
+				})
 				if err != nil {
 					t.Fatal(err)
 				}
 				defer s.Close()
 
-				cli, err := DialTimeout("stcp", s.Addr(), 5*time.Second, cfg)
+				d := Dialer{config}
+				cli, err := d.DialTimeout("stcp", s.Addr(), 5*time.Second)
 				if err != nil {
 					t.Fatal(err)
 				}

@@ -1,7 +1,6 @@
 package cs
 
 import (
-	"crypto/tls"
 	"net"
 	"testing"
 	"time"
@@ -36,7 +35,8 @@ func TestTCP(t *testing.T) {
 		defer s.Close()
 
 		// client
-		cli, err := DialTCPTimeout(s.Addr(), compress, 5*time.Second)
+		d := TCPDialer{compress}
+		cli, err := d.DialTimeout(s.Addr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 
@@ -123,12 +123,19 @@ func TestTcpTls(t *testing.T) {
 		defer s.Close()
 
 		// client
-		var cli *tls.Conn
-		if isSingle {
-			cli, err = DialTCPSingleTLSTimeout(s.Addr(), []byte(crt), 5*time.Second)
-		} else {
-			cli, err = DialTCPTLSTimeout(s.Addr(), []byte(crt), []byte(key), nil, 5*time.Second)
+		var cli net.Conn
+
+		d := TCPTlsDialer{
+			CaCert: []byte(crt),
+			Cert:   []byte(crt),
+			Key:    []byte(key),
+			Single: isSingle,
 		}
+		if !isSingle {
+			d.CaCert = nil
+		}
+
+		cli, err = d.DialTimeout(s.Addr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 
@@ -166,7 +173,8 @@ func TestSTCP(t *testing.T) {
 			require.NoError(t, err)
 			defer s.Close()
 
-			cli, err := DialStcpTimeout(s.Addr(), method, password, compress, 5*time.Second)
+			d := StcpDialer{method, password, compress}
+			cli, err := d.DialTimeout(s.Addr(), 5*time.Second)
 			require.NoError(t, err)
 			defer cli.Close()
 
@@ -206,7 +214,8 @@ func TestSSSSTCP(t *testing.T) {
 	defer s.Close()
 
 	p := func() {
-		cli, err := DialStcpTimeout(s.Addr(), method, password, compress, 5*time.Second)
+		d := StcpDialer{method, password, compress}
+		cli, err := d.DialTimeout(s.Addr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 

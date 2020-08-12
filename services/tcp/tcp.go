@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"strings"
 	"sync/atomic"
@@ -233,7 +232,6 @@ func (sf *TCP) proxyStream2Stream(inConn net.Conn) {
 
 	sf.userConns.Upsert(srcAddr, inConn, func(exist bool, valueInMap, newValue interface{}) interface{} {
 		if exist {
-			log.Println("exissfafdadlfkal;dfaldfk")
 			valueInMap.(net.Conn).Close()
 		}
 		return newValue
