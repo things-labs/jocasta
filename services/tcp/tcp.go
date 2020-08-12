@@ -73,7 +73,7 @@ type connItem struct {
 
 type TCP struct {
 	cfg     Config
-	channel cs.Channel
+	channel cs.Server
 	// parent type = "udp", udp -> udp绑定传输
 	// src地址对udp连接映射
 	// parent type != "udp", udp -> net.conn 其它的绑定传输
@@ -180,7 +180,7 @@ func (sf *TCP) Start() (err error) {
 		},
 		Handler: cs.HandlerFunc(sf.handler),
 	}
-	sf.channel, err = srv.ListenAndServe()
+	sf.channel, err = srv.RunListenAndServe()
 	if err != nil {
 		return err
 	}

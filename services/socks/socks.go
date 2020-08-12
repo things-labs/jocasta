@@ -111,7 +111,7 @@ type Config struct {
 
 type Socks struct {
 	cfg                   Config
-	channel               cs.Channel
+	channel               cs.Server
 	socks5Srv             *socks5.Server
 	filters               *filter.Filter
 	basicAuthCenter       *basicAuth.Center
@@ -368,7 +368,7 @@ func (sf *Socks) Start() (err error) {
 		Handler: cs.HandlerFunc(sf.handle),
 	}
 
-	sf.channel, err = srv.ListenAndServe()
+	sf.channel, err = srv.RunListenAndServe()
 	if err != nil {
 		return
 	}

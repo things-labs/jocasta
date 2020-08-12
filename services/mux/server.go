@@ -72,7 +72,7 @@ type UDPConnItem struct {
 type Server struct {
 	id       string
 	cfg      ServerConfig
-	channel  cs.Channel
+	channel  cs.Server
 	sessions *smux.Session
 	udpConns *connection.Manager // 本地udp地址 -> 远端连接 映射
 	mu       sync.Mutex

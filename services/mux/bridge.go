@@ -52,7 +52,7 @@ type BridgeConfig struct {
 
 type Bridge struct {
 	cfg         BridgeConfig
-	channel     cs.Channel
+	channel     cs.Server
 	clientConns *connection.Manager // sk 对 session映射
 	serverConns cmap.ConcurrentMap  // address 对 session映射
 	gPool       sword.GoPool
@@ -127,7 +127,7 @@ func (sf *Bridge) Start() (err error) {
 		},
 		Handler: cs.HandlerFunc(sf.handler),
 	}
-	sf.channel, err = srv.ListenAndServe()
+	sf.channel, err = srv.RunListenAndServe()
 	if err != nil {
 		return
 	}

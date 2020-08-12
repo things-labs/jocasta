@@ -115,7 +115,7 @@ type Config struct {
 
 type HTTP struct {
 	cfg             Config
-	channels        []cs.Channel
+	channels        []cs.Server
 	filters         *filter.Filter
 	basicAuthCenter *basicAuth.Center
 	lb              *lb.Group
@@ -134,7 +134,7 @@ var _ services.Service = (*HTTP)(nil)
 func New(log logger.Logger, cfg Config) *HTTP {
 	return &HTTP{
 		cfg:       cfg,
-		channels:  make([]cs.Channel, 0),
+		channels:  make([]cs.Server, 0),
 		userConns: cmap.New(),
 		log:       log,
 		gPool:     sword.GPool,
@@ -370,7 +370,7 @@ func (sf *HTTP) Start() (err error) {
 			Handler: cs.HandlerFunc(sf.handle),
 		}
 
-		sc, err := srv.ListenAndServe()
+		sc, err := srv.RunListenAndServe()
 		if err != nil {
 			return err
 		}

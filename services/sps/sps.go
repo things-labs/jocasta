@@ -102,7 +102,7 @@ type SPS struct {
 	cfg                   Config
 	domainResolver        *idns.Resolver
 	basicAuthCenter       *basicAuth.Center
-	serverChannels        []cs.Channel
+	serverChannels        []cs.Server
 	userConns             cmap.ConcurrentMap
 	localCipher           *shadowsocks.Cipher
 	parentCipher          *shadowsocks.Cipher
@@ -121,7 +121,7 @@ var _ services.Service = (*SPS)(nil)
 func New(log logger.Logger, cfg Config) *SPS {
 	return &SPS{
 		cfg:                   cfg,
-		serverChannels:        make([]cs.Channel, 0),
+		serverChannels:        make([]cs.Server, 0),
 		userConns:             cmap.New(),
 		udpRelatedPacketConns: cmap.New(),
 		parentAuthData:        &sync.Map{},
@@ -290,7 +290,7 @@ func (sf *SPS) Start() (err error) {
 	sf.log.Infof("use %s %s parent %v [ %s ]", sf.cfg.ParentType, sf.cfg.ParentServiceType, sf.cfg.Parent, strings.ToUpper(sf.cfg.LoadBalanceMethod))
 	for _, addr := range strings.Split(sf.cfg.Local, ",") {
 		if addr != "" {
-			var sc cs.Channel
+			var sc cs.Server
 
 			srv := ccs.Server{
 				Protocol: sf.cfg.LocalType,
@@ -308,7 +308,7 @@ func (sf *SPS) Start() (err error) {
 				Handler: cs.HandlerFunc(sf.handle),
 				GoPool:  sword.GPool,
 			}
-			sc, err = srv.ListenAndServe()
+			sc, err = srv.RunListenAndServe()
 			if err != nil {
 				return
 			}
