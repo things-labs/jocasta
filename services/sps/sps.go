@@ -292,8 +292,8 @@ func (sf *SPS) Start() (err error) {
 		if addr != "" {
 			var sc cs.Channel
 
-			sc, err = ccs.ListenAndServeAny(sf.cfg.LocalType, addr, sf.handle,
-				ccs.Config{
+			srv := ccs.Server{
+				Config: ccs.Config{
 					Cert:         sf.cfg.cert,
 					Key:          sf.cfg.key,
 					CaCert:       sf.cfg.caCert,
@@ -302,7 +302,10 @@ func (sf *SPS) Start() (err error) {
 					STCPPassword: sf.cfg.STCPPassword,
 					KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 					Compress:     sf.cfg.LocalCompress,
-				})
+				},
+				Handler: sf.handle,
+			}
+			sc, err = srv.ListenAndServe(sf.cfg.LocalType, addr)
 			if err != nil {
 				return
 			}

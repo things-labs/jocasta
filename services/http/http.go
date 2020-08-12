@@ -354,8 +354,9 @@ func (sf *HTTP) Start() (err error) {
 		if addr == "" {
 			continue
 		}
-		sc, err := ccs.ListenAndServeAny(sf.cfg.LocalType, addr, sf.handle,
-			ccs.Config{
+
+		srv := ccs.Server{
+			Config: ccs.Config{
 				Cert:         sf.cfg.cert,
 				Key:          sf.cfg.key,
 				CaCert:       sf.cfg.caCert,
@@ -363,7 +364,11 @@ func (sf *HTTP) Start() (err error) {
 				STCPMethod:   sf.cfg.STCPMethod,
 				STCPPassword: sf.cfg.STCPPassword,
 				Compress:     sf.cfg.LocalCompress,
-			})
+			},
+			Handler: sf.handle,
+		}
+
+		sc, err := srv.ListenAndServe(sf.cfg.LocalType, addr)
 		if err != nil {
 			return err
 		}

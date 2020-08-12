@@ -18,20 +18,21 @@ func TestStream_Stcp(t *testing.T) {
 				config := Config{STCPMethod: method, STCPPassword: password, Compress: compress}
 				// t.Logf("stcp method: %s compress: %t", method, compress)
 
-				srv := Server{config}
-				s, err := srv.ListenAndServeAny("stcp", ":", func(inconn net.Conn) {
-					buf := make([]byte, 2048)
-					_, err := inconn.Read(buf)
-					if err != nil {
-						t.Error(err)
-						return
-					}
-					_, err = inconn.Write(want)
-					if err != nil {
-						t.Error(err)
-						return
-					}
-				})
+				srv := Server{config,
+					func(inconn net.Conn) {
+						buf := make([]byte, 2048)
+						_, err := inconn.Read(buf)
+						if err != nil {
+							t.Error(err)
+							return
+						}
+						_, err = inconn.Write(want)
+						if err != nil {
+							t.Error(err)
+							return
+						}
+					}}
+				s, err := srv.ListenAndServe("stcp", ":")
 				if err != nil {
 					t.Fatal(err)
 				}

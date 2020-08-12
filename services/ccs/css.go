@@ -73,25 +73,26 @@ func (sf *Dialer) DialTimeout(protocol string, address string, timeout time.Dura
 
 type Server struct {
 	Config
+	Handler func(conn net.Conn)
 }
 
-func (sf *Server) New(protocol, address string, handler func(conn net.Conn)) (cs.Channel, error) {
+func (sf *Server) New(protocol, address string) (cs.Channel, error) {
 	switch protocol {
 	case "tcp":
-		return cs.NewTCP(address, sf.Compress, handler, cs.WithTCPGPool(sword.GPool))
+		return cs.NewTCP(address, sf.Compress, sf.Handler, cs.WithTCPGPool(sword.GPool))
 	case "tls":
-		return cs.NewTCPTLS(address, sf.Cert, sf.Key, sf.CaCert, false, handler, cs.WithTCPGPool(sword.GPool))
+		return cs.NewTCPTLS(address, sf.Cert, sf.Key, sf.CaCert, false, sf.Handler, cs.WithTCPGPool(sword.GPool))
 	case "stcp":
-		return cs.NewStcp(address, sf.STCPMethod, sf.STCPPassword, sf.Compress, handler, cs.WithTCPGPool(sword.GPool))
+		return cs.NewStcp(address, sf.STCPMethod, sf.STCPPassword, sf.Compress, sf.Handler, cs.WithTCPGPool(sword.GPool))
 	case "kcp":
-		return cs.NewKcp(address, sf.KcpConfig, handler, cs.WithKcpGPool(sword.GPool))
+		return cs.NewKcp(address, sf.KcpConfig, sf.Handler, cs.WithKcpGPool(sword.GPool))
 	default:
 		return nil, fmt.Errorf("not support protocol: %s", protocol)
 	}
 }
 
-func (sf *Server) ListenAndServeAny(protocol, address string, handler func(conn net.Conn)) (cs.Channel, error) {
-	channel, err := sf.New(protocol, address, handler)
+func (sf *Server) ListenAndServe(protocol, address string) (cs.Channel, error) {
+	channel, err := sf.New(protocol, address)
 	if err != nil {
 		return nil, err
 	}
@@ -106,11 +107,6 @@ func (sf *Server) ListenAndServeAny(protocol, address string, handler func(conn 
 		err = errors.New("waiting status timeout")
 	}
 	return channel, err
-}
-
-func ListenAndServeAny(protocol, address string, handler func(conn net.Conn), c Config) (cs.Channel, error) {
-	srv := Server{c}
-	return srv.ListenAndServeAny(protocol, address, handler)
 }
 
 func ListenAndServeUDP(address string, handler func(listen *net.UDPConn, message cs.Message)) (*cs.UDP, error) {

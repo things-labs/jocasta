@@ -166,8 +166,8 @@ func (sf *TCP) Start() (err error) {
 		return err
 	}
 
-	sf.channel, err = ccs.ListenAndServeAny(sf.cfg.LocalType, sf.cfg.Local, sf.handler,
-		ccs.Config{
+	srv := ccs.Server{
+		Config: ccs.Config{
 			Cert:         sf.cfg.cert,
 			Key:          sf.cfg.key,
 			CaCert:       sf.cfg.caCert,
@@ -175,7 +175,10 @@ func (sf *TCP) Start() (err error) {
 			STCPPassword: sf.cfg.STCPPassword,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.LocalCompress,
-		})
+		},
+		Handler: sf.handler,
+	}
+	sf.channel, err = srv.ListenAndServe(sf.cfg.LocalType, sf.cfg.Local)
 	if err != nil {
 		return err
 	}

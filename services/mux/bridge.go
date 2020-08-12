@@ -114,15 +114,18 @@ func (sf *Bridge) Start() (err error) {
 		return err
 	}
 
-	sf.channel, err = ccs.ListenAndServeAny(sf.cfg.LocalType, sf.cfg.Local, sf.handler,
-		ccs.Config{
+	srv := ccs.Server{
+		Config: ccs.Config{
 			Cert:         sf.cfg.cert,
 			Key:          sf.cfg.key,
 			STCPMethod:   sf.cfg.STCPMethod,
 			STCPPassword: sf.cfg.STCPPassword,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.Compress,
-		})
+		},
+		Handler: sf.handler,
+	}
+	sf.channel, err = srv.ListenAndServe(sf.cfg.LocalType, sf.cfg.Local)
 	if err != nil {
 		return
 	}
