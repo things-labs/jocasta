@@ -55,8 +55,7 @@ func TestKcp(t *testing.T) {
 		}
 		// start server
 		go func() { _ = srv.ListenAndServe() }()
-		err = <-srv.Status
-		require.NoError(t, err)
+		require.NoError(t, <-srv.Status)
 		defer srv.Close()
 
 		// client

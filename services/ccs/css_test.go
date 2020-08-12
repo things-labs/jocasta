@@ -43,7 +43,6 @@ func TestStream_Stcp(t *testing.T) {
 				require.NoError(t, err)
 				err = <-srv.Status()
 				require.NoError(t, err)
-
 				defer s.Close()
 
 				// client

@@ -14,9 +14,10 @@ import (
 func TestTCP(t *testing.T) {
 	for _, compress := range []bool{true, false} {
 		// t.Logf("tcp compress: %t", compress)
-		s := &TCPServer{
+		srv := &TCPServer{
 			Addr:     ":",
 			Compress: compress,
+			Status:   make(chan error, 1),
 			Handler: HandlerFunc(func(inconn net.Conn) {
 				buf := make([]byte, 2048)
 				_, err := inconn.Read(buf)
@@ -32,13 +33,14 @@ func TestTCP(t *testing.T) {
 
 		// server
 		go func() {
-			_ = s.ListenAndServe()
+			_ = srv.ListenAndServe()
 		}()
-		defer s.Close()
-		time.Sleep(100 * time.Millisecond)
+		require.NoError(t, <-srv.Status)
+		defer srv.Close()
+
 		// client
 		d := TCPDialer{compress}
-		cli, err := d.DialTimeout(s.LocalAddr(), 5*time.Second)
+		cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 
@@ -104,12 +106,13 @@ func TestTcpTls(t *testing.T) {
 	for _, isSingle := range []bool{true, false} {
 		// t.Logf("tcp tls single: %t", isSingle)
 
-		s := &TCPTlsServer{
+		srv := &TCPTlsServer{
 			Addr:   ":",
 			CaCert: nil,
 			Cert:   []byte(crt),
 			Key:    []byte(key),
 			Single: isSingle,
+			Status: make(chan error, 1),
 			Handler: HandlerFunc(func(inconn net.Conn) {
 				buf := make([]byte, 2048)
 				_, err := inconn.Read(buf)
@@ -125,10 +128,10 @@ func TestTcpTls(t *testing.T) {
 
 		//server
 		go func() {
-			_ = s.ListenAndServe()
+			_ = srv.ListenAndServe()
 		}()
-		defer s.Close()
-		time.Sleep(time.Millisecond)
+		require.NoError(t, <-srv.Status)
+		defer srv.Close()
 
 		// client
 		d := TCPTlsDialer{
@@ -141,7 +144,7 @@ func TestTcpTls(t *testing.T) {
 			d.CaCert = nil
 		}
 
-		cli, err := d.DialTimeout(s.LocalAddr(), 5*time.Second)
+		cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 
@@ -160,12 +163,12 @@ func TestSTCP(t *testing.T) {
 		for _, compress := range []bool{true, false} {
 			// t.Logf("stcp method: %s compress: %t", method, compress)
 
-			s := &StcpServer{
+			srv := &StcpServer{
 				Addr:     ":",
-				ln:       nil,
 				Method:   method,
 				Password: password,
 				Compress: compress,
+				Status:   make(chan error, 1),
 				Handler: HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 2048)
 					_, err := inconn.Read(buf)
@@ -180,15 +183,14 @@ func TestSTCP(t *testing.T) {
 			}
 
 			go func() {
-				_ = s.ListenAndServe()
+				_ = srv.ListenAndServe()
 			}()
 
-			defer s.Close()
-
-			time.Sleep(time.Millisecond)
+			require.NoError(t, <-srv.Status)
+			defer srv.Close()
 
 			d := StcpDialer{method, password, compress}
-			cli, err := d.DialTimeout(s.LocalAddr(), 5*time.Second)
+			cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
 			require.NoError(t, err)
 			defer cli.Close()
 
@@ -208,11 +210,12 @@ func TestSSSSTCP(t *testing.T) {
 	compress := false
 	want := []byte("1flkdfladnfadkfna;kdnga;kdnva;ldk;adkfpiehrqeiphr23r[ingkdnv;ifefqiefn")
 
-	s := StcpServer{
+	srv := StcpServer{
 		Addr:     ":",
 		Method:   method,
 		Password: password,
 		Compress: compress,
+		Status:   make(chan error, 1),
 		Handler: HandlerFunc(func(inconn net.Conn) {
 			buf := make([]byte, 2048)
 			n, err := inconn.Read(buf)
@@ -227,16 +230,14 @@ func TestSSSSTCP(t *testing.T) {
 	}
 	// server
 	go func() {
-		_ = s.ListenAndServe()
+		_ = srv.ListenAndServe()
 	}()
-
-	defer s.Close()
-
-	time.Sleep(time.Millisecond)
+	require.NoError(t, <-srv.Status)
+	defer srv.Close()
 
 	p := func() {
 		d := StcpDialer{method, password, compress}
-		cli, err := d.DialTimeout(s.LocalAddr(), 5*time.Second)
+		cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 

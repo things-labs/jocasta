@@ -170,6 +170,7 @@ func (sf *TCPTlsServer) ListenAndServe() error {
 	sf.mu.Lock()
 	sf.ln = ln
 	sf.mu.Unlock()
+	setStatus(sf.Status, nil)
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
