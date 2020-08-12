@@ -137,14 +137,15 @@ func (sf *UDP) Start() (err error) {
 		return
 	}
 
-	sf.channel, err = ccs.ListenAndServeUDP(sf.cfg.Local, sf.handle)
-	if err != nil {
-		return
+	sf.channel = &cs.UDP{
+		Addr:    sf.cfg.Local,
+		Handler: sf.handle,
+		GoPool:  sf.gPool,
 	}
 
 	sf.gPool.Go(func() { sf.conns.RunWatch(sf.ctx) })
 	sf.log.Infof("[ UDP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)
-	sf.log.Infof("[ UDP ] use proxy udp on %s", sf.channel.Addr())
+	sf.log.Infof("[ UDP ] use proxy udp on %s", sf.channel.LocalAddr())
 	return
 }
 

@@ -115,6 +115,8 @@ func (sf *Bridge) Start() (err error) {
 	}
 
 	srv := ccs.Server{
+		Protocol: sf.cfg.LocalType,
+		Addr:     sf.cfg.Local,
 		Config: ccs.Config{
 			Cert:         sf.cfg.cert,
 			Key:          sf.cfg.key,
@@ -123,14 +125,14 @@ func (sf *Bridge) Start() (err error) {
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.Compress,
 		},
-		Handler: sf.handler,
+		Handler: cs.HandlerFunc(sf.handler),
 	}
-	sf.channel, err = srv.ListenAndServe(sf.cfg.LocalType, sf.cfg.Local)
+	sf.channel, err = srv.ListenAndServe()
 	if err != nil {
 		return
 	}
 	sf.gPool.Go(func() { sf.clientConns.RunWatch(sf.ctx) })
-	sf.log.Infof("[ Bridge ] use bridge %s on %s", sf.cfg.LocalType, sf.channel.Addr())
+	sf.log.Infof("[ Bridge ] use bridge %s on %s", sf.cfg.LocalType, sf.channel.LocalAddr())
 	return
 }
 

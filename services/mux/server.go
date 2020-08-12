@@ -161,19 +161,29 @@ func (sf *Server) Start() (err error) {
 
 	if sf.cfg.IsUDP {
 		sf.cfg.remote = "udp:" + sf.cfg.remote
-		sf.channel, err = cs.NewUDP(sf.cfg.local, sf.handleUDP, cs.WithUDPGPool(sword.GPool))
+
+		sf.channel = &cs.UDP{
+			Addr:    sf.cfg.local,
+			UDPConn: nil,
+			Handler: sf.handleUDP,
+			GoPool:  sword.GPool,
+		}
 	} else {
 		sf.cfg.remote = "tcp:" + sf.cfg.remote
-		sf.channel, err = cs.NewTCP(sf.cfg.local, false, sf.handleTCP, cs.WithTCPGPool(sword.GPool))
+
+		sf.channel = &cs.TCPServer{
+			Addr:     sf.cfg.local,
+			Compress: false,
+			Handler:  cs.HandlerFunc(sf.handleTCP),
+			GoPool:   sword.GPool,
+		}
 	}
 	if err != nil {
 		return
 	}
-	sf.gPool.Go(func() { _ = sf.channel.ListenAndServe() })
+	sf.gPool.Go(func() { _ = sf.channel.ListenAndServe() }) // TODO: BUG
 
-	if err = <-sf.channel.Status(); err != nil {
-		return
-	}
+	time.Sleep(time.Millisecond * 100)
 
 	if sf.cfg.IsUDP {
 		sf.gPool.Go(func() {
@@ -181,7 +191,7 @@ func (sf *Server) Start() (err error) {
 		})
 	}
 	sf.log.Infof("use %s parent %s", sf.cfg.ParentType, sf.cfg.Parent)
-	sf.log.Infof("server on %s", sf.channel.Addr())
+	sf.log.Infof("server on %s", sf.channel.LocalAddr())
 	return
 }
 

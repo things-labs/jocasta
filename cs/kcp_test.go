@@ -36,30 +36,32 @@ func TestKcp(t *testing.T) {
 		config.Block, err = NewKcpBlockCryptWithPbkdf2(method, "key", "thinkgos-goproxy")
 		require.NoError(t, err)
 
-		s, err := NewKcp(":", config, func(inconn net.Conn) {
-			buf := make([]byte, 2048)
-			_, err := inconn.Read(buf)
-			if !assert.NoError(t, err) {
-				return
-			}
-			_, err = inconn.Write([]byte("okay"))
-			if !assert.NoError(t, err) {
-				return
-			}
-		})
-		require.NoError(t, err)
+		s := KCPServer{
+			Addr:   ":",
+			Config: config,
+			Handler: HandlerFunc(func(inconn net.Conn) {
+				buf := make([]byte, 2048)
+				_, err := inconn.Read(buf)
+				if !assert.NoError(t, err) {
+					return
+				}
+				_, err = inconn.Write([]byte("okay"))
+				if !assert.NoError(t, err) {
+					return
+				}
+			}),
+		}
+
 		// server
 		go func() {
 			_ = s.ListenAndServe()
 		}()
-		time.Sleep(time.Millisecond * 10)
-		err = <-s.Status()
-		require.NoError(t, err)
+		time.Sleep(time.Millisecond * 100)
 		defer s.Close()
 
 		// client
 		d := KCPDialer{config}
-		cli, err := d.DialTimeout(s.Addr(), time.Second)
+		cli, err := d.DialTimeout(s.LocalAddr(), time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 

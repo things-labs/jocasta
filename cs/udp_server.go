@@ -2,7 +2,7 @@ package cs
 
 import (
 	"net"
-	"runtime/debug"
+	"strconv"
 
 	"github.com/thinkgos/jocasta/lib/gpool"
 )
@@ -14,36 +14,28 @@ type Message struct {
 }
 
 type UDP struct {
-	common
+	Addr string
 	*net.UDPConn
 	Handler func(listen *net.UDPConn, message Message)
-	gPool   gpool.Pool
+	GoPool  gpool.Pool
 }
 
-func NewUDP(addr string, handler func(listen *net.UDPConn, message Message), opts ...UDPOption) (*UDP, error) {
-	c, err := newCommon(addr)
+func (sf *UDP) ListenAndServe() error {
+	h, port, err := net.SplitHostPort(sf.Addr)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	p := &UDP{
-		common:  c,
-		Handler: handler,
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		return err
 	}
-	for _, opt := range opts {
-		opt(p)
-	}
-	return p, nil
-}
 
-func (sf *UDP) ListenAndServe() (err error) {
-	addr := &net.UDPAddr{IP: net.ParseIP(sf.ip), Port: sf.port}
+	addr := &net.UDPAddr{IP: net.ParseIP(h), Port: p}
 	sf.UDPConn, err = net.ListenUDP("udp", addr)
 	if err != nil {
-		sf.status <- err
 		return err
 	}
 	defer sf.UDPConn.Close()
-	sf.status <- nil
 	for {
 		buf := make([]byte, 2048)
 		n, srcAddr, err := sf.UDPConn.ReadFromUDP(buf)
@@ -52,11 +44,6 @@ func (sf *UDP) ListenAndServe() (err error) {
 		}
 		data := buf[0:n]
 		sf.goFunc(func() {
-			defer func() {
-				if e := recover(); e != nil {
-					sf.log.Errorf("UDP handler crashed, %s , \ntrace: %s", e, string(debug.Stack()))
-				}
-			}()
 			sf.Handler(sf.UDPConn, Message{
 				LocalAddr: addr,
 				SrcAddr:   srcAddr,
@@ -73,7 +60,7 @@ func (sf *UDP) Close() (err error) {
 	return
 }
 
-func (sf *UDP) Addr() (addr string) {
+func (sf *UDP) LocalAddr() (addr string) {
 	if sf.UDPConn != nil {
 		addr = sf.UDPConn.LocalAddr().String()
 	}
@@ -81,21 +68,9 @@ func (sf *UDP) Addr() (addr string) {
 }
 
 func (sf *UDP) goFunc(f func()) {
-	if sf.gPool == nil {
-		sf.gPool.Go(f)
+	if sf.GoPool == nil {
+		sf.GoPool.Go(f)
 	} else {
 		go f()
-	}
-}
-
-// UDPOption udp option
-type UDPOption func(udp *UDP)
-
-// WithUDPGPool with gpool.Pool
-func WithUDPGPool(pool gpool.Pool) UDPOption {
-	return func(p *UDP) {
-		if pool != nil {
-			p.gPool = pool
-		}
 	}
 }

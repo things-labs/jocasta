@@ -14,29 +14,31 @@ import (
 func TestTCP(t *testing.T) {
 	for _, compress := range []bool{true, false} {
 		// t.Logf("tcp compress: %t", compress)
-		s, err := NewTCP(":", compress, func(inconn net.Conn) {
-			buf := make([]byte, 2048)
-			_, err := inconn.Read(buf)
-			if !assert.NoError(t, err) {
-				return
-			}
-			_, err = inconn.Write([]byte("okay"))
-			if !assert.NoError(t, err) {
-				return
-			}
-		})
-		require.NoError(t, err)
+		s := &TCPServer{
+			Addr:     ":",
+			Compress: compress,
+			Handler: HandlerFunc(func(inconn net.Conn) {
+				buf := make([]byte, 2048)
+				_, err := inconn.Read(buf)
+				if !assert.NoError(t, err) {
+					return
+				}
+				_, err = inconn.Write([]byte("okay"))
+				if !assert.NoError(t, err) {
+					return
+				}
+			}),
+		}
+
 		// server
 		go func() {
 			_ = s.ListenAndServe()
 		}()
-		err = <-s.Status()
-		require.NoError(t, err)
 		defer s.Close()
-
+		time.Sleep(100 * time.Millisecond)
 		// client
 		d := TCPDialer{compress}
-		cli, err := d.DialTimeout(s.Addr(), 5*time.Second)
+		cli, err := d.DialTimeout(s.LocalAddr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 
@@ -101,30 +103,34 @@ TL44tBTU3E0Bl+fyBSRkAXbVVTcYsxTeHsSuYm3pARTpKsw=
 func TestTcpTls(t *testing.T) {
 	for _, isSingle := range []bool{true, false} {
 		// t.Logf("tcp tls single: %t", isSingle)
-		s, err := NewTCPTLS(":", []byte(crt), []byte(key), nil, isSingle, func(inconn net.Conn) {
-			buf := make([]byte, 2048)
-			_, err := inconn.Read(buf)
-			if !assert.NoError(t, err) {
-				return
-			}
-			_, err = inconn.Write([]byte("okay"))
-			if !assert.NoError(t, err) {
-				return
-			}
-		})
-		require.NoError(t, err)
+
+		s := &TCPTlsServer{
+			Addr:   ":",
+			CaCert: nil,
+			Cert:   []byte(crt),
+			Key:    []byte(key),
+			Single: isSingle,
+			Handler: HandlerFunc(func(inconn net.Conn) {
+				buf := make([]byte, 2048)
+				_, err := inconn.Read(buf)
+				if !assert.NoError(t, err) {
+					return
+				}
+				_, err = inconn.Write([]byte("okay"))
+				if !assert.NoError(t, err) {
+					return
+				}
+			}),
+		}
+
 		//server
 		go func() {
 			_ = s.ListenAndServe()
 		}()
-
-		err = <-s.Status()
-		require.NoError(t, err)
 		defer s.Close()
+		time.Sleep(time.Millisecond)
 
 		// client
-		var cli net.Conn
-
 		d := TCPTlsDialer{
 			CaCert: []byte(crt),
 			Cert:   []byte(crt),
@@ -135,7 +141,7 @@ func TestTcpTls(t *testing.T) {
 			d.CaCert = nil
 		}
 
-		cli, err = d.DialTimeout(s.Addr(), 5*time.Second)
+		cli, err := d.DialTimeout(s.LocalAddr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 
@@ -153,28 +159,36 @@ func TestSTCP(t *testing.T) {
 	for _, method := range encrypt.CipherMethods() {
 		for _, compress := range []bool{true, false} {
 			// t.Logf("stcp method: %s compress: %t", method, compress)
-			s, err := NewStcp(":", method, password, compress, func(inconn net.Conn) {
-				buf := make([]byte, 2048)
-				_, err := inconn.Read(buf)
-				if !assert.NoError(t, err) {
-					return
-				}
-				_, err = inconn.Write([]byte("okay"))
-				if !assert.NoError(t, err) {
-					return
-				}
-			})
-			require.NoError(t, err)
+
+			s := &StcpServer{
+				Addr:     ":",
+				ln:       nil,
+				Method:   method,
+				Password: password,
+				Compress: compress,
+				Handler: HandlerFunc(func(inconn net.Conn) {
+					buf := make([]byte, 2048)
+					_, err := inconn.Read(buf)
+					if !assert.NoError(t, err) {
+						return
+					}
+					_, err = inconn.Write([]byte("okay"))
+					if !assert.NoError(t, err) {
+						return
+					}
+				}),
+			}
+
 			go func() {
 				_ = s.ListenAndServe()
 			}()
 
-			err = <-s.Status()
-			require.NoError(t, err)
 			defer s.Close()
 
+			time.Sleep(time.Millisecond)
+
 			d := StcpDialer{method, password, compress}
-			cli, err := d.DialTimeout(s.Addr(), 5*time.Second)
+			cli, err := d.DialTimeout(s.LocalAddr(), 5*time.Second)
 			require.NoError(t, err)
 			defer cli.Close()
 
@@ -193,29 +207,36 @@ func TestSSSSTCP(t *testing.T) {
 	method := "aes-192-cfb"
 	compress := false
 	want := []byte("1flkdfladnfadkfna;kdnga;kdnva;ldk;adkfpiehrqeiphr23r[ingkdnv;ifefqiefn")
-	s, err := NewStcp(":", method, password, compress, func(inconn net.Conn) {
-		buf := make([]byte, 2048)
-		n, err := inconn.Read(buf)
-		if !assert.NoError(t, err) {
-			return
-		}
-		_, err = inconn.Write(buf[:n])
-		if !assert.NoError(t, err) {
-			return
-		}
-	})
-	require.NoError(t, err)
+
+	s := StcpServer{
+		Addr:     ":",
+		Method:   method,
+		Password: password,
+		Compress: compress,
+		Handler: HandlerFunc(func(inconn net.Conn) {
+			buf := make([]byte, 2048)
+			n, err := inconn.Read(buf)
+			if !assert.NoError(t, err) {
+				return
+			}
+			_, err = inconn.Write(buf[:n])
+			if !assert.NoError(t, err) {
+				return
+			}
+		}),
+	}
 	// server
 	go func() {
 		_ = s.ListenAndServe()
 	}()
-	err = <-s.Status()
-	require.NoError(t, err)
+
 	defer s.Close()
+
+	time.Sleep(time.Millisecond)
 
 	p := func() {
 		d := StcpDialer{method, password, compress}
-		cli, err := d.DialTimeout(s.Addr(), 5*time.Second)
+		cli, err := d.DialTimeout(s.LocalAddr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 

@@ -356,6 +356,8 @@ func (sf *HTTP) Start() (err error) {
 		}
 
 		srv := ccs.Server{
+			Protocol: sf.cfg.LocalType,
+			Addr:     addr,
 			Config: ccs.Config{
 				Cert:         sf.cfg.cert,
 				Key:          sf.cfg.key,
@@ -365,15 +367,15 @@ func (sf *HTTP) Start() (err error) {
 				STCPPassword: sf.cfg.STCPPassword,
 				Compress:     sf.cfg.LocalCompress,
 			},
-			Handler: sf.handle,
+			Handler: cs.HandlerFunc(sf.handle),
 		}
 
-		sc, err := srv.ListenAndServe(sf.cfg.LocalType, addr)
+		sc, err := srv.ListenAndServe()
 		if err != nil {
 			return err
 		}
 		sf.channels = append(sf.channels, sc)
-		sf.log.Infof("use proxy %s on %s", sf.cfg.LocalType, sc.Addr())
+		sf.log.Infof("use proxy %s on %s", sf.cfg.LocalType, sc.LocalAddr())
 	}
 	if len(sf.cfg.Parent) > 0 {
 		sf.log.Infof("use parent %s < %v [ %s ] >", sf.cfg.ParentType, sf.cfg.Parent, strings.ToUpper(sf.cfg.LoadBalanceMethod))

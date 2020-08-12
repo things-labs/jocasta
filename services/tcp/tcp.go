@@ -167,6 +167,8 @@ func (sf *TCP) Start() (err error) {
 	}
 
 	srv := ccs.Server{
+		Protocol: sf.cfg.LocalType,
+		Addr:     sf.cfg.Local,
 		Config: ccs.Config{
 			Cert:         sf.cfg.cert,
 			Key:          sf.cfg.key,
@@ -176,9 +178,9 @@ func (sf *TCP) Start() (err error) {
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.LocalCompress,
 		},
-		Handler: sf.handler,
+		Handler: cs.HandlerFunc(sf.handler),
 	}
-	sf.channel, err = srv.ListenAndServe(sf.cfg.LocalType, sf.cfg.Local)
+	sf.channel, err = srv.ListenAndServe()
 	if err != nil {
 		return err
 	}
@@ -188,7 +190,7 @@ func (sf *TCP) Start() (err error) {
 	}
 
 	sf.log.Infof("[ TCP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)
-	sf.log.Infof("[ TCP ] use proxy %s on %s", sf.cfg.LocalType, sf.channel.Addr())
+	sf.log.Infof("[ TCP ] use proxy %s on %s", sf.cfg.LocalType, sf.channel.LocalAddr())
 	return nil
 }
 

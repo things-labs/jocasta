@@ -1,11 +1,13 @@
 package ccs
 
 import (
-	"bytes"
 	"net"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
@@ -17,9 +19,11 @@ func TestStream_Stcp(t *testing.T) {
 			testFunc := func() {
 				config := Config{STCPMethod: method, STCPPassword: password, Compress: compress}
 				// t.Logf("stcp method: %s compress: %t", method, compress)
-
-				srv := Server{config,
-					func(inconn net.Conn) {
+				srv := &Server{
+					Protocol: "stcp",
+					Addr:     ":",
+					Config:   config,
+					Handler: cs.HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 2048)
 						_, err := inconn.Read(buf)
 						if err != nil {
@@ -31,32 +35,26 @@ func TestStream_Stcp(t *testing.T) {
 							t.Error(err)
 							return
 						}
-					}}
-				s, err := srv.ListenAndServe("stcp", ":")
-				if err != nil {
-					t.Fatal(err)
+					}),
 				}
+				s, err := srv.ListenAndServe()
+				require.NoError(t, err)
+
 				defer s.Close()
 
+				time.Sleep(time.Millisecond * 100)
+
 				d := Dialer{config}
-				cli, err := d.DialTimeout("stcp", s.Addr(), 5*time.Second)
-				if err != nil {
-					t.Fatal(err)
-				}
+				cli, err := d.DialTimeout("stcp", s.LocalAddr(), 5*time.Second)
+				require.NoError(t, err)
 				defer cli.Close()
 
 				_, err = cli.Write(want)
-				if err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				b := make([]byte, 2048)
 				n, err := cli.Read(b)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if !bytes.Equal(b[:n], want) {
-					t.Fatalf("client revecive okay excepted,revecived : %s", string(b[:n]))
-				}
+				require.NoError(t, err)
+				require.Equal(t, want, b[:n])
 			}
 			testFunc()
 		}

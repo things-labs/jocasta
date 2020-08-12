@@ -1,10 +1,7 @@
 package cs
 
 import (
-	"fmt"
 	"net"
-	"runtime/debug"
-	"strconv"
 
 	"github.com/xtaci/kcp-go/v5"
 
@@ -12,55 +9,33 @@ import (
 	"github.com/thinkgos/jocasta/lib/gpool"
 )
 
-// KCP 传输,可选snappy压缩
-type KCP struct {
-	common
+// KCPServer 传输,可选snappy压缩
+type KCPServer struct {
+	Addr    string
 	l       net.Listener
-	cfg     KcpConfig
-	handler func(conn net.Conn)
-	gPool   gpool.Pool
+	Config  KcpConfig
+	Handler Handler
+	GoPool  gpool.Pool
 }
 
-func NewKcp(addr string, cfg KcpConfig, handler func(conn net.Conn), opts ...KcpOption) (*KCP, error) {
-	com, err := newCommon(addr)
+func (sf *KCPServer) ListenAndServe() error {
+	lis, err := kcp.ListenWithOptions(sf.Addr, sf.Config.Block, sf.Config.DataShard, sf.Config.ParityShard)
 	if err != nil {
-		return nil, err
-	}
-
-	k := &KCP{
-		common:  com,
-		cfg:     cfg,
-		handler: handler,
-	}
-	for _, opt := range opts {
-		opt(k)
-	}
-	return k, nil
-}
-
-func (sf *KCP) ListenAndServe() error {
-	lis, err := kcp.ListenWithOptions(net.JoinHostPort(sf.ip, strconv.Itoa(sf.port)), sf.cfg.Block, sf.cfg.DataShard, sf.cfg.ParityShard)
-	if err != nil {
-		sf.status <- err
 		return err
 	}
 	defer lis.Close()
 
-	if err = lis.SetDSCP(sf.cfg.DSCP); err != nil {
-		sf.status <- fmt.Errorf("SetDSCP %+v", err)
+	if err = lis.SetDSCP(sf.Config.DSCP); err != nil {
 		return err
 	}
-	if err = lis.SetReadBuffer(sf.cfg.SockBuf); err != nil {
-		sf.status <- fmt.Errorf("SetReadBuffer %+v", err)
+	if err = lis.SetReadBuffer(sf.Config.SockBuf); err != nil {
 		return err
 	}
-	if err = lis.SetWriteBuffer(sf.cfg.SockBuf); err != nil {
-		sf.status <- fmt.Errorf("SetWriteBuffer %+v", err)
+	if err = lis.SetWriteBuffer(sf.Config.SockBuf); err != nil {
 		return err
 	}
 
 	sf.l = lis
-	sf.status <- nil
 	for {
 		conn, err := lis.AcceptKCP()
 		if err != nil {
@@ -71,62 +46,42 @@ func (sf *KCP) ListenAndServe() error {
 
 			conn.SetStreamMode(true)
 			conn.SetWriteDelay(true)
-			conn.SetNoDelay(sf.cfg.NoDelay, sf.cfg.Interval, sf.cfg.Resend, sf.cfg.NoCongestion)
-			conn.SetMtu(sf.cfg.MTU)
-			conn.SetWindowSize(sf.cfg.SndWnd, sf.cfg.RcvWnd)
-			conn.SetACKNoDelay(sf.cfg.AckNodelay)
+			conn.SetNoDelay(sf.Config.NoDelay, sf.Config.Interval, sf.Config.Resend, sf.Config.NoCongestion)
+			conn.SetMtu(sf.Config.MTU)
+			conn.SetWindowSize(sf.Config.SndWnd, sf.Config.RcvWnd)
+			conn.SetACKNoDelay(sf.Config.AckNodelay)
 
-			if sf.cfg.NoComp {
+			if sf.Config.NoComp {
 				c = conn
 			} else {
 				c = csnappy.New(conn)
 			}
-			sf.handler(c)
+			sf.Handler.ServerConn(c)
 		})
 	}
 }
 
-// Close close kcp
-func (sf *KCP) Close() (err error) {
-	if sf.l != nil {
-		err = sf.l.Close()
-	}
-	return
-}
-
 // Addr return address
-func (sf *KCP) Addr() (addr string) {
+func (sf *KCPServer) LocalAddr() (addr string) {
 	if sf.l != nil {
 		addr = sf.l.Addr().String()
 	}
 	return
 }
 
-// 提交任务到协程
-func (sf *KCP) goFunc(f func()) {
-	fn := func() {
-		defer func() {
-			if err := recover(); err != nil {
-				sf.log.Errorf("kcp connection handler crashed, %s , \ntrace:%s", err, string(debug.Stack()))
-			}
-		}()
-		f()
+// Close close kcp
+func (sf *KCPServer) Close() (err error) {
+	if sf.l != nil {
+		err = sf.l.Close()
 	}
-	if sf.gPool != nil {
-		sf.gPool.Go(fn)
-	} else {
-		go fn()
-	}
+	return
 }
 
-// KcpOption kcp option for kcp
-type KcpOption func(*KCP)
-
-// WithKcpGPool with gpool.Pool
-func WithKcpGPool(pool gpool.Pool) KcpOption {
-	return func(k *KCP) {
-		if pool != nil {
-			k.gPool = pool
-		}
+// 提交任务到协程
+func (sf *KCPServer) goFunc(f func()) {
+	if sf.GoPool != nil {
+		sf.GoPool.Go(f)
+	} else {
+		go f()
 	}
 }

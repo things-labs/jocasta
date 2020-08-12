@@ -1,12 +1,12 @@
 package ccs
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"time"
 
 	"github.com/thinkgos/jocasta/cs"
+	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/pkg/sword"
 )
 
@@ -72,56 +72,55 @@ func (sf *Dialer) DialTimeout(protocol string, address string, timeout time.Dura
 }
 
 type Server struct {
+	Protocol string
+	Addr     string
 	Config
-	Handler func(conn net.Conn)
+	Handler cs.Handler
+	GoPool  gpool.Pool
 }
 
-func (sf *Server) New(protocol, address string) (cs.Channel, error) {
-	switch protocol {
+func (sf *Server) ListenAndServe() (cs.Channel, error) {
+	var srv cs.Channel
+
+	switch sf.Protocol {
 	case "tcp":
-		return cs.NewTCP(address, sf.Compress, sf.Handler, cs.WithTCPGPool(sword.GPool))
+		srv = &cs.TCPServer{
+			Addr:     sf.Addr,
+			Compress: sf.Compress,
+			Handler:  sf.Handler,
+			GoPool:   sf.GoPool,
+		}
 	case "tls":
-		return cs.NewTCPTLS(address, sf.Cert, sf.Key, sf.CaCert, false, sf.Handler, cs.WithTCPGPool(sword.GPool))
+		srv = &cs.TCPTlsServer{
+			Addr:    sf.Addr,
+			CaCert:  sf.CaCert,
+			Cert:    sf.Cert,
+			Key:     sf.Key,
+			Single:  false,
+			Handler: sf.Handler,
+			GoPool:  sf.GoPool,
+		}
 	case "stcp":
-		return cs.NewStcp(address, sf.STCPMethod, sf.STCPPassword, sf.Compress, sf.Handler, cs.WithTCPGPool(sword.GPool))
+		srv = &cs.StcpServer{
+			Addr:     sf.Addr,
+			Method:   sf.STCPMethod,
+			Password: sf.STCPPassword,
+			Compress: sf.Compress,
+			Handler:  sf.Handler,
+			GoPool:   sf.GoPool,
+		}
 	case "kcp":
-		return cs.NewKcp(address, sf.KcpConfig, sf.Handler, cs.WithKcpGPool(sword.GPool))
+		srv = &cs.KCPServer{
+			Addr:    sf.Addr,
+			Config:  sf.KcpConfig,
+			Handler: sf.Handler,
+			GoPool:  sf.GoPool,
+		}
 	default:
-		return nil, fmt.Errorf("not support protocol: %s", protocol)
-	}
-}
-
-func (sf *Server) ListenAndServe(protocol, address string) (cs.Channel, error) {
-	channel, err := sf.New(protocol, address)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("not support protocol: %s", sf.Protocol)
 	}
 
-	sword.Go(func() { _ = channel.ListenAndServe() })
+	sword.Go(func() { _ = srv.ListenAndServe() })
 
-	t := time.NewTimer(time.Second)
-	defer t.Stop()
-	select {
-	case err = <-channel.Status():
-	case <-t.C:
-		err = errors.New("waiting status timeout")
-	}
-	return channel, err
-}
-
-func ListenAndServeUDP(address string, handler func(listen *net.UDPConn, message cs.Message)) (*cs.UDP, error) {
-	channel, err := cs.NewUDP(address, handler, cs.WithUDPGPool(sword.GPool))
-	if err != nil {
-		return nil, err
-	}
-	sword.Go(func() { _ = channel.ListenAndServe() })
-
-	t := time.NewTimer(time.Second)
-	defer t.Stop()
-	select {
-	case err = <-channel.Status():
-	case <-t.C:
-		err = errors.New("waiting status timeout")
-	}
-	return channel, err
+	return srv, nil
 }

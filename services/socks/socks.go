@@ -354,6 +354,8 @@ func (sf *Socks) Start() (err error) {
 	sf.socks5Srv = socks5.NewServer(opts...)
 
 	srv := ccs.Server{
+		Protocol: sf.cfg.LocalType,
+		Addr:     sf.cfg.Local,
 		Config: ccs.Config{
 			Cert:         sf.cfg.cert,
 			Key:          sf.cfg.key,
@@ -363,10 +365,10 @@ func (sf *Socks) Start() (err error) {
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.LocalCompress,
 		},
-		Handler: sf.handle,
+		Handler: cs.HandlerFunc(sf.handle),
 	}
 
-	sf.channel, err = srv.ListenAndServe(sf.cfg.LocalType, sf.cfg.Local)
+	sf.channel, err = srv.ListenAndServe()
 	if err != nil {
 		return
 	}
@@ -374,7 +376,7 @@ func (sf *Socks) Start() (err error) {
 	if len(sf.cfg.Parent) > 0 {
 		sf.log.Infof("[ Socks ] use parent %s < %v [ %s ] >", sf.cfg.ParentType, sf.cfg.Parent, strings.ToUpper(sf.cfg.LoadBalanceMethod))
 	}
-	sf.log.Infof("[ Socks ] use proxy %s on %s", sf.cfg.LocalType, sf.channel.Addr())
+	sf.log.Infof("[ Socks ] use proxy %s on %s", sf.cfg.LocalType, sf.channel.LocalAddr())
 	return
 }
 

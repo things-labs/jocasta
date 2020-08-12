@@ -293,6 +293,8 @@ func (sf *SPS) Start() (err error) {
 			var sc cs.Channel
 
 			srv := ccs.Server{
+				Protocol: sf.cfg.LocalType,
+				Addr:     addr,
 				Config: ccs.Config{
 					Cert:         sf.cfg.cert,
 					Key:          sf.cfg.key,
@@ -303,9 +305,10 @@ func (sf *SPS) Start() (err error) {
 					KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 					Compress:     sf.cfg.LocalCompress,
 				},
-				Handler: sf.handle,
+				Handler: cs.HandlerFunc(sf.handle),
+				GoPool:  sword.GPool,
 			}
-			sc, err = srv.ListenAndServe(sf.cfg.LocalType, addr)
+			sc, err = srv.ListenAndServe()
 			if err != nil {
 				return
 			}
@@ -318,7 +321,7 @@ func (sf *SPS) Start() (err error) {
 			if err != nil {
 				return
 			}
-			sf.log.Infof("%s http(s)+socks+ss proxy on %s", sf.cfg.LocalType, sc.Addr())
+			sf.log.Infof("%s http(s)+socks+ss proxy on %s", sf.cfg.LocalType, sc.LocalAddr())
 		}
 	}
 	return

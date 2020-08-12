@@ -4,7 +4,6 @@ import "io"
 
 type Channel interface {
 	io.Closer
-	Addr() string
-	Status() <-chan error
+	LocalAddr() string
 	ListenAndServe() error
 }
