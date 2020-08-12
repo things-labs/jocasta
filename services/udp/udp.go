@@ -315,17 +315,17 @@ func (sf *UDP) proxyUdp2Udp(_ *net.UDPConn, msg cs.Message) {
 	}
 }
 
-func (sf *UDP) dialParent(address string) (conn net.Conn, err error) {
-	return ccs.DialTimeout(sf.cfg.ParentType, address, sf.cfg.Timeout,
-		ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			CaCert:       sf.cfg.caCert,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
-			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			Compress:     sf.cfg.ParentCompress,
-		})
+func (sf *UDP) dialParent(address string) (net.Conn, error) {
+	d := ccs.Dialer{Config: ccs.Config{
+		Cert:         sf.cfg.cert,
+		Key:          sf.cfg.key,
+		CaCert:       sf.cfg.caCert,
+		STCPMethod:   sf.cfg.STCPMethod,
+		STCPPassword: sf.cfg.STCPPassword,
+		KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
+		Compress:     sf.cfg.ParentCompress,
+	}}
+	return d.DialTimeout(sf.cfg.ParentType, address, sf.cfg.Timeout)
 }
 
 // 解析domain

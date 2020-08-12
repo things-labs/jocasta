@@ -563,17 +563,17 @@ func (sf *HTTP) resolve(address string) string {
 func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 	switch sf.cfg.ParentType {
 	case "tcp", "tls", "stcp", "kcp":
-		outConn, err = ccs.DialTimeout(sf.cfg.ParentType, address, sf.cfg.Timeout,
-			ccs.Config{
-				Cert:         sf.cfg.cert,
-				Key:          sf.cfg.key,
-				CaCert:       sf.cfg.caCert,
-				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-				STCPMethod:   sf.cfg.STCPMethod,
-				STCPPassword: sf.cfg.STCPPassword,
-				Compress:     sf.cfg.ParentCompress,
-				Jumper:       sf.jumper,
-			})
+		d := ccs.Dialer{Config: ccs.Config{
+			Cert:         sf.cfg.cert,
+			Key:          sf.cfg.key,
+			CaCert:       sf.cfg.caCert,
+			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
+			STCPMethod:   sf.cfg.STCPMethod,
+			STCPPassword: sf.cfg.STCPPassword,
+			Compress:     sf.cfg.ParentCompress,
+			Jumper:       sf.jumper,
+		}}
+		outConn, err = d.DialTimeout(sf.cfg.ParentType, address, sf.cfg.Timeout)
 	case "ssh":
 		t := time.NewTimer(sf.cfg.Timeout * 2)
 		defer t.Stop()

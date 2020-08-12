@@ -288,16 +288,16 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 }
 
 func (sf *Server) dialParent() (net.Conn, error) {
-	return ccs.DialTimeout(sf.cfg.ParentType, sf.cfg.Parent, sf.cfg.Timeout,
-		ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
-			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			Compress:     sf.cfg.Compress,
-			Jumper:       sf.jumper,
-		})
+	d := ccs.Dialer{Config: ccs.Config{
+		Cert:         sf.cfg.cert,
+		Key:          sf.cfg.key,
+		STCPMethod:   sf.cfg.STCPMethod,
+		STCPPassword: sf.cfg.STCPPassword,
+		KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
+		Compress:     sf.cfg.Compress,
+		Jumper:       sf.jumper,
+	}}
+	return d.DialTimeout(sf.cfg.ParentType, sf.cfg.Parent, sf.cfg.Timeout)
 }
 
 func (sf *Server) runUDPReceive(key, id string) {

@@ -663,19 +663,18 @@ func (sf *SPS) resolve(address string) string {
 	return address
 }
 
-func (sf *SPS) dialParent(address string) (conn net.Conn, err error) {
-	conn, err = ccs.DialTimeout(sf.cfg.ParentType, address, sf.cfg.Timeout,
-		ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			CaCert:       sf.cfg.caCert,
-			SingleTls:    sf.cfg.ParentTLSSingle,
-			STCPMethod:   "",
-			STCPPassword: "",
-			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			Compress:     sf.cfg.ParentCompress,
-			Jumper:       sf.jumper,
-		})
+func (sf *SPS) dialParent(address string) (net.Conn, error) {
+	d := ccs.Dialer{Config: ccs.Config{
+		Cert:         sf.cfg.cert,
+		Key:          sf.cfg.key,
+		CaCert:       sf.cfg.caCert,
+		KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
+		STCPMethod:   sf.cfg.STCPMethod,
+		STCPPassword: sf.cfg.STCPPassword,
+		Compress:     sf.cfg.ParentCompress,
+		Jumper:       sf.jumper,
+	}}
+	conn, err := d.DialTimeout(sf.cfg.ParentType, address, sf.cfg.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -683,7 +682,7 @@ func (sf *SPS) dialParent(address string) (conn net.Conn, err error) {
 	if sf.cfg.ParentKey != "" {
 		conn = ccrypt.New(conn, ccrypt.Config{Password: sf.cfg.ParentKey})
 	}
-	return
+	return conn, nil
 }
 func (sf *SPS) HandshakeSocksParent(parentAuth string, outconn net.Conn, network, dstAddr string, auth proxy.Auth, fromSS bool) (client *socks5.Client, err error) {
 	var realAuth *proxy.Auth

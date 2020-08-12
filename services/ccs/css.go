@@ -71,11 +71,6 @@ func (sf *Dialer) DialTimeout(protocol string, address string, timeout time.Dura
 	return dialer.DialTimeout(address, timeout)
 }
 
-func DialTimeout(protocol, address string, timeout time.Duration, c Config) (net.Conn, error) {
-	d := Dialer{c}
-	return d.DialTimeout(protocol, address, timeout)
-}
-
 type Server struct {
 	Config
 }
@@ -111,12 +106,6 @@ func (sf *Server) ListenAndServeAny(protocol, address string, handler func(conn 
 		err = errors.New("waiting status timeout")
 	}
 	return channel, err
-}
-
-// not support udp
-func NewAny(protocol, address string, handler func(conn net.Conn), c Config) (cs.Channel, error) {
-	srv := Server{c}
-	return srv.New(protocol, address, handler)
 }
 
 func ListenAndServeAny(protocol, address string, handler func(conn net.Conn), c Config) (cs.Channel, error) {
