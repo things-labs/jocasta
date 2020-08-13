@@ -15,72 +15,69 @@ func TestKcp(t *testing.T) {
 	require.True(t, HasKcpBlockCrypt("blowfish"))
 	_, err := NewKcpBlockCrypt("invalidMethod", key)
 	require.Error(t, err)
-
 	_, err = NewKcpBlockCrypt("blowfish", key[:8])
 	require.Error(t, err)
 
-	fun := func(method string, compress bool) {
-		var err error
-
-		config := KcpConfig{
-			MTU:          1400,
-			SndWnd:       32,
-			RcvWnd:       32,
-			DataShard:    10,
-			ParityShard:  3,
-			DSCP:         0,
-			NoComp:       compress,
-			AckNodelay:   true,
-			NoDelay:      1,
-			Interval:     10,
-			Resend:       2,
-			NoCongestion: 1,
-			SockBuf:      4194304,
-			KeepAlive:    10,
-		}
-		config.Block, err = NewKcpBlockCryptWithPbkdf2(method, "key", "thinkgos-jocasta")
-		require.NoError(t, err)
-
-		// server
-		srv := &KCPServer{
-			Addr:   ":",
-			Config: config,
-			Status: make(chan error, 1),
-			Handler: HandlerFunc(func(inconn net.Conn) {
-				buf := make([]byte, 2048)
-				_, err := inconn.Read(buf)
-				if !assert.NoError(t, err) {
-					return
-				}
-				_, err = inconn.Write([]byte("okay"))
-				if !assert.NoError(t, err) {
-					return
-				}
-			}),
-		}
-		// start server
-		go func() { _ = srv.ListenAndServe() }()
-		require.NoError(t, <-srv.Status)
-		defer srv.Close()
-
-		// client
-		d := &KCPDialer{config}
-		cli, err := d.DialTimeout(srv.LocalAddr(), time.Second)
-		require.NoError(t, err)
-		defer cli.Close()
-
-		_, err = cli.Write([]byte("test"))
-		require.NoError(t, err)
-
-		b := make([]byte, 20)
-		n, err := cli.Read(b)
-		require.NoError(t, err)
-		require.Equal(t, "okay", string(b[:n]))
-	}
-
 	for _, method := range KcpBlockCryptMethods() {
 		for _, compress := range []bool{true, false} {
-			fun(method, compress)
+			func() {
+				var err error
+
+				config := KcpConfig{
+					MTU:          1400,
+					SndWnd:       32,
+					RcvWnd:       32,
+					DataShard:    10,
+					ParityShard:  3,
+					DSCP:         0,
+					NoComp:       compress,
+					AckNodelay:   true,
+					NoDelay:      1,
+					Interval:     10,
+					Resend:       2,
+					NoCongestion: 1,
+					SockBuf:      4194304,
+					KeepAlive:    10,
+				}
+				config.Block, err = NewKcpBlockCryptWithPbkdf2(method, "key", "thinkgos-jocasta")
+				require.NoError(t, err)
+
+				// server
+				srv := &KCPServer{
+					Addr:   ":",
+					Config: config,
+					Status: make(chan error, 1),
+					Handler: HandlerFunc(func(inconn net.Conn) {
+						buf := make([]byte, 2048)
+						_, err := inconn.Read(buf)
+						if !assert.NoError(t, err) {
+							return
+						}
+						_, err = inconn.Write([]byte("okay"))
+						if !assert.NoError(t, err) {
+							return
+						}
+					}),
+				}
+				// start server
+				go func() { _ = srv.ListenAndServe() }()
+				require.NoError(t, <-srv.Status)
+				defer srv.Close()
+
+				// client
+				d := &KCPDialer{config}
+				cli, err := d.DialTimeout(srv.LocalAddr(), time.Second)
+				require.NoError(t, err)
+				defer cli.Close()
+
+				_, err = cli.Write([]byte("test"))
+				require.NoError(t, err)
+
+				b := make([]byte, 20)
+				n, err := cli.Read(b)
+				require.NoError(t, err)
+				require.Equal(t, "okay", string(b[:n]))
+			}()
 		}
 	}
 }

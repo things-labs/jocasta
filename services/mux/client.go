@@ -386,14 +386,17 @@ func (sf *Client) runUdpReceive(key, id string) {
 }
 
 func (sf *Client) dialParent(address string) (net.Conn, error) {
-	d := ccs.Dialer{Config: ccs.Config{
-		Cert:         sf.cfg.cert,
-		Key:          sf.cfg.key,
-		STCPMethod:   sf.cfg.STCPMethod,
-		STCPPassword: sf.cfg.STCPPassword,
-		KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-		Compress:     sf.cfg.Compress,
-		Jumper:       sf.jumper,
-	}}
-	return d.DialTimeout(sf.cfg.ParentType, address, sf.cfg.Timeout)
+	d := ccs.Dialer{
+		Protocol: sf.cfg.ParentType,
+		Config: ccs.Config{
+			Cert:         sf.cfg.cert,
+			Key:          sf.cfg.key,
+			STCPMethod:   sf.cfg.STCPMethod,
+			STCPPassword: sf.cfg.STCPPassword,
+			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
+			Compress:     sf.cfg.Compress,
+			Jumper:       sf.jumper,
+		},
+	}
+	return d.DialTimeout(address, sf.cfg.Timeout)
 }

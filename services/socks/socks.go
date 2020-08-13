@@ -585,16 +585,19 @@ func (sf *Socks) resolve(address string) string {
 func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
 	switch sf.cfg.ParentType {
 	case "tcp", "tls", "stcp", "kcp":
-		d := ccs.Dialer{Config: ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			CaCert:       sf.cfg.caCert,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
-			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			Compress:     sf.cfg.ParentCompress,
-		}}
-		outConn, err = d.DialTimeout(sf.cfg.ParentType, targetAddr, sf.cfg.Timeout)
+		d := ccs.Dialer{
+			Protocol: sf.cfg.ParentType,
+			Config: ccs.Config{
+				Cert:         sf.cfg.cert,
+				Key:          sf.cfg.key,
+				CaCert:       sf.cfg.caCert,
+				STCPMethod:   sf.cfg.STCPMethod,
+				STCPPassword: sf.cfg.STCPPassword,
+				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
+				Compress:     sf.cfg.ParentCompress,
+			},
+		}
+		outConn, err = d.DialTimeout(targetAddr, sf.cfg.Timeout)
 	case "ssh":
 		t := time.NewTimer(sf.cfg.Timeout * 2)
 		defer t.Stop()

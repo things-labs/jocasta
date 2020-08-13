@@ -19,8 +19,8 @@ func Test_InvalidProtocol(t *testing.T) {
 	require.Error(t, <-errChan)
 
 	// client
-	d := &Dialer{}
-	_, err := d.DialTimeout("invalid", ":", time.Second)
+	d := &Dialer{Protocol: "invalid"}
+	_, err := d.DialTimeout(":", time.Second)
 	require.Error(t, err)
 }
 
@@ -51,8 +51,8 @@ func Test_TCP(t *testing.T) {
 		defer channel.Close()
 
 		// client
-		d := &Dialer{Config{Compress: compress}}
-		cli, err := d.DialTimeout("tcp", channel.LocalAddr(), 5*time.Second)
+		d := &Dialer{"tcp", Config{Compress: compress}}
+		cli, err := d.DialTimeout(channel.LocalAddr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 
@@ -97,8 +97,8 @@ func Test_Stcp(t *testing.T) {
 				defer s.Close()
 
 				// client
-				d := &Dialer{config}
-				cli, err := d.DialTimeout("stcp", s.LocalAddr(), 5*time.Second)
+				d := &Dialer{"stcp", config}
+				cli, err := d.DialTimeout(s.LocalAddr(), 5*time.Second)
 				require.NoError(t, err)
 				defer cli.Close()
 
@@ -193,7 +193,8 @@ func TestTcpTls(t *testing.T) {
 
 		// client
 		d := &Dialer{
-			Config: Config{
+			"tls",
+			Config{
 				CaCert:    []byte(crt),
 				Cert:      []byte(crt),
 				Key:       []byte(key),
@@ -204,7 +205,7 @@ func TestTcpTls(t *testing.T) {
 			d.CaCert = nil
 		}
 
-		cli, err := d.DialTimeout("tls", channel.LocalAddr(), 5*time.Second)
+		cli, err := d.DialTimeout(channel.LocalAddr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 
@@ -214,5 +215,70 @@ func TestTcpTls(t *testing.T) {
 		n, err := cli.Read(b)
 		require.NoError(t, err)
 		require.Equal(t, "okay", string(b[:n]))
+	}
+}
+
+func TestKcp(t *testing.T) {
+	for _, method := range cs.KcpBlockCryptMethods() {
+		for _, compress := range []bool{true, false} {
+			func() {
+				var err error
+
+				config := cs.KcpConfig{
+					MTU:          1400,
+					SndWnd:       32,
+					RcvWnd:       32,
+					DataShard:    10,
+					ParityShard:  3,
+					DSCP:         0,
+					NoComp:       compress,
+					AckNodelay:   true,
+					NoDelay:      1,
+					Interval:     10,
+					Resend:       2,
+					NoCongestion: 1,
+					SockBuf:      4194304,
+					KeepAlive:    10,
+				}
+				config.Block, err = cs.NewKcpBlockCryptWithPbkdf2(method, "key", "thinkgos-jocasta")
+				require.NoError(t, err)
+
+				// server
+				srv := &Server{
+					Protocol: "kcp",
+					Addr:     ":",
+					Config:   Config{KcpConfig: config},
+					status:   make(chan error, 1),
+					Handler: cs.HandlerFunc(func(inconn net.Conn) {
+						buf := make([]byte, 2048)
+						_, err := inconn.Read(buf)
+						if !assert.NoError(t, err) {
+							return
+						}
+						_, err = inconn.Write([]byte("okay"))
+						if !assert.NoError(t, err) {
+							return
+						}
+					}),
+				}
+				channel, errChan := srv.RunListenAndServe()
+				require.NoError(t, <-errChan)
+				defer channel.Close()
+
+				// client
+				d := &Dialer{"kcp", Config{KcpConfig: config}}
+				cli, err := d.DialTimeout(channel.LocalAddr(), time.Second)
+				require.NoError(t, err)
+				defer cli.Close()
+
+				_, err = cli.Write([]byte("test"))
+				require.NoError(t, err)
+
+				b := make([]byte, 20)
+				n, err := cli.Read(b)
+				require.NoError(t, err)
+				require.Equal(t, "okay", string(b[:n]))
+			}()
+		}
 	}
 }

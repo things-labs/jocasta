@@ -29,14 +29,15 @@ type Config struct {
 
 // Dialer Client dialer
 type Dialer struct {
+	Protocol string
 	Config
 }
 
 /// DialTimeout dial tthe remote server
-func (sf *Dialer) DialTimeout(protocol string, address string, timeout time.Duration) (net.Conn, error) {
+func (sf *Dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	var dialer cs.Dialer
 
-	switch protocol {
+	switch sf.Protocol {
 	case "tcp":
 		if sf.Jumper != nil {
 			dialer = &cs.JumperTCP{Jumper: sf.Jumper}
@@ -68,7 +69,7 @@ func (sf *Dialer) DialTimeout(protocol string, address string, timeout time.Dura
 	case "kcp":
 		dialer = &cs.KCPDialer{Config: sf.KcpConfig}
 	default:
-		return nil, fmt.Errorf("protocol support one of <tcp|tls|stcp|kcp> but give %s", protocol)
+		return nil, fmt.Errorf("protocol support one of <tcp|tls|stcp|kcp> but give %s", sf.Protocol)
 	}
 	return dialer.DialTimeout(address, timeout)
 }

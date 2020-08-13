@@ -669,17 +669,20 @@ func (sf *SPS) resolve(address string) string {
 }
 
 func (sf *SPS) dialParent(address string) (net.Conn, error) {
-	d := ccs.Dialer{Config: ccs.Config{
-		Cert:         sf.cfg.cert,
-		Key:          sf.cfg.key,
-		CaCert:       sf.cfg.caCert,
-		KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-		STCPMethod:   sf.cfg.STCPMethod,
-		STCPPassword: sf.cfg.STCPPassword,
-		Compress:     sf.cfg.ParentCompress,
-		Jumper:       sf.jumper,
-	}}
-	conn, err := d.DialTimeout(sf.cfg.ParentType, address, sf.cfg.Timeout)
+	d := ccs.Dialer{
+		Protocol: sf.cfg.ParentType,
+		Config: ccs.Config{
+			Cert:         sf.cfg.cert,
+			Key:          sf.cfg.key,
+			CaCert:       sf.cfg.caCert,
+			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
+			STCPMethod:   sf.cfg.STCPMethod,
+			STCPPassword: sf.cfg.STCPPassword,
+			Compress:     sf.cfg.ParentCompress,
+			Jumper:       sf.jumper,
+		},
+	}
+	conn, err := d.DialTimeout(address, sf.cfg.Timeout)
 	if err != nil {
 		return nil, err
 	}
