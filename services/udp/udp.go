@@ -60,7 +60,7 @@ type connItem struct {
 
 type UDP struct {
 	cfg     Config
-	channel *cs.UDP
+	channel *cs.UDPServer
 	// parent type = "udp", udp -> udp绑定传输
 	// src地址对udp连接映射
 	// parent type != "udp", udp -> 其它的绑定传输
@@ -136,11 +136,17 @@ func (sf *UDP) Start() (err error) {
 		return
 	}
 
-	sf.channel = &cs.UDP{
+	channel := &cs.UDPServer{
 		Addr:    sf.cfg.Local,
+		Status:  make(chan error, 1),
 		Handler: sf.handle,
 		GoPool:  sf.gPool,
 	}
+	go channel.ListenAndServe()
+	if err = <-channel.Status; err != nil {
+		return err
+	}
+	sf.channel = channel
 
 	sf.gPool.Go(func() { sf.conns.RunWatch(sf.ctx) })
 	sf.log.Infof("[ UDP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)

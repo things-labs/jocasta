@@ -158,14 +158,15 @@ func (sf *Server) Start() (err error) {
 		return
 	}
 
+	status := make(chan error, 1)
 	if sf.cfg.IsUDP {
 		sf.cfg.remote = "udp:" + sf.cfg.remote
 
-		sf.channel = &cs.UDP{
+		sf.channel = &cs.UDPServer{
 			Addr:    sf.cfg.local,
-			UDPConn: nil,
-			Handler: sf.handleUDP,
+			Status:  status,
 			GoPool:  sword.GPool,
+			Handler: sf.handleUDP,
 		}
 	} else {
 		sf.cfg.remote = "tcp:" + sf.cfg.remote
@@ -173,14 +174,16 @@ func (sf *Server) Start() (err error) {
 		sf.channel = &cs.TCPServer{
 			Addr:     sf.cfg.local,
 			Compress: false,
-			Handler:  cs.HandlerFunc(sf.handleTCP),
+			Status:   status,
 			GoPool:   sword.GPool,
+			Handler:  cs.HandlerFunc(sf.handleTCP),
 		}
 	}
-	if err != nil {
+	sf.gPool.Go(func() { _ = sf.channel.ListenAndServe() })
+
+	if err = <-status; err != nil {
 		return
 	}
-	sf.gPool.Go(func() { _ = sf.channel.ListenAndServe() }) // TODO: BUG
 
 	time.Sleep(time.Millisecond * 100)
 
@@ -341,7 +344,7 @@ func (sf *Server) runUDPReceive(key, id string) {
 		}
 		atomic.StoreInt64(&udpConnItem.lastActiveTime, time.Now().Unix())
 		sf.gPool.Go(func() {
-			sf.channel.(*cs.UDP).WriteToUDP(da.Data, udpConnItem.srcAddr)
+			sf.channel.(*cs.UDPServer).WriteToUDP(da.Data, udpConnItem.srcAddr)
 		})
 	}
 }
