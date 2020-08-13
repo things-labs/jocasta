@@ -22,6 +22,7 @@ type KCPServer struct {
 	ln      net.Listener
 }
 
+// ListenAndServe listen and server
 func (sf *KCPServer) ListenAndServe() error {
 	ln, err := kcp.ListenWithOptions(sf.Addr, sf.Config.Block, sf.Config.DataShard, sf.Config.ParityShard)
 	if err != nil {

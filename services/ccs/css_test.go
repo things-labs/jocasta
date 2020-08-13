@@ -172,7 +172,7 @@ func TestTcpTls(t *testing.T) {
 				CaCert:    nil,
 				Cert:      []byte(crt),
 				Key:       []byte(key),
-				SingleTls: single,
+				SingleTLS: single,
 			},
 			status: make(chan error, 1),
 			Handler: cs.HandlerFunc(func(inconn net.Conn) {
@@ -198,7 +198,7 @@ func TestTcpTls(t *testing.T) {
 				CaCert:    []byte(crt),
 				Cert:      []byte(crt),
 				Key:       []byte(key),
-				SingleTls: single,
+				SingleTLS: single,
 			},
 		}
 		if !single {

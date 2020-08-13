@@ -297,7 +297,7 @@ func (sf *SPS) Start() (err error) {
 					Cert:         sf.cfg.cert,
 					Key:          sf.cfg.key,
 					CaCert:       sf.cfg.caCert,
-					SingleTls:    false,
+					SingleTLS:    false,
 					STCPMethod:   sf.cfg.STCPMethod,
 					STCPPassword: sf.cfg.STCPPassword,
 					KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,

@@ -7,30 +7,33 @@ import (
 	"github.com/thinkgos/jocasta/lib/gpool"
 )
 
+// Message message
 type Message struct {
 	LocalAddr *net.UDPAddr
 	SrcAddr   *net.UDPAddr
 	Data      []byte
 }
 
+// UDP udp server
 type UDP struct {
 	Addr string
 	*net.UDPConn
-	Handler func(listen *net.UDPConn, message Message)
 	GoPool  gpool.Pool
+	Handler func(listen *net.UDPConn, message Message)
 }
 
+// ListenAndServe listen and server
 func (sf *UDP) ListenAndServe() error {
-	h, port, err := net.SplitHostPort(sf.Addr)
+	h, p, err := net.SplitHostPort(sf.Addr)
 	if err != nil {
 		return err
 	}
-	p, err := strconv.Atoi(port)
+	port, err := strconv.Atoi(p)
 	if err != nil {
 		return err
 	}
 
-	addr := &net.UDPAddr{IP: net.ParseIP(h), Port: p}
+	addr := &net.UDPAddr{IP: net.ParseIP(h), Port: port}
 	sf.UDPConn, err = net.ListenUDP("udp", addr)
 	if err != nil {
 		return err
@@ -54,6 +57,7 @@ func (sf *UDP) ListenAndServe() error {
 	}
 }
 
+// Close close the server
 func (sf *UDP) Close() (err error) {
 	if sf.UDPConn != nil {
 		err = sf.UDPConn.Close()
@@ -61,6 +65,7 @@ func (sf *UDP) Close() (err error) {
 	return
 }
 
+// LocalAddr local address
 func (sf *UDP) LocalAddr() (addr string) {
 	if sf.UDPConn != nil {
 		addr = sf.UDPConn.LocalAddr().String()

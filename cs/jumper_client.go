@@ -16,16 +16,18 @@ import (
 	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
+// Jumper 跳板机
 type Jumper struct {
 	proxyURL *url.URL
 }
 
+// ValidJumperProxyURL 校验proxyURL是否正确
 func ValidJumperProxyURL(proxyURL string) bool {
 	_, err := url.Parse(proxyURL)
 	return err == nil
 }
 
-// 创建跳板
+// NewJumper 创建跳板
 // proxyURL格式如下
 // https://username:password@host:port
 // https://host:port
@@ -39,15 +41,18 @@ func NewJumper(proxyURL string) (*Jumper, error) {
 	return &Jumper{u}, nil
 }
 
+// JumperTCP tcp jumper
 type JumperTCP struct {
 	*Jumper
 }
 
+// DialTimeout tcp dialer
 func (sf *JumperTCP) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	d := dialer{sf.Jumper}
 	return d.DialTimeout(address, timeout)
 }
 
+// JumperTCPTls tcp tls jumper
 type JumperTCPTls struct {
 	*Jumper
 	CaCert []byte
@@ -56,6 +61,7 @@ type JumperTCPTls struct {
 	Single bool
 }
 
+// DialTimeout tcp tls dialer
 func (sf *JumperTCPTls) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	var err error
 	var conf *tls.Config
@@ -65,10 +71,10 @@ func (sf *JumperTCPTls) DialTimeout(address string, timeout time.Duration) (net.
 	} else {
 		conf, err = TLSConfig(sf.Cert, sf.Key, sf.CaCert)
 	}
-
 	if err != nil {
 		return nil, err
 	}
+
 	d := dialer{sf.Jumper}
 	conn, err := d.DialTimeout(address, timeout)
 	if err != nil {
@@ -77,6 +83,7 @@ func (sf *JumperTCPTls) DialTimeout(address string, timeout time.Duration) (net.
 	return tls.Client(conn, conf), nil
 }
 
+// JumperStcp stcp jumper
 type JumperStcp struct {
 	*Jumper
 	Method   string
@@ -84,6 +91,7 @@ type JumperStcp struct {
 	Compress bool
 }
 
+// DialTimeout stcp dialer
 func (sf *JumperStcp) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	cip, err := encrypt.NewCipher(sf.Method, sf.Password)
 	if err != nil {
@@ -100,6 +108,10 @@ func (sf *JumperStcp) DialTimeout(address string, timeout time.Duration) (net.Co
 	return cencrypt.New(conn, cip), nil
 }
 
+type dialer struct {
+	*Jumper
+}
+
 func (sf *dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	switch sf.proxyURL.Scheme {
 	case "https":
@@ -109,10 +121,6 @@ func (sf *dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, 
 	default:
 		return nil, fmt.Errorf("unkown scheme of %s", sf.proxyURL.String())
 	}
-}
-
-type dialer struct {
-	*Jumper
 }
 
 func (sf *dialer) dialHTTPS(address string, timeout time.Duration) (net.Conn, error) {

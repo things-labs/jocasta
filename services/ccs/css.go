@@ -15,7 +15,7 @@ type Config struct {
 	Cert      []byte
 	Key       []byte
 	CaCert    []byte
-	SingleTls bool
+	SingleTLS bool
 	// 仅stcp有效
 	STCPMethod   string
 	STCPPassword string
@@ -23,7 +23,7 @@ type Config struct {
 	KcpConfig cs.KcpConfig
 	// stcp支持压缩,tcp支持压缩,但jumper的tcp暂不支持压缩
 	Compress bool // 是否压缩
-	// 支持tcp(暂不支持压缩),tls,stcp
+	// 支持tcp(暂不支持压缩), tls, stcp
 	Jumper *cs.Jumper //only client used
 }
 
@@ -33,7 +33,7 @@ type Dialer struct {
 	Config
 }
 
-/// DialTimeout dial tthe remote server
+// DialTimeout dial tthe remote server
 func (sf *Dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	var dialer cs.Dialer
 
@@ -48,11 +48,11 @@ func (sf *Dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, 
 		if sf.Jumper != nil {
 			dialer = &cs.JumperTCPTls{
 				Jumper: sf.Jumper,
-				CaCert: sf.CaCert, Cert: sf.Cert, Key: sf.Key, Single: sf.SingleTls,
+				CaCert: sf.CaCert, Cert: sf.Cert, Key: sf.Key, Single: sf.SingleTLS,
 			}
 		} else {
 			dialer = &cs.TCPTlsDialer{
-				CaCert: sf.CaCert, Cert: sf.Cert, Key: sf.Key, Single: sf.SingleTls,
+				CaCert: sf.CaCert, Cert: sf.Cert, Key: sf.Key, Single: sf.SingleTLS,
 			}
 		}
 	case "stcp":
@@ -105,7 +105,7 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 			CaCert:  sf.CaCert,
 			Cert:    sf.Cert,
 			Key:     sf.Key,
-			Single:  sf.SingleTls,
+			Single:  sf.SingleTLS,
 			Status:  sf.status,
 			GoPool:  sf.GoPool,
 			Handler: sf.Handler,
