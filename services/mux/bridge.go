@@ -124,6 +124,7 @@ func (sf *Bridge) Start() (err error) {
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.Compress,
 		},
+		GoPool:  sf.gPool,
 		Handler: cs.HandlerFunc(sf.handler),
 	}
 	var errChan <-chan error

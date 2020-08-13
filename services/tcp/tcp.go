@@ -7,11 +7,13 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"runtime/debug"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/thinkgos/strext"
+	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/thinkgos/jocasta/connection"
@@ -31,24 +33,24 @@ const defaultUDPIdleTime = 10 // 单位s
 
 type Config struct {
 	// parent
-	ParentType     string `validate:"required,oneof=tcp tls stcp kcp udp"` // 父级协议类型 tcp|tls|stcp|kcp|udp default empty
-	Parent         string //`validate:"required,tcp_addr|udp_addr"`          // 父级地址,格式addr:port, default empty
-	ParentCompress bool   // default false
+	ParentType     string `validate:"required,oneof=tcp tls stcp kcp udp"` // 父级协议类型 tcp|tls|stcp|kcp|udp default: empty
+	Parent         string // 父级地址,格式addr:port, default empty
+	ParentCompress bool   // 父级支持压缩传输, default: false
 	// local
 	LocalType     string `validate:"required,oneof=tcp tls stcp kcp"` // 本地协议类型 tcp|tls|stcp|kcp
-	Local         string //`validate:"required,tcp_addr|udp_addr"`      // 本地监听地址 default :28080
-	LocalCompress bool   // default false
+	Local         string // 本地监听地址 default :28080
+	LocalCompress bool   // 本地支持压缩传输, default: false
 	// tls有效
-	CertFile   string // cert文件 default proxy.crt
-	KeyFile    string // key文件 default proxy.key
-	CaCertFile string // ca文件 default empty
+	CertFile   string // cert文件 default: proxy.crt
+	KeyFile    string // key文件 default: proxy.key
+	CaCertFile string // ca文件 default: empty
 	// kcp有效
 	SKCPConfig *ccs.SKCPConfig
 	// stcp有效
-	STCPMethod   string `validate:"required"`
-	STCPPassword string // default thinkgos's_goproxy
+	STCPMethod   string `validate:"required"` // stcp 加密方法 default: aes-192-cfb
+	STCPPassword string // stcp 加密密钥 default: thinkgos's_goproxy
 	// 其它
-	Timeout time.Duration `validate:"required"` // dial超时时间, default 2s
+	Timeout time.Duration `validate:"required"` // 连接父级或真实服务器超时时间,default: 2s
 	// 跳板机 仅支持tls,tcp下使用
 	// https://username:password@host:port
 	// https://host:port
@@ -81,7 +83,7 @@ type TCP struct {
 	single      singleflight.Group
 	jumper      *cs.Jumper
 	dnsResolver *idns.Resolver
-	gPool       sword.GoPool
+	goPool      sword.GoPool
 	cancel      context.CancelFunc
 	ctx         context.Context
 	log         logger.Logger
@@ -125,8 +127,7 @@ func (sf *TCP) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return errors.New("cert file and key file required")
 		}
-		sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
-		if err != nil {
+		if sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
 			return err
 		}
 		if sf.cfg.CaCertFile != "" {
@@ -177,21 +178,22 @@ func (sf *TCP) Start() (err error) {
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.LocalCompress,
 		},
+		GoPool:  sf.goPool,
 		Handler: cs.HandlerFunc(sf.handler),
 	}
-	var errChan <-chan error
-	sf.channel, errChan = srv.RunListenAndServe()
+	channel, errChan := srv.RunListenAndServe()
 	if err = <-errChan; err != nil {
 		return err
 	}
+	sf.channel = channel
 
 	if sf.cfg.ParentType == "udp" {
-		sf.gPool.Go(func() { sf.userConns.RunWatch(sf.ctx) })
+		sf.goPool.Go(func() { sf.userConns.RunWatch(sf.ctx) })
 	}
 
 	sf.log.Infof("[ TCP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)
 	sf.log.Infof("[ TCP ] use proxy %s on %s", sf.cfg.LocalType, sf.channel.LocalAddr())
-	return nil
+	return
 }
 
 func (sf *TCP) Stop() {
@@ -214,6 +216,11 @@ func (sf *TCP) Stop() {
 }
 
 func (sf *TCP) handler(inConn net.Conn) {
+	defer func() {
+		if err := recover(); err != nil {
+			sf.log.DPanicf("[ TCP ] handler", zap.Any("crashed", err), zap.ByteString("stack", debug.Stack()))
+		}
+	}()
 	defer inConn.Close()
 	switch sf.cfg.ParentType {
 	case "tcp", "tls", "stcp", "kcp":
@@ -296,7 +303,7 @@ func (sf *TCP) proxyStream2UDP(inConn net.Conn) {
 				targetConn: targetConn,
 			}
 			sf.userConns.Set(srcAddr, item)
-			sf.gPool.Go(func() {
+			sf.goPool.Go(func() {
 				sf.log.Infof("[ TCP ] udp conn %s ---> %s connected", srcAddr, localAddr)
 				buf := sword.Binding.Get()
 				defer func() {
@@ -371,7 +378,8 @@ func (sf *TCP) dialParent(address string) (net.Conn, error) {
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.ParentCompress,
 			Jumper:       sf.jumper,
-		}}
+		},
+	}
 	return d.DialTimeout(address, sf.cfg.Timeout)
 }
 

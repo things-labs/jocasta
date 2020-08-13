@@ -302,8 +302,8 @@ func (sf *SPS) Start() (err error) {
 					KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 					Compress:     sf.cfg.LocalCompress,
 				},
-				Handler: cs.HandlerFunc(sf.handle),
 				GoPool:  sword.GPool,
+				Handler: cs.HandlerFunc(sf.handle),
 			}
 
 			sc, errChan := srv.RunListenAndServe()

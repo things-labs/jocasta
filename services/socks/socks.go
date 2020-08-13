@@ -364,6 +364,7 @@ func (sf *Socks) Start() (err error) {
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.LocalCompress,
 		},
+		GoPool:  sf.gPool,
 		Handler: cs.HandlerFunc(sf.handle),
 	}
 

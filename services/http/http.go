@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -39,65 +40,64 @@ import (
 
 type Config struct {
 	// parent
-	ParentType     string   // 父级协议, tcp|tls|stcp|kcp|ssh, default empty
-	Parent         []string // 父级地址,格式addr:port, default empty
-	ParentCompress bool     // 父级支持压缩传输, default false
-	ParentKey      string   // 父级加密的key, default empty
+	ParentType     string   // 父级协议, tcp|tls|stcp|kcp|ssh, default: empty
+	Parent         []string // 父级地址,格式addr:port, default: empty
+	ParentCompress bool     // 父级支持压缩传输, default: false
+	ParentKey      string   // 父级加密的key, default: empty
 	// local
 	LocalType     string // 本地协议, tcp|tls|stcp|kcp, default tcp
-	Local         string // 本地监听地址, 格式addr:port,多个以','分隔, default :28080
-	LocalCompress bool   // 本地支持压缩传输, default false
-	LocalKey      string // 本地加密的key default empty
+	Local         string // 本地监听地址, 格式addr:port,多个以','分隔, default `:28080`
+	LocalCompress bool   // 本地支持压缩传输, default: false
+	LocalKey      string // 本地加密的key default: empty
 	// tls 有效
-	CertFile   string // cert文件名 default proxy.crt
-	KeyFile    string // key文件名 default proxy.key
-	CaCertFile string // ca文件名 default empty
+	CertFile   string // cert文件名 default: proxy.crt
+	KeyFile    string // key文件名 default: proxy.key
+	CaCertFile string // ca文件名 default: empty
 	// kcp 有效
 	SKCPConfig ccs.SKCPConfig
 	// stcp有效
-	STCPMethod   string // stcp 加密方法 default aes-192-cfb
-	STCPPassword string // stcp 加密密钥 default thinkgos's_goproxy
+	STCPMethod   string // stcp 加密方法 default: aes-192-cfb
+	STCPPassword string // stcp 加密密钥 default: thinkgos's_goproxy
 	// ssh有效
-	SSHKeyFile     string // 私有key文件 default empty
-	SSHKeyFileSalt string // 私有key加盐 default empty
-	SSHUser        string // 用户
-	SSHPassword    string // 密码
+	SSHKeyFile     string // ssh 私有key文件 default empty
+	SSHKeyFileSalt string // ssh 私有key加盐 default empty
+	SSHUser        string // ssh 用户
+	SSHPassword    string // ssh 密码
 	// 其它
-	Timeout time.Duration // tcp连接到父级或真实服务器超时时间,default 2000 单位ms
-	Always  bool          // 是否一直使用父级代理,default false
+	Timeout time.Duration // 连接父级或真实服务器超时时间,default: 2s
+	Always  bool          // 强制一直使用父级代理,default: false
 	// 代理过滤
-	ProxyFile   string        // 代理域文件名 default blocked
-	DirectFile  string        // 直接域文件名 default direct
-	HTTPTimeout time.Duration // http连接主机超时时间,单位ms,efault 3000
-	Interval    time.Duration // 检查域名间隔,单位s,default 10
+	ProxyFile   string        // 代理域文件名 default: blocked
+	DirectFile  string        // 直连域文件名 default: direct
+	HTTPTimeout time.Duration // http连接主机超时时间 default: 3s
+	Interval    time.Duration // 检查域名间隔 default 10s
 	// basic auth 配置
-	AuthFile       string        // 授权文件,一行一对,格式user:passwrod, default empty
+	AuthFile       string        // 授权文件,一行一条(格式user:passwrod), default empty
 	Auth           []string      // 授权用户密码对, default empty
-	AuthURL        string        // 授权url, default empty
-	AuthURLTimeout time.Duration // 授权超时时间, 单位ms, default 3000
-	AuthURLOkCode  int           // 授权成功的code, default 204
-	AuthURLRetry   uint          // 授权重试次数, default 1
+	AuthURL        string        // 外部认证授权url, default: empty
+	AuthURLTimeout time.Duration // 外部认证授权超时时间, default: 3s
+	AuthURLOkCode  int           // 外部认证授权成功的code, default: 204
+	AuthURLRetry   uint          // 外部认证授权重试次数, default: 1
 	// 自定义dns服务
-	DNSAddress string // dns 解析服务器地址 default empty
-	DNSTTL     int    // 解析结果缓存时间,单位秒 default 300s
-	// 智能模式 代理过滤
-	// direct 不在blocked都直连
-	// proxy 不在direct都走代理
-	// intelligent blocked和direct都没有,智能判断
-	// default intelligent
+	DNSAddress string // dns 解析服务器地址 default: empty
+	DNSTTL     int    // 解析结果缓存时间,单位秒 default: 300
+	// 代理过滤 default: intelligent
+	//      direct 不在blocked都直连
+	//      proxy  不在direct都走代理
+	//      intelligent blocked和direct都没有,智能判断
 	Intelligent string
 	// 负载均衡
-	LoadBalanceMethod     string        // 负载均衡方法, roundrobin|leastconn|leasttime|hash|weight default roundrobin
-	LoadBalanceTimeout    time.Duration // 负载均衡dial超时时间 default 500 单位ms
-	LoadBalanceRetryTime  time.Duration // 负载均衡重试时间间隔 default 1000 单位ms
+	LoadBalanceMethod     string        // 负载均衡方法, roundrobin|leastconn|leasttime|hash|weight default: roundrobin
+	LoadBalanceTimeout    time.Duration // 负载均衡dial超时时间 default 500ms
+	LoadBalanceRetryTime  time.Duration // 负载均衡重试时间间隔 default 1000ms
 	LoadBalanceHashTarget bool          // hash方法时,选择hash的目标, 默认false
 	LoadBalanceOnlyHA     bool          // 高可用模式, default false
 	// 限速器
-	RateLimit           string //  限制速字节/s,可设置为2m, 100k等数值,default 0,不限速
+	RateLimit           string //  限制速byte/s,可设置为2m, 100k等数值,0表示不限速 default: 0
 	LocalIPS            []string
 	BindListen          bool
 	Debug               bool
-	CheckParentInterval int // not used
+	CheckParentInterval int // TODO: not used
 	// 跳板机 仅支持tls,tcp下使用
 	// https://username:password@host:port
 	// https://host:port
@@ -145,28 +145,14 @@ func (sf *HTTP) inspectConfig() (err error) {
 		sf.cfg.Parent = []string{}
 	}
 
-	// tls 证书
-	if sf.cfg.LocalType == "tls" || (sf.cfg.ParentType == "tls" && len(sf.cfg.Parent) > 0) {
-		sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
-		if err != nil {
-			return err
-		}
-		if sf.cfg.CaCertFile != "" {
-			sf.cfg.caCert, err = ioutil.ReadFile(sf.cfg.CaCertFile)
-			if err != nil {
-				return fmt.Errorf("read ca file %+v", err)
-			}
-		}
-	}
-
 	if len(sf.cfg.Parent) > 0 {
 		if sf.cfg.ParentType == "" {
 			return fmt.Errorf("parent type required for %s", sf.cfg.Parent)
 		}
-
 		if !strext.Contains([]string{"tcp", "tls", "stcp", "kcp", "ssh"}, sf.cfg.ParentType) {
 			return fmt.Errorf("parent type suport <tcp|tls|kcp|ssh>")
 		}
+
 		// ssh 证书
 		if sf.cfg.ParentType == "ssh" {
 			if sf.cfg.SSHUser == "" {
@@ -191,6 +177,21 @@ func (sf *HTTP) inspectConfig() (err error) {
 		}
 	}
 
+	// tls 证书
+	if sf.cfg.LocalType == "tls" || (sf.cfg.ParentType == "tls" && len(sf.cfg.Parent) > 0) {
+		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
+			return errors.New("cert file and key file required")
+		}
+		if sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
+			return err
+		}
+		if sf.cfg.CaCertFile != "" {
+			if sf.cfg.caCert, err = ioutil.ReadFile(sf.cfg.CaCertFile); err != nil {
+				return fmt.Errorf("read ca file %+v", err)
+			}
+		}
+	}
+
 	if sf.cfg.RateLimit != "0" && sf.cfg.RateLimit != "" {
 		size, err := meter.ParseBytes(sf.cfg.RateLimit)
 		if err != nil {
@@ -199,11 +200,10 @@ func (sf *HTTP) inspectConfig() (err error) {
 		sf.cfg.rateLimit = rate.Limit(size)
 	}
 	if sf.cfg.Jumper != "" {
-		if sf.cfg.ParentType != "tls" && sf.cfg.ParentType != "tcp" {
+		if !strext.Contains([]string{"tls", "tcp"}, sf.cfg.ParentType) {
 			return fmt.Errorf("jumper only support one of <tls|tcp> but %s", sf.cfg.ParentType)
 		}
-		sf.jumper, err = cs.NewJumper(sf.cfg.Jumper)
-		if err != nil {
+		if sf.jumper, err = cs.NewJumper(sf.cfg.Jumper); err != nil {
 			return fmt.Errorf("new jumper, %+v", err)
 		}
 	}
@@ -211,20 +211,19 @@ func (sf *HTTP) inspectConfig() (err error) {
 }
 
 func (sf *HTTP) InitService() (err error) {
-	var opts []basicAuth.Option
-
 	// init domain resolver
 	if sf.cfg.DNSAddress != "" {
 		sf.domainResolver = idns.New(sf.cfg.DNSAddress, sf.cfg.DNSTTL)
 	}
 	// init basic auth
 	if sf.cfg.AuthFile != "" || len(sf.cfg.Auth) > 0 || sf.cfg.AuthURL != "" {
+		var opts []basicAuth.Option
+
 		if sf.domainResolver != nil {
 			opts = append(opts, basicAuth.WithDNSServer(sf.domainResolver))
 		}
 		if sf.cfg.AuthURL != "" {
 			opts = append(opts, basicAuth.WithAuthURL(sf.cfg.AuthURL, sf.cfg.AuthURLTimeout, sf.cfg.AuthURLOkCode, sf.cfg.AuthURLRetry))
-			sf.log.Debugf("auth from url [ %s ]", sf.cfg.AuthURL)
 		}
 		sf.basicAuthCenter = basicAuth.New(opts...)
 
@@ -234,12 +233,13 @@ func (sf *HTTP) InitService() (err error) {
 		if sf.cfg.AuthFile != "" {
 			n, err := sf.basicAuthCenter.LoadFromFile(sf.cfg.AuthFile)
 			if err != nil {
-				return fmt.Errorf("load auth-file %v", err)
+				return fmt.Errorf("load auth-file failed, %v", err)
 			}
-			sf.log.Debugf("auth data added from file %d , total:%d", n, sf.basicAuthCenter.Total())
+			sf.log.Debugf("auth data added from file %d , total: %d", n, sf.basicAuthCenter.Total())
 		}
 	}
-	// init lb
+
+	// init lb TODO: 未认真检查
 	if len(sf.cfg.Parent) > 0 {
 		sf.filters = filter.New(sf.cfg.Intelligent,
 			filter.WithTimeout(sf.cfg.HTTPTimeout),
@@ -366,9 +366,9 @@ func (sf *HTTP) Start() (err error) {
 				STCPPassword: sf.cfg.STCPPassword,
 				Compress:     sf.cfg.LocalCompress,
 			},
+			GoPool:  sf.gPool,
 			Handler: cs.HandlerFunc(sf.handle),
 		}
-
 		sc, errChan := srv.RunListenAndServe()
 		if err = <-errChan; err != nil {
 			return err

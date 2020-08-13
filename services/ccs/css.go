@@ -57,19 +57,15 @@ func (sf *Dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, 
 		}
 	case "stcp":
 		if sf.Jumper != nil {
-			dialer = &cs.JumperStcp{
-				Jumper: sf.Jumper,
-				Method: sf.STCPMethod, Password: sf.STCPPassword, Compress: sf.Compress,
-			}
-		} else {
-			dialer = &cs.StcpDialer{
-				Method: sf.STCPMethod, Password: sf.STCPPassword, Compress: sf.Compress,
-			}
+			return nil, fmt.Errorf("protocol <stcp> not support jumper")
+		}
+		dialer = &cs.StcpDialer{
+			Method: sf.STCPMethod, Password: sf.STCPPassword, Compress: sf.Compress,
 		}
 	case "kcp":
 		dialer = &cs.KCPDialer{Config: sf.KcpConfig}
 	default:
-		return nil, fmt.Errorf("protocol support one of <tcp|tls|stcp|kcp> but give %s", sf.Protocol)
+		return nil, fmt.Errorf("protocol support one of <tcp|tls|stcp|kcp> but give <%s>", sf.Protocol)
 	}
 	return dialer.DialTimeout(address, timeout)
 }

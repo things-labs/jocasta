@@ -18,7 +18,7 @@ func WithLogger(l logger.Logger) Option {
 
 func WithGPool(pool sword.GoPool) Option {
 	return func(t *TCP) {
-		t.gPool = pool
+		t.goPool = pool
 	}
 }
 
