@@ -31,10 +31,10 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/thinkgos/jocasta/cs"
+	"github.com/thinkgos/jocasta/services/ccs"
 
 	"github.com/thinkgos/jocasta/pkg/izap"
 	"github.com/thinkgos/jocasta/services"
-	"github.com/thinkgos/jocasta/services/skcp"
 )
 
 var (
@@ -112,7 +112,7 @@ func preRun(cmd *cobra.Command, args []string) {
 
 	//set kcp config
 	if kcpCfg.Mode != "manual" {
-		kcpCfg.NoDelay, kcpCfg.Interval, kcpCfg.Resend, kcpCfg.NoCongestion = skcp.Mode(kcpCfg.Mode)
+		kcpCfg.NoDelay, kcpCfg.Interval, kcpCfg.Resend, kcpCfg.NoCongestion = ccs.SKcpMode(kcpCfg.Mode)
 	}
 	if !cs.HasKcpBlockCrypt(kcpCfg.Method) {
 		kcpCfg.Method = "aes"

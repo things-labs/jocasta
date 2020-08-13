@@ -21,7 +21,6 @@ import (
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
-	"github.com/thinkgos/jocasta/services/skcp"
 )
 
 // node type
@@ -39,7 +38,7 @@ type BridgeConfig struct {
 	CertFile string // default proxy.crt
 	KeyFile  string // default proxy.key
 	// kcp有效
-	SKCPConfig skcp.Config
+	SKCPConfig ccs.SKCPConfig
 	// stcp有效
 	STCPMethod   string `validate:"required"` // stcp 加密方法 default aes-192-cfb
 	STCPPassword string // stcp 加密密钥 default thinkgos's_goproxy

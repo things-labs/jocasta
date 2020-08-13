@@ -6,11 +6,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/thinkgos/jocasta/cs"
-
-	"github.com/thinkgos/jocasta/services/skcp"
+	"github.com/thinkgos/jocasta/services/ccs"
 )
 
-var kcpCfg skcp.Config
+var kcpCfg ccs.SKCPConfig
 
 func kcp(cmd *cobra.Command) {
 	persistent := cmd.PersistentFlags()

@@ -23,7 +23,6 @@ import (
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
-	"github.com/thinkgos/jocasta/services/skcp"
 )
 
 const defaultUDPIdleTime = 10 // 单位s
@@ -40,7 +39,7 @@ type Config struct {
 	KeyFile    string // key文件名
 	CaCertFile string // ca文件, default: empty
 	// kcp有效
-	SKCPConfig *skcp.Config
+	SKCPConfig *ccs.SKCPConfig
 	// stcp有效
 	STCPMethod   string `validate:"required"` // default: aes-192-cfb
 	STCPPassword string // default: thinkgos's_goproxy

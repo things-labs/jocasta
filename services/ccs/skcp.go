@@ -1,10 +1,10 @@
-package skcp
+package ccs
 
 import (
 	"github.com/thinkgos/jocasta/cs"
 )
 
-type Config struct {
+type SKCPConfig struct {
 	// 加密的方法
 	// sm4,tea,xor,none,aes-128,aes-192,blowfish,twofish,cast5,3des,xtea,salsa20,aes
 	// 默认aes
@@ -21,13 +21,13 @@ type Config struct {
 	cs.KcpConfig
 }
 
-// Mode KCP 工作模式
+// SKcpMode KCP 工作模式
 // mode support:
 // 		normal(default)
 // 		fast
 // 		fast2
 // 		fast3
-func Mode(mode string) (noDelay int, interval int, resend int, noCongestion int) {
+func SKcpMode(mode string) (noDelay int, interval int, resend int, noCongestion int) {
 	switch mode {
 	case "fast":
 		return 0, 30, 2, 1

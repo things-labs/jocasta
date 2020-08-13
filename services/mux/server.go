@@ -25,7 +25,6 @@ import (
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 	"github.com/thinkgos/jocasta/services/ccs"
-	"github.com/thinkgos/jocasta/services/skcp"
 )
 
 type ServerConfig struct {
@@ -37,7 +36,7 @@ type ServerConfig struct {
 	CertFile string // default proxy.crt
 	KeyFile  string // default proxy.key
 	// kcp有效
-	SKCPConfig skcp.Config
+	SKCPConfig ccs.SKCPConfig
 	// stcp有效
 	STCPMethod   string `validate:"required"` // default aes-192-cfb
 	STCPPassword string // default thinkgos's_goproxy
