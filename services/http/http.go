@@ -370,8 +370,8 @@ func (sf *HTTP) Start() (err error) {
 			Handler: cs.HandlerFunc(sf.handle),
 		}
 
-		sc, err := srv.RunListenAndServe()
-		if err != nil {
+		sc, errChan := srv.RunListenAndServe()
+		if err = <-errChan; err != nil {
 			return err
 		}
 		sf.channels = append(sf.channels, sc)

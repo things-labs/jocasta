@@ -290,8 +290,6 @@ func (sf *SPS) Start() (err error) {
 	sf.log.Infof("use %s %s parent %v [ %s ]", sf.cfg.ParentType, sf.cfg.ParentServiceType, sf.cfg.Parent, strings.ToUpper(sf.cfg.LoadBalanceMethod))
 	for _, addr := range strings.Split(sf.cfg.Local, ",") {
 		if addr != "" {
-			var sc cs.Server
-
 			srv := ccs.Server{
 				Protocol: sf.cfg.LocalType,
 				Addr:     addr,
@@ -308,8 +306,9 @@ func (sf *SPS) Start() (err error) {
 				Handler: cs.HandlerFunc(sf.handle),
 				GoPool:  sword.GPool,
 			}
-			sc, err = srv.RunListenAndServe()
-			if err != nil {
+
+			sc, errChan := srv.RunListenAndServe()
+			if err = <-errChan; err != nil {
 				return
 			}
 			sf.serverChannels = append(sf.serverChannels, sc)

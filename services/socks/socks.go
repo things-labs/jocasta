@@ -368,8 +368,9 @@ func (sf *Socks) Start() (err error) {
 		Handler: cs.HandlerFunc(sf.handle),
 	}
 
-	sf.channel, err = srv.RunListenAndServe()
-	if err != nil {
+	var errChan <-chan error
+	sf.channel, errChan = srv.RunListenAndServe()
+	if err = <-errChan; err != nil {
 		return
 	}
 

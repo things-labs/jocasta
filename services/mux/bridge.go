@@ -127,8 +127,9 @@ func (sf *Bridge) Start() (err error) {
 		},
 		Handler: cs.HandlerFunc(sf.handler),
 	}
-	sf.channel, err = srv.RunListenAndServe()
-	if err != nil {
+	var errChan <-chan error
+	sf.channel, errChan = srv.RunListenAndServe()
+	if err = <-errChan; err != nil {
 		return
 	}
 	sf.gPool.Go(func() { sf.clientConns.RunWatch(sf.ctx) })

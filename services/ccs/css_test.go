@@ -39,10 +39,8 @@ func TestStream_Stcp(t *testing.T) {
 						}
 					}),
 				}
-				s, err := srv.RunListenAndServe()
-				require.NoError(t, err)
-				err = <-srv.Status()
-				require.NoError(t, err)
+				s, errChan := srv.RunListenAndServe()
+				require.NoError(t, <-errChan)
 				defer s.Close()
 
 				// client

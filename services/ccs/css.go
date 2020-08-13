@@ -9,6 +9,7 @@ import (
 	"github.com/thinkgos/jocasta/lib/gpool"
 )
 
+// Config config
 type Config struct {
 	// 仅tls有效
 	Cert      []byte
@@ -26,10 +27,12 @@ type Config struct {
 	Jumper *cs.Jumper //only client used
 }
 
+// Dialer Client dialer
 type Dialer struct {
 	Config
 }
 
+/// DialTimeout dial tthe remote server
 func (sf *Dialer) DialTimeout(protocol string, address string, timeout time.Duration) (net.Conn, error) {
 	var dialer cs.Dialer
 
@@ -70,6 +73,7 @@ func (sf *Dialer) DialTimeout(protocol string, address string, timeout time.Dura
 	return dialer.DialTimeout(address, timeout)
 }
 
+// Server server
 type Server struct {
 	Protocol string
 	Addr     string
@@ -80,7 +84,8 @@ type Server struct {
 	status chan error
 }
 
-func (sf *Server) RunListenAndServe() (cs.Server, error) {
+// RunListenAndServe run listen and server no-block, return error chan indicate server is run sucess or failed
+func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 	var srv cs.Server
 
 	sf.status = make(chan error, 1)
@@ -123,14 +128,11 @@ func (sf *Server) RunListenAndServe() (cs.Server, error) {
 			Handler: sf.Handler,
 		}
 	default:
-		return nil, fmt.Errorf("not support protocol: %s", sf.Protocol)
+		sf.status <- fmt.Errorf("not support protocol: %s", sf.Protocol)
+		return nil, sf.status
 	}
 
 	gpool.Go(sf.GoPool, func() { _ = srv.ListenAndServe() })
 
-	return srv, nil
-}
-
-func (sf *Server) Status() <-chan error {
-	return sf.status
+	return srv, sf.status
 }
