@@ -11,9 +11,9 @@ import (
 )
 
 type Config struct {
-	CaFilePrefix   string // ca证书文件名前缀, default empty
-	CertFilePrefix string // cert和key文件名前缀, default empty
-	Sign           bool   // 是否签发证书 false 表示生成root ca, true 代表根据root ca签发证书
+	CaFilePrefix   string // ca证书文件名前缀, default: empty
+	CertFilePrefix string // cert和key文件名前缀, default: empty
+	Sign           bool   // 是否签发证书, false: 表示生成root ca, true: 代表根据root ca签发证书
 	SignDays       int    // 签发天数, 默认365天
 	CommonName     string // common name
 }
@@ -59,8 +59,10 @@ func (sf *Keygen) Start() error {
 	if !sf.cfg.Sign {
 		return cert.CreateCAFile(sf.cfg.CaFilePrefix, config)
 	}
-	caCert, caKey, err := cert.ParseCrtAndKeyFile(sf.cfg.CaFilePrefix+cert.CertFileSuffix,
-		sf.cfg.CaFilePrefix+cert.KeyFileSuffix)
+	caCert, caKey, err := cert.ParseCrtAndKeyFile(
+		sf.cfg.CaFilePrefix+cert.CertFileSuffix,
+		sf.cfg.CaFilePrefix+cert.KeyFileSuffix,
+	)
 	if err != nil {
 		return err
 	}

@@ -55,12 +55,12 @@ func init() {
 	flags.StringVar(&spsCfg.STCPMethod, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
 	flags.StringVar(&spsCfg.STCPPassword, "stcp-password", "thinkgos's_goproxy", "password of local stcp's encrpyt/decrypt")
 	// 其它
-	flags.DurationVar(&spsCfg.Timeout, "timeout", 5000*time.Millisecond, "tcp timeout milliseconds when connect to real server or parent proxy")
+	flags.DurationVar(&spsCfg.Timeout, "timeout", 5*time.Second, "tcp timeout duration when connect to real server or parent proxy")
 	// basic auth 配置
 	flags.StringVarP(&spsCfg.AuthFile, "auth-file", "F", "", "http basic auth file,\"username:password\" each line in file")
 	flags.StringSliceVarP(&spsCfg.Auth, "auth", "a", nil, "http basic auth username and password, multiple user repeat -a ,such as: -a user1:pass1 -a user2:pass2")
 	flags.StringVar(&spsCfg.AuthURL, "auth-url", "", "http basic auth username and password will send to this url,response http code equal to 'auth-code' means ok,others means fail.")
-	flags.DurationVar(&spsCfg.AuthURLTimeout, "auth-timeout", 3000*time.Millisecond, "access 'auth-url' timeout milliseconds")
+	flags.DurationVar(&spsCfg.AuthURLTimeout, "auth-timeout", 3*time.Second, "access 'auth-url' timeout duration")
 	flags.IntVar(&spsCfg.AuthURLOkCode, "auth-code", 204, "access 'auth-url' success http code")
 	flags.UintVar(&spsCfg.AuthURLRetry, "auth-retry", 0, "access 'auth-url' fail and retry count")
 	// dns域名解析
@@ -68,8 +68,8 @@ func init() {
 	flags.IntVarP(&spsCfg.DNSTTL, "dns-ttl", "e", 300, "caching seconds of dns query result")
 	// 负载均衡
 	flags.StringVar(&spsCfg.LoadBalanceMethod, "lb-method", "roundrobin", "load balance method when use multiple parent,can be <roundrobin|leastconn|leasttime|hash|weight>")
-	flags.DurationVar(&spsCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp milliseconds timeout of connecting to parent")
-	flags.DurationVar(&spsCfg.LoadBalanceRetryTime, "lb-retrytime", 1000*time.Millisecond, "sleep time milliseconds after checking")
+	flags.DurationVar(&spsCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp duration timeout of connecting to parent")
+	flags.DurationVar(&spsCfg.LoadBalanceRetryTime, "lb-retrytime", time.Second, "sleep time duration after checking")
 	flags.BoolVar(&spsCfg.LoadBalanceHashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")
 	flags.BoolVar(&spsCfg.LoadBalanceOnlyHA, "lb-onlyha", false, "use only `high availability mode` to choose parent for LB")
 	// 限速器

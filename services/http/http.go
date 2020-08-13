@@ -57,10 +57,10 @@ type Config struct {
 	SKCPConfig ccs.SKCPConfig
 	// stcp有效
 	STCPMethod   string // stcp 加密方法 default: aes-192-cfb
-	STCPPassword string // stcp 加密密钥 default: thinkgos's_goproxy
+	STCPPassword string // stcp 加密密钥 default: thinkgos's_jocasta
 	// ssh有效
-	SSHKeyFile     string // ssh 私有key文件 default empty
-	SSHKeyFileSalt string // ssh 私有key加盐 default empty
+	SSHKeyFile     string // ssh 私有key文件 default: empty
+	SSHKeyFileSalt string // ssh 私有key加盐 default: empty
 	SSHUser        string // ssh 用户
 	SSHPassword    string // ssh 密码
 	// 其它
@@ -90,14 +90,13 @@ type Config struct {
 	LoadBalanceMethod     string        // 负载均衡方法, roundrobin|leastconn|leasttime|hash|weight default: roundrobin
 	LoadBalanceTimeout    time.Duration // 负载均衡dial超时时间 default 500ms
 	LoadBalanceRetryTime  time.Duration // 负载均衡重试时间间隔 default 1000ms
-	LoadBalanceHashTarget bool          // hash方法时,选择hash的目标, 默认false
+	LoadBalanceHashTarget bool          // hash方法时,选择hash的目标, default: false
 	LoadBalanceOnlyHA     bool          // 高可用模式, default false
 	// 限速器
-	RateLimit           string //  限制速byte/s,可设置为2m, 100k等数值,0表示不限速 default: 0
-	LocalIPS            []string
-	BindListen          bool
-	Debug               bool
-	CheckParentInterval int // TODO: not used
+	RateLimit  string //  限制速byte/s,可设置为2m, 100k等数值,0表示不限速 default: 0
+	LocalIPS   []string
+	BindListen bool
+	Debug      bool
 	// 跳板机 仅支持tls,tcp下使用
 	// https://username:password@host:port
 	// https://host:port

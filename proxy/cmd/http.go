@@ -52,17 +52,17 @@ func init() {
 	flags.StringVarP(&httpCfg.SSHPassword, "ssh-password", "A", "", "password for ssh")
 	// 其它
 	flags.BoolVar(&httpCfg.Always, "always", false, "always use parent proxy")
-	flags.DurationVar(&httpCfg.Timeout, "timeout", 2000*time.Millisecond, "tcp timeout milliseconds when connect to real server or parent proxy")
+	flags.DurationVar(&httpCfg.Timeout, "timeout", 2*time.Second, "tcp timeout when connect to real server or parent proxy")
 	// 代理过滤
 	flags.StringVarP(&httpCfg.ProxyFile, "blocked", "b", "blocked", "blocked domain file , one domain each line")
 	flags.StringVarP(&httpCfg.DirectFile, "direct", "d", "direct", "direct domain file , one domain each line")
-	flags.DurationVar(&httpCfg.HTTPTimeout, "http-timeout", 3000*time.Millisecond, "check domain if blocked , http request timeout milliseconds when connect to host")
-	flags.DurationVar(&httpCfg.Interval, "interval", 10*time.Second, "check domain if blocked every interval seconds")
+	flags.DurationVar(&httpCfg.HTTPTimeout, "http-timeout", 3*time.Second, "check domain if blocked , http request timeout duration when connect to host")
+	flags.DurationVar(&httpCfg.Interval, "interval", 10*time.Second, "check domain if blocked every interval duration")
 	// basic auth 配置
 	flags.StringVarP(&httpCfg.AuthFile, "auth-file", "F", "", "http basic auth file,\"username:password\" each line in file")
 	flags.StringSliceVarP(&httpCfg.Auth, "auth", "a", nil, "http basic auth username and password, multiple user repeat -a ,such as: -a user1:pass1 -a user2:pass2")
 	flags.StringVar(&httpCfg.AuthURL, "auth-url", "", "http basic auth username and password will send to this url,response http code equal to 'auth-code' means ok,others means fail.")
-	flags.DurationVar(&httpCfg.AuthURLTimeout, "auth-timeout", 3000*time.Millisecond, "access 'auth-url' timeout milliseconds")
+	flags.DurationVar(&httpCfg.AuthURLTimeout, "auth-timeout", 3*time.Second, "access 'auth-url' timeout duration")
 	flags.IntVar(&httpCfg.AuthURLOkCode, "auth-code", 204, "access 'auth-url' success http code")
 	flags.UintVar(&httpCfg.AuthURLRetry, "auth-retry", 1, "access 'auth-url' fail and retry count")
 	// dns服务
@@ -72,14 +72,13 @@ func init() {
 	flags.StringVar(&httpCfg.Intelligent, "intelligent", "intelligent", "settting intelligent HTTP, SOCKS5 proxy mode, can be <intelligent|direct|parent>")
 	// 负载均衡
 	flags.StringVar(&httpCfg.LoadBalanceMethod, "lb-method", "roundrobin", "load balance method when use multiple parent,can be <roundrobin|leastconn|leasttime|hash|weight>")
-	flags.DurationVar(&httpCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp milliseconds timeout of connecting to parent")
-	flags.DurationVar(&httpCfg.LoadBalanceRetryTime, "lb-retrytime", 1000*time.Millisecond, "sleep time milliseconds after checking")
+	flags.DurationVar(&httpCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp timeout duration of connecting to parent")
+	flags.DurationVar(&httpCfg.LoadBalanceRetryTime, "lb-retrytime", time.Second, "sleep time duration after checking")
 	flags.BoolVar(&httpCfg.LoadBalanceHashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")
 	flags.BoolVar(&httpCfg.LoadBalanceOnlyHA, "lb-onlyha", false, "use only `high availability mode` to choose parent for LB")
 	// 限速器
 	flags.StringVarP(&httpCfg.RateLimit, "rate-limit", "l", "0", "rate limit (bytes/second) of each connection, such as: 100K 1.5M . 0 means no limitation")
 	flags.BoolVarP(&httpCfg.BindListen, "bind-listen", "B", false, "using listener binding IP when connect to target")
-	flags.IntVarP(&httpCfg.CheckParentInterval, "check-parent-interval", "I", 3, "check if proxy is okay every interval seconds,zero: means no check")
 	flags.StringSliceVarP(&httpCfg.LocalIPS, "local-bind-ips", "g", nil, "if your host behind a nat,set your public ip here avoid dead loop")
 	// 跳板机
 	flags.StringVarP(&httpCfg.Jumper, "jumper", "J", "", "https or socks5 proxies used when connecting to parent, only worked of -T is tls or tcp, format is https://username:password@host:port https://host:port or socks5://username:password@host:port socks5://host:port")

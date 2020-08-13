@@ -29,9 +29,9 @@ var keygenCmd = &cobra.Command{
 func init() {
 	flags := keygenCmd.Flags()
 
-	flags.StringVarP(&keygenCfg.CaFilePrefix, "ca", "C", "", "cert file name prefix of sign to create")
-	flags.StringVarP(&keygenCfg.CertFilePrefix, "cert", "c", "", "cert file name prefix of sign to create")
-	flags.StringVarP(&keygenCfg.CommonName, "cn", "n", "", "common name")
+	flags.StringVarP(&keygenCfg.CaFilePrefix, "ca", "C", "", "ca file name prefix")
+	flags.StringVarP(&keygenCfg.CertFilePrefix, "cert", "c", "", "cert file name prefix of sign")
+	flags.StringVarP(&keygenCfg.CommonName, "cn", "n", "", "common name, if empty it will generate rand common name")
 	flags.IntVarP(&keygenCfg.SignDays, "days", "d", 365, "days of sign")
 	flags.BoolVarP(&keygenCfg.Sign, "sign", "s", false, "cert is to sign")
 

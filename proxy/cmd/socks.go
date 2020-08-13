@@ -60,17 +60,17 @@ func init() {
 	flags.StringVarP(&socksCfg.SSHKeyFileSalt, "ssh-keysalt", "s", "", "salt of ssh private key")
 	flags.StringVarP(&socksCfg.SSHPassword, "ssh-password", "D", "", "password for ssh")
 	// 其它
-	flags.DurationVar(&socksCfg.Timeout, "timeout", 5000*time.Millisecond, "tcp timeout milliseconds when connect to real server or parent proxy")
+	flags.DurationVar(&socksCfg.Timeout, "timeout", 5*time.Second, "tcp timeout duration when connect to real server or parent proxy")
 	flags.BoolVar(&socksCfg.Always, "always", false, "always use parent proxy")
 	// 代理过滤
 	flags.StringVarP(&socksCfg.ProxyFile, "blocked", "b", "blocked", "blocked domain file , one domain each line")
 	flags.StringVarP(&socksCfg.DirectFile, "direct", "d", "direct", "direct domain file , one domain each line")
-	flags.DurationVar(&socksCfg.Interval, "interval", 10*time.Second, "check domain if blocked every interval seconds")
+	flags.DurationVar(&socksCfg.Interval, "interval", 10*time.Second, "check domain if blocked every interval duration")
 	// basic auth 配置
 	flags.StringVarP(&socksCfg.AuthFile, "auth-file", "F", "", "http basic auth file,\"username:password\" each line in file")
 	flags.StringSliceVarP(&socksCfg.Auth, "auth", "a", nil, "http basic auth username and password, multiple user repeat -a ,such as: -a user1:pass1 -a user2:pass2")
 	flags.StringVar(&socksCfg.AuthURL, "auth-url", "", "http basic auth username and password will send to this url,response http code equal to 'auth-code' means ok,others means fail.")
-	flags.DurationVar(&socksCfg.AuthURLTimeout, "auth-timeout", 3000*time.Millisecond, "access 'auth-url' timeout milliseconds")
+	flags.DurationVar(&socksCfg.AuthURLTimeout, "auth-timeout", 3*time.Second, "access 'auth-url' timeout duration")
 	flags.IntVar(&socksCfg.AuthURLOkCode, "auth-code", 204, "access 'auth-url' success http code")
 	flags.UintVar(&socksCfg.AuthURLRetry, "auth-retry", 0, "access 'auth-url' fail and retry count")
 	// dns域名解析
@@ -80,8 +80,8 @@ func init() {
 	flags.StringVar(&socksCfg.Intelligent, "intelligent", "intelligent", "settting intelligent HTTP, SOCKS5 proxy mode, can be <intelligent|direct|parent>")
 	// 负载均衡
 	flags.StringVar(&socksCfg.LoadBalanceMethod, "lb-method", "roundrobin", "load balance method when use multiple parent,can be <roundrobin|leastconn|leasttime|hash|weight>")
-	flags.DurationVar(&socksCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp milliseconds timeout of connecting to parent")
-	flags.DurationVar(&socksCfg.LoadBalanceRetryTime, "lb-retrytime", 1000*time.Millisecond, "sleep time milliseconds after checking")
+	flags.DurationVar(&socksCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp duration timeout of connecting to parent")
+	flags.DurationVar(&socksCfg.LoadBalanceRetryTime, "lb-retrytime", 1*time.Second, "sleep time duration after checking")
 	flags.BoolVar(&socksCfg.LoadBalanceHashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")
 	flags.BoolVar(&socksCfg.LoadBalanceOnlyHA, "lb-onlyha", false, "use only `high availability mode` to choose parent for LB")
 	// 限速器
