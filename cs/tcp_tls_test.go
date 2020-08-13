@@ -1,4 +1,4 @@
-package ccs
+package cs
 
 import (
 	"net"
@@ -7,111 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/encrypt"
 )
-
-func Test_InvalidProtocol(t *testing.T) {
-	// server
-	srv := &Server{Protocol: "invalid"}
-	_, errChan := srv.RunListenAndServe()
-	require.Error(t, <-errChan)
-
-	// client
-	d := &Dialer{}
-	_, err := d.DialTimeout("invalid", ":", time.Second)
-	require.Error(t, err)
-}
-
-func Test_TCP(t *testing.T) {
-	for _, compress := range []bool{true, false} {
-		// server
-		srv := &Server{
-			Protocol: "tcp",
-			Addr:     ":",
-			Config: Config{
-				Compress: compress,
-			},
-			status: make(chan error, 1),
-			Handler: cs.HandlerFunc(func(inconn net.Conn) {
-				buf := make([]byte, 2048)
-				_, err := inconn.Read(buf)
-				if !assert.NoError(t, err) {
-					return
-				}
-				_, err = inconn.Write([]byte("okay"))
-				if !assert.NoError(t, err) {
-					return
-				}
-			}),
-		}
-		channel, errChan := srv.RunListenAndServe()
-		require.NoError(t, <-errChan)
-		defer channel.Close()
-
-		// client
-		d := &Dialer{Config{Compress: compress}}
-		cli, err := d.DialTimeout("tcp", channel.LocalAddr(), 5*time.Second)
-		require.NoError(t, err)
-		defer cli.Close()
-
-		_, err = cli.Write([]byte("test"))
-		require.NoError(t, err)
-		b := make([]byte, 20)
-		n, err := cli.Read(b)
-		require.NoError(t, err)
-		require.Equal(t, "okay", string(b[:n]), "client revecive okay excepted,revecived : %s", string(b[:n]))
-	}
-}
-
-func Test_Stcp(t *testing.T) {
-	password := "pass_word"
-	want := []byte("1flkdfladnfadkfna;kdnga;kdnva;ldk;adkfpiehrqeiphr23r[ingkdnv;ifefqiefn")
-	for _, method := range encrypt.CipherMethods() {
-		for _, compress := range []bool{true, false} {
-			func() {
-				config := Config{STCPMethod: method, STCPPassword: password, Compress: compress}
-
-				// server
-				srv := &Server{
-					Protocol: "stcp",
-					Addr:     ":",
-					Config:   config,
-					Handler: cs.HandlerFunc(func(inconn net.Conn) {
-						buf := make([]byte, 2048)
-						_, err := inconn.Read(buf)
-						if err != nil {
-							t.Error(err)
-							return
-						}
-						_, err = inconn.Write(want)
-						if err != nil {
-							t.Error(err)
-							return
-						}
-					}),
-				}
-				s, errChan := srv.RunListenAndServe()
-				require.NoError(t, <-errChan)
-				defer s.Close()
-
-				// client
-				d := &Dialer{config}
-				cli, err := d.DialTimeout("stcp", s.LocalAddr(), 5*time.Second)
-				require.NoError(t, err)
-				defer cli.Close()
-
-				_, err = cli.Write(want)
-				require.NoError(t, err)
-				b := make([]byte, 2048)
-				n, err := cli.Read(b)
-				require.NoError(t, err)
-				require.Equal(t, want, b[:n])
-			}()
-		}
-	}
-}
 
 var key = `-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAwZquZqQbc6TaZyaa0UV5XRqDe7FY6BNhk7FxFMvwPyQ0jSj9
@@ -165,17 +61,14 @@ TL44tBTU3E0Bl+fyBSRkAXbVVTcYsxTeHsSuYm3pARTpKsw=
 func TestTcpTls(t *testing.T) {
 	for _, single := range []bool{true, false} {
 		// server
-		srv := &Server{
-			Protocol: "tls",
-			Addr:     ":",
-			Config: Config{
-				CaCert:    nil,
-				Cert:      []byte(crt),
-				Key:       []byte(key),
-				SingleTls: single,
-			},
-			status: make(chan error, 1),
-			Handler: cs.HandlerFunc(func(inconn net.Conn) {
+		srv := &TCPTlsServer{
+			Addr:   ":",
+			CaCert: nil,
+			Cert:   []byte(crt),
+			Key:    []byte(key),
+			Single: single,
+			Status: make(chan error, 1),
+			Handler: HandlerFunc(func(inconn net.Conn) {
 				buf := make([]byte, 2048)
 				_, err := inconn.Read(buf)
 				if !assert.NoError(t, err) {
@@ -187,24 +80,22 @@ func TestTcpTls(t *testing.T) {
 				}
 			}),
 		}
-		channel, errChan := srv.RunListenAndServe()
-		require.NoError(t, <-errChan)
-		defer channel.Close()
+		go func() { _ = srv.ListenAndServe() }()
+		require.NoError(t, <-srv.Status)
+		defer srv.Close()
 
 		// client
-		d := &Dialer{
-			Config: Config{
-				CaCert:    []byte(crt),
-				Cert:      []byte(crt),
-				Key:       []byte(key),
-				SingleTls: single,
-			},
+		d := &TCPTlsDialer{
+			CaCert: []byte(crt),
+			Cert:   []byte(crt),
+			Key:    []byte(key),
+			Single: single,
 		}
 		if !single {
 			d.CaCert = nil
 		}
 
-		cli, err := d.DialTimeout("tls", channel.LocalAddr(), 5*time.Second)
+		cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
 		require.NoError(t, err)
 		defer cli.Close()
 

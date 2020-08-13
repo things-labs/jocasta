@@ -2,7 +2,6 @@ package cs
 
 import (
 	"net"
-	"runtime"
 	"testing"
 	"time"
 
@@ -11,12 +10,18 @@ import (
 )
 
 func TestKcp(t *testing.T) {
-	var err error
-	runtime.GOMAXPROCS(2)
+	key := []byte("qwertyuiopasdfghjklzxcvbnm123456")
+
 	require.True(t, HasKcpBlockCrypt("blowfish"))
+	_, err := NewKcpBlockCrypt("invalidMethod", key)
+	require.Error(t, err)
+
+	_, err = NewKcpBlockCrypt("blowfish", key[:8])
+	require.Error(t, err)
 
 	fun := func(method string, compress bool) {
-		// t.Logf("kcp crypt method: %s compress: %t", method, compress)
+		var err error
+
 		config := KcpConfig{
 			MTU:          1400,
 			SndWnd:       32,
@@ -33,7 +38,7 @@ func TestKcp(t *testing.T) {
 			SockBuf:      4194304,
 			KeepAlive:    10,
 		}
-		config.Block, err = NewKcpBlockCryptWithPbkdf2(method, "key", "thinkgos-goproxy")
+		config.Block, err = NewKcpBlockCryptWithPbkdf2(method, "key", "thinkgos-jocasta")
 		require.NoError(t, err)
 
 		// server
@@ -59,7 +64,7 @@ func TestKcp(t *testing.T) {
 		defer srv.Close()
 
 		// client
-		d := KCPDialer{config}
+		d := &KCPDialer{config}
 		cli, err := d.DialTimeout(srv.LocalAddr(), time.Second)
 		require.NoError(t, err)
 		defer cli.Close()

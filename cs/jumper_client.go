@@ -20,7 +20,7 @@ type Jumper struct {
 	proxyURL *url.URL
 }
 
-func ValidJumper(proxyURL string) bool {
+func ValidJumperProxyURL(proxyURL string) bool {
 	_, err := url.Parse(proxyURL)
 	return err == nil
 }

@@ -43,7 +43,8 @@ func (sf *UDP) ListenAndServe() error {
 			return err
 		}
 		data := buf[0:n]
-		sf.goFunc(func() {
+
+		gpool.Go(sf.GoPool, func() {
 			sf.Handler(sf.UDPConn, Message{
 				LocalAddr: addr,
 				SrcAddr:   srcAddr,
@@ -65,12 +66,4 @@ func (sf *UDP) LocalAddr() (addr string) {
 		addr = sf.UDPConn.LocalAddr().String()
 	}
 	return
-}
-
-func (sf *UDP) goFunc(f func()) {
-	if sf.GoPool == nil {
-		sf.GoPool.Go(f)
-	} else {
-		go f()
-	}
 }

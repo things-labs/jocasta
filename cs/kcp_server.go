@@ -19,7 +19,7 @@ type KCPServer struct {
 	GoPool  gpool.Pool
 	Handler Handler
 	mu      sync.Mutex
-	l       net.Listener
+	ln      net.Listener
 }
 
 func (sf *KCPServer) ListenAndServe() error {
@@ -39,7 +39,7 @@ func (sf *KCPServer) ListenAndServe() error {
 		return err
 	}
 	sf.mu.Lock()
-	sf.l = ln
+	sf.ln = ln
 	sf.mu.Unlock()
 	setStatus(sf.Status, nil)
 	for {
@@ -67,8 +67,8 @@ func (sf *KCPServer) ListenAndServe() error {
 // LocalAddr return address
 func (sf *KCPServer) LocalAddr() (addr string) {
 	sf.mu.Lock()
-	if sf.l != nil {
-		addr = sf.l.Addr().String()
+	if sf.ln != nil {
+		addr = sf.ln.Addr().String()
 	}
 	sf.mu.Unlock()
 	return
@@ -77,8 +77,8 @@ func (sf *KCPServer) LocalAddr() (addr string) {
 // Close close kcp
 func (sf *KCPServer) Close() (err error) {
 	sf.mu.Lock()
-	if sf.l != nil {
-		err = sf.l.Close()
+	if sf.ln != nil {
+		err = sf.ln.Close()
 	}
 	sf.mu.Unlock()
 	return

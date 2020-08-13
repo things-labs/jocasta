@@ -104,7 +104,7 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 			CaCert:  sf.CaCert,
 			Cert:    sf.Cert,
 			Key:     sf.Key,
-			Single:  false,
+			Single:  sf.SingleTls,
 			Status:  sf.status,
 			GoPool:  sf.GoPool,
 			Handler: sf.Handler,

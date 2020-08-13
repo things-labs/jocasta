@@ -39,7 +39,7 @@ type KcpConfig struct {
 
 	SockBuf   int            // 读写缓存器, 默认 4194304 4M
 	Block     kcp.BlockCrypt // block encryption
-	KeepAlive int            // TODO: 未用?? 默认10
+	KeepAlive int            // TODO: 未用 默认10
 }
 
 type blockCryptInfo struct {
@@ -64,7 +64,7 @@ var blockCrypts = map[string]blockCryptInfo{
 }
 
 // NewKcpBlockCrypt 根据method和key生成kcp.BlockCrypt
-// Note: key大于或等于对应加密方法key长度
+// Note: key大于或等于对应加密方法的key长度
 func NewKcpBlockCrypt(method string, key []byte) (kcp.BlockCrypt, error) {
 	bc, ok := blockCrypts[method]
 	if !ok {
