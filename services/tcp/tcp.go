@@ -256,7 +256,7 @@ func (sf *TCP) proxyStream2Stream(inConn net.Conn) {
 	}()
 
 	err = sword.Binding.Proxy(inConn, targetConn)
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) && !extnet.IsErrClosed(err) {
 		sf.log.Errorf("[ TCP ] proxying, %s", err)
 	}
 }
@@ -278,9 +278,11 @@ func (sf *TCP) proxyStream2UDP(inConn net.Conn) {
 		// read client ---> write remote
 		da, err := captain.ParseStreamDatagram(inConn)
 		if err != nil {
-			sf.log.Warnf("[ TCP ] udp read from local conn fail, %v", err)
 			if strings.Contains(err.Error(), "n != int(") {
 				continue
+			}
+			if !extnet.IsErrClosed(err) {
+				sf.log.Warnf("[ TCP ] udp read from local conn fail, %v", err)
 			}
 			return
 		}
