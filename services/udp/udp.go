@@ -27,25 +27,25 @@ import (
 
 const defaultUDPIdleTime = 10 // 单位s
 
+// Config config
 type Config struct {
 	// parent
 	ParentType     string `validate:"required,oneof=tcp tls stcp kcp udp"` // 父级协议,tcp|tls|stcp|kcp|udp default empty
 	Parent         string // 父级地址,格式addr:port, default: empty
 	ParentCompress bool   // 父级是否传输压缩, default: false
 	// local
-	Local string // 本地监听地址 default :28080
+	Local string // 本地监听地址 default :22800
 	// tls有效
-	CertFile   string // cert文件名
-	KeyFile    string // key文件名
-	CaCertFile string // ca文件, default: empty
+	CertFile   string // cert文件 default: proxy.crt
+	KeyFile    string // key文件 default: proxy.key
+	CaCertFile string // ca文件 default: empty
 	// kcp有效
 	SKCPConfig *ccs.SKCPConfig
 	// stcp有效
 	STCPMethod   string `validate:"required"` // default: aes-192-cfb
-	STCPPassword string // default: thinkgos's_goproxy
+	STCPPassword string // default: thinkgos's_jocasta
 	// 其它
-	Timeout             time.Duration `validate:"required"` // tcp连接父级代理超时时间 单位ms
-	CheckParentInterval int           // TODO: not used 确认代理是否正常间隔,0表示不检查, default 3 单位s
+	Timeout time.Duration `validate:"required"` // 连接父级或真实服务器超时时间, default: 2s
 	// private
 	cert   []byte
 	key    []byte

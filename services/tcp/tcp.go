@@ -31,6 +31,7 @@ import (
 
 const defaultUDPIdleTime = 10 // 单位s
 
+// Config config
 type Config struct {
 	// parent
 	ParentType     string `validate:"required,oneof=tcp tls stcp kcp udp"` // 父级协议类型 tcp|tls|stcp|kcp|udp default: empty
