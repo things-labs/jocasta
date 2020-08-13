@@ -27,7 +27,7 @@ func New(gcInterval time.Duration, gcIterCb func(key string, value interface{}, 
 	}
 }
 
-// RunWatch watch interval
+// RunWatch watch conn interval
 func (sf *Manager) RunWatch(ctx context.Context) {
 	if sf.interval <= 0 {
 		return

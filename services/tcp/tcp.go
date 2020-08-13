@@ -38,7 +38,7 @@ type Config struct {
 	ParentCompress bool   // 父级支持压缩传输, default: false
 	// local
 	LocalType     string `validate:"required,oneof=tcp tls stcp kcp"` // 本地协议类型 tcp|tls|stcp|kcp
-	Local         string // 本地监听地址 default :28080
+	Local         string // 本地监听地址 default :22800
 	LocalCompress bool   // 本地支持压缩传输, default: false
 	// tls有效
 	CertFile   string // cert文件 default: proxy.crt
@@ -48,16 +48,15 @@ type Config struct {
 	SKCPConfig *ccs.SKCPConfig
 	// stcp有效
 	STCPMethod   string `validate:"required"` // stcp 加密方法 default: aes-192-cfb
-	STCPPassword string // stcp 加密密钥 default: thinkgos's_goproxy
+	STCPPassword string // stcp 加密密钥 default: thinkgos's_jocasta
 	// 其它
-	Timeout time.Duration `validate:"required"` // 连接父级或真实服务器超时时间,default: 2s
+	Timeout time.Duration `validate:"required"` // 连接父级或真实服务器超时时间, default: 2s
 	// 跳板机 仅支持tls,tcp下使用
 	// https://username:password@host:port
 	// https://host:port
 	// socks5://username:password@host:port
 	// socks5://host:port
-	Jumper              string
-	CheckParentInterval int // TODO: not used确认代理是否正常间隔,0表示不检查, default 3 单位s
+	Jumper string
 	// private
 	cert   []byte
 	key    []byte
@@ -69,7 +68,7 @@ type connItem struct {
 	srcAddr        *net.UDPAddr
 	targetAddr     *net.UDPAddr
 	targetConn     net.Conn
-	lastActiveTime int64
+	lastActiveTime int64 // unix time
 }
 
 type TCP struct {
