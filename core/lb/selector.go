@@ -1,223 +1,193 @@
 package lb
 
 import (
-	"crypto/md5"
+	"hash/fnv"
+	"math/rand"
 	"net"
+	"sync/atomic"
 )
 
-// Selector select the backend
-type Selector interface {
-	// 根据源地址,获得后端连接
-	SelectBackend(srcAddr string) *Backend
-	// Backends return all upstreams
-	Backends() Upstreams
-	// ConnsIncrease increase the addr conns count
-	ConnsIncrease(addr string)
-	// ConnsDecrease decrease the addr conns count
-	ConnsDecrease(addr string)
-	// HasActive has any active a backend
-	HasActive() bool
-	// Stop stop all the backend
-	Stop()
-	// ActiveCount active backend count
-	ActiveCount() int
+func init() {
+	RegisterSelector("random", func() Selector { return new(Random) })
+	RegisterSelector("roundrobin", func() Selector { return new(RoundRobin) })
+	RegisterSelector("leastconn", func() Selector { return new(LeastConn) })
+	RegisterSelector("iphash", func() Selector { return new(IPHash) })
+	RegisterSelector("addrhash", func() Selector { return new(AddrHash) })
+	RegisterSelector("leasttime", func() Selector { return new(LeastTime) })
+	RegisterSelector("weight", func() Selector { return new(Weight) })
+}
+
+// Random is a policy that selects an available backend at random.
+type Random struct{}
+
+// Select implement Selector
+func (Random) Select(pool UpstreamPool, _ string) *Upstream {
+	// use reservoir sampling because the number of available
+	// hosts isn't known: https://en.wikipedia.org/wiki/Reservoir_sampling
+	var b *Upstream
+	var count int
+
+	for _, upstream := range pool {
+		if upstream.Active() {
+			// (n % 1 == 0) holds for all n, therefore a
+			// upstream will always be chosen if there is at
+			// least one available
+			count++
+			if (rand.Int() % count) == 0 {
+				b = upstream
+			}
+		}
+	}
+	return b
 }
 
 // RoundRobin round robin 轮询模式
 type RoundRobin struct {
-	backendIndex int
-	Upstreams
+	robin uint32
 }
 
-// NewRoundRobin new round robin
-func NewRoundRobin(upstreams Upstreams) Selector {
-	return &RoundRobin{Upstreams: upstreams}
-}
-
-// SelectBackend implement Selector
-func (sf *RoundRobin) SelectBackend(srcAddr string) (b *Backend) {
-	if len(sf.Upstreams) == 0 {
-		return
+// Select implement Selector
+func (sf *RoundRobin) Select(pool UpstreamPool, _ string) *Upstream {
+	for i, n := uint32(0), uint32(len(pool)); i < n; i++ {
+		newRobin := atomic.AddUint32(&sf.robin, 1)
+		b := pool[newRobin%n]
+		if b.Active() {
+			return b
+		}
 	}
-	if len(sf.Upstreams) == 1 {
-		return sf.Upstreams[0]
-	}
-
-RETRY:
-	if found := sf.HasActive(); !found {
-		return sf.Upstreams[0]
-	}
-	sf.backendIndex++
-	if sf.backendIndex > len(sf.Upstreams)-1 {
-		sf.backendIndex = 0
-	}
-	if !sf.Upstreams[sf.backendIndex].Active() {
-		goto RETRY
-	}
-	return sf.Upstreams[sf.backendIndex]
+	return nil
 }
 
 // LeastConn least conn 使用最小连接数的
-type LeastConn struct {
-	Upstreams
-}
+type LeastConn struct{}
 
-// NewLeastConn new least conn
-func NewLeastConn(upstreams Upstreams) Selector {
-	return &LeastConn{upstreams}
-}
+// Select implement Selector
+func (LeastConn) Select(pool UpstreamPool, _ string) *Upstream {
+	var best *Upstream
 
-// SelectBackend implement Selector
-func (sf *LeastConn) SelectBackend(srcAddr string) (b *Backend) {
-	if len(sf.Upstreams) == 0 {
-		return
-	}
-	if len(sf.Upstreams) == 1 {
-		return sf.Upstreams[0]
-	}
-
-	if found := sf.HasActive(); !found {
-		return sf.Upstreams[0]
-	}
-
-	min := sf.Upstreams[0].ConnsCount()
-	index := 0
-	for i, b := range sf.Upstreams {
+	min, count := int64(-1), 0
+	for _, b := range pool {
 		if b.Active() {
-			min = b.ConnsCount()
-			index = i
-			break
+			numConns := b.ConnsCount()
+			if min == -1 || numConns < min {
+				min = numConns
+				count = 0
+			}
+			// among hosts with same least connections, perform a reservoir
+			// sample: https://en.wikipedia.org/wiki/Reservoir_sampling
+			if numConns == min {
+				count++
+				if rand.Int()%count == 0 {
+					best = b
+				}
+			}
 		}
 	}
-	for i, b := range sf.Upstreams {
-		if b.Active() && b.ConnsCount() <= min {
-			min = b.ConnsCount()
-			index = i
-		}
-	}
-	return sf.Upstreams[index]
+	return best
 }
 
-// Hash ip hash 实现
-type Hash struct {
-	Upstreams
-}
+// IPHash ip hash 实现
+type IPHash struct{}
 
-// NewHash new hash
-func NewHash(upstreams Upstreams) Selector {
-	return &Hash{upstreams}
-}
-
-// SelectBackend implement Selector
-func (sf *Hash) SelectBackend(srcAddr string) *Backend {
-	if len(sf.Upstreams) == 0 {
-		return nil
+// Select implement Selector
+func (IPHash) Select(pool UpstreamPool, srcAddr string) *Upstream {
+	if srcAddr == "" {
+		return Random{}.Select(pool, srcAddr)
 	}
-	if len(sf.Upstreams) == 1 {
-		return sf.Upstreams[0]
-	}
-
 	host, _, err := net.SplitHostPort(srcAddr)
 	if err != nil {
 		host = srcAddr
 	}
+	return hashing(pool, host)
+}
 
-	i := 0
-	for _, b := range md5.Sum([]byte(host)) {
-		i += int(b)
-	}
+// AddrHash host:port hash 实现
+type AddrHash struct{}
 
-	if active := sf.HasActive(); !active {
-		return sf.Upstreams[0]
+// Select implement Selector
+func (AddrHash) Select(pool UpstreamPool, srcAddr string) *Upstream {
+	if srcAddr == "" {
+		return Random{}.Select(pool, srcAddr)
 	}
-RETRY:
-	k := i % len(sf.Upstreams)
-	if !sf.Upstreams[k].Active() {
-		i++
-		goto RETRY
+	return hashing(pool, srcAddr)
+}
+
+func hashing(pool UpstreamPool, s string) *Upstream {
+	poolLen := uint32(len(pool))
+	index := hash(s) % poolLen
+	for i := uint32(0); i < poolLen; i++ {
+		upstream := pool[index%poolLen]
+		if upstream.Active() {
+			return upstream
+		}
+		index++
 	}
-	return sf.Upstreams[k]
+	return nil
+}
+
+// hash calculates a fast hash based on s.
+func hash(s string) uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(s)) // nolint: errcheck
+	return h.Sum32()
 }
 
 // Weight weight 根据权重和连接数
-type Weight struct {
-	Upstreams
-}
+type Weight struct{}
 
-// NewWeight new a weight
-func NewWeight(upstreams Upstreams) Selector {
-	return &Weight{upstreams}
-}
-
-// SelectBackend implement Selector
-func (sf *Weight) SelectBackend(srcAddr string) (b *Backend) {
-	if len(sf.Upstreams) == 0 {
+// Select implement Selector
+func (Weight) Select(pool UpstreamPool, srcAddr string) (b *Upstream) {
+	if len(pool) == 0 {
 		return
 	}
-	if len(sf.Upstreams) == 1 {
-		return sf.Upstreams[0]
+	if len(pool) == 1 {
+		return pool[0]
 	}
 
-	found := sf.HasActive()
-	if !found {
-		return sf.Upstreams[0]
-	}
-
-	min := sf.Upstreams[0].ConnsCount() / int64(sf.Upstreams[0].Weight)
+	min := pool[0].ConnsCount() / int64(pool[0].Weight)
 	index := 0
-	for i, b := range sf.Upstreams {
+	for i, b := range pool {
 		if b.Active() {
 			min = b.ConnsCount() / int64(b.Weight)
 			index = i
 			break
 		}
 	}
-	for i, b := range sf.Upstreams {
+	for i, b := range pool {
 		if b.Active() && b.ConnsCount()/int64(b.Weight) <= min {
 			min = b.ConnsCount()
 			index = i
 		}
 	}
-	return sf.Upstreams[index]
+	return pool[index]
 }
 
 // LeastTime 使用连接时间最小的
-type LeastTime struct {
-	Upstreams
-}
+type LeastTime struct{}
 
-// NewLeastTime new a least time selector
-func NewLeastTime(upstreams Upstreams) Selector {
-	return &LeastTime{upstreams}
-}
-
-// SelectBackend implement Selector
-func (sf *LeastTime) SelectBackend(srcAddr string) (b *Backend) {
-	if len(sf.Upstreams) == 0 {
+// Select implement Selector
+func (LeastTime) Select(pool UpstreamPool, srcAddr string) (b *Upstream) {
+	if len(pool) == 0 {
 		return
 	}
-	if len(sf.Upstreams) == 1 {
-		return sf.Upstreams[0]
+	if len(pool) == 1 {
+		return pool[0]
 	}
 
-	if found := sf.HasActive(); !found {
-		return sf.Upstreams[0]
-	}
-
-	min := sf.Upstreams[0].ConnectUsedTime()
+	min := pool[0].ConnectUsedTime()
 	index := 0
-	for i, b := range sf.Upstreams {
+	for i, b := range pool {
 		if b.Active() {
 			min = b.ConnectUsedTime()
 			index = i
 			break
 		}
 	}
-	for i, b := range sf.Upstreams {
+	for i, b := range pool {
 		if b.Active() && b.ConnectUsedTime() > 0 && b.ConnectUsedTime() <= min {
 			min = b.ConnectUsedTime()
 			index = i
 		}
 	}
-	return sf.Upstreams[index]
+	return pool[index]
 }

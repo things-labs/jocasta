@@ -25,8 +25,8 @@ type Config struct {
 	ConnFactory func(address string, timeout time.Duration) (net.Conn, error)
 }
 
-// Backend 后端
-type Backend struct {
+// Upstream 后端
+type Upstream struct {
 	Config
 	active          int32        // 是否处于活动状态
 	connections     int64        // 连接数
@@ -38,7 +38,7 @@ type Backend struct {
 	log             logger.Logger
 }
 
-func NewBackend(config Config, dns *idns.Resolver, log logger.Logger) (*Backend, error) {
+func NewUpstream(config Config, dns *idns.Resolver, log logger.Logger) (*Upstream, error) {
 	if config.Address == "" {
 		return nil, errors.New("address required")
 	}
@@ -58,7 +58,7 @@ func NewBackend(config Config, dns *idns.Resolver, log logger.Logger) (*Backend,
 		config.RetryTime = time.Second * 2
 	}
 
-	b := &Backend{
+	b := &Upstream{
 		Config: config,
 		stop:   make(chan struct{}, 1),
 		dns:    dns,
@@ -69,20 +69,20 @@ func NewBackend(config Config, dns *idns.Resolver, log logger.Logger) (*Backend,
 }
 
 // ConnsCount connection count
-func (b *Backend) ConnsCount() int64 { return atomic.LoadInt64(&b.connections) }
+func (b *Upstream) ConnsCount() int64 { return atomic.LoadInt64(&b.connections) }
 
 // ConnsIncrease connection count increase one
-func (b *Backend) ConnsIncrease() { atomic.AddInt64(&b.connections, 1) }
+func (b *Upstream) ConnsIncrease() { atomic.AddInt64(&b.connections, 1) }
 
 // ConnsDecrease connection count decrease one
-func (b *Backend) ConnsDecrease() { atomic.AddInt64(&b.connections, -1) }
+func (b *Upstream) ConnsDecrease() { atomic.AddInt64(&b.connections, -1) }
 
 // Active return active or not
-func (b *Backend) Active() bool { return atomic.LoadInt32(&b.active) == 1 }
+func (b *Upstream) Active() bool { return atomic.LoadInt32(&b.active) == 1 }
 
-func (b *Backend) ConnectUsedTime() time.Duration { return b.connectUsedTime.Load().(time.Duration) }
+func (b *Upstream) ConnectUsedTime() time.Duration { return b.connectUsedTime.Load().(time.Duration) }
 
-func (b *Backend) StartHeartCheck() {
+func (b *Upstream) StartHeartCheck() {
 	if b.IsMuxCheck {
 		go b.runMuxHeartCheck()
 	} else {
@@ -90,7 +90,7 @@ func (b *Backend) StartHeartCheck() {
 	}
 }
 
-func (b *Backend) StopHeartCheck() {
+func (b *Upstream) StopHeartCheck() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if !b.hasClosed {
@@ -100,7 +100,7 @@ func (b *Backend) StopHeartCheck() {
 	}
 }
 
-func (b *Backend) runMuxHeartCheck() {
+func (b *Upstream) runMuxHeartCheck() {
 	var t = time.NewTicker(b.RetryTime)
 
 	defer func() {
@@ -133,7 +133,7 @@ func (b *Backend) runMuxHeartCheck() {
 }
 
 // Monitoring the backend
-func (b *Backend) runTCPHeartCheck() {
+func (b *Upstream) runTCPHeartCheck() {
 	var activeTries int
 	var inactiveTries int
 	var t = time.NewTicker(b.RetryTime)
@@ -171,7 +171,7 @@ func (b *Backend) runTCPHeartCheck() {
 	}
 }
 
-func (b *Backend) getConn() (conn net.Conn, err error) {
+func (b *Upstream) getConn() (conn net.Conn, err error) {
 	address := b.Address
 	if b.dns != nil && b.dns.PublicDNSAddr() != "" {
 		if address, err = b.dns.Resolve(b.Address); err != nil {
@@ -186,14 +186,14 @@ func (b *Backend) getConn() (conn net.Conn, err error) {
 
 /******************************************************************************/
 
-// Upstreams upstream backend
-type Upstreams []*Backend
+// UpstreamPool upstream pool
+type UpstreamPool []*Upstream
 
-// NewUpstreams new stream
-func NewUpstreams(configs []Config, dr *idns.Resolver, log logger.Logger) Upstreams {
-	bks := make([]*Backend, 0, len(configs))
+// NewUpstreamPool new stream pool
+func NewUpstreamPool(configs []Config, dr *idns.Resolver, log logger.Logger) UpstreamPool {
+	bks := make([]*Upstream, 0, len(configs))
 	for _, c := range configs {
-		b, err := NewBackend(c, dr, log)
+		b, err := NewUpstream(c, dr, log)
 		if err != nil {
 			continue
 		}
@@ -204,13 +204,13 @@ func NewUpstreams(configs []Config, dr *idns.Resolver, log logger.Logger) Upstre
 }
 
 // Len return upstreams total length
-func (ups Upstreams) Len() int { return len(ups) }
+func (ups UpstreamPool) Len() int { return len(ups) }
 
 // Backends return all upstreams
-func (ups Upstreams) Backends() Upstreams { return ups }
+func (ups UpstreamPool) Backends() UpstreamPool { return ups }
 
 // ConnsIncrease increase the addr conns count
-func (ups Upstreams) ConnsIncrease(addr string) {
+func (ups UpstreamPool) ConnsIncrease(addr string) {
 	for _, bk := range ups {
 		if bk.Address == addr {
 			bk.ConnsIncrease()
@@ -220,7 +220,7 @@ func (ups Upstreams) ConnsIncrease(addr string) {
 }
 
 // ConnsDecrease decrease the addr conns count
-func (ups Upstreams) ConnsDecrease(addr string) {
+func (ups UpstreamPool) ConnsDecrease(addr string) {
 	for _, bk := range ups {
 		if bk.Address == addr {
 			bk.ConnsDecrease()
@@ -230,7 +230,7 @@ func (ups Upstreams) ConnsDecrease(addr string) {
 }
 
 // HasActive has any active a backend
-func (ups Upstreams) HasActive() bool {
+func (ups UpstreamPool) HasActive() bool {
 	for _, b := range ups {
 		if b.Active() {
 			return true
@@ -240,14 +240,14 @@ func (ups Upstreams) HasActive() bool {
 }
 
 // Stop stop all the backend
-func (ups Upstreams) Stop() {
+func (ups UpstreamPool) Stop() {
 	for _, b := range ups {
 		b.StopHeartCheck()
 	}
 }
 
 // ActiveCount active backend count
-func (ups Upstreams) ActiveCount() (count int) {
+func (ups UpstreamPool) ActiveCount() (count int) {
 	for _, b := range ups {
 		if b.Active() {
 			count++
