@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net"
 	"sync/atomic"
+	"time"
 )
 
 func init() {
@@ -28,7 +29,7 @@ func (Random) Select(pool UpstreamPool, _ string) *Upstream {
 	var count int
 
 	for _, upstream := range pool {
-		if upstream.Active() {
+		if upstream.Available() {
 			// (n % 1 == 0) holds for all n, therefore a
 			// upstream will always be chosen if there is at
 			// least one available
@@ -51,7 +52,7 @@ func (sf *RoundRobin) Select(pool UpstreamPool, _ string) *Upstream {
 	for i, n := uint32(0), uint32(len(pool)); i < n; i++ {
 		newRobin := atomic.AddUint32(&sf.robin, 1)
 		b := pool[newRobin%n]
-		if b.Active() {
+		if b.Available() {
 			return b
 		}
 	}
@@ -67,7 +68,7 @@ func (LeastConn) Select(pool UpstreamPool, _ string) *Upstream {
 
 	min, count := int64(-1), 0
 	for _, b := range pool {
-		if b.Active() {
+		if b.Available() {
 			numConns := b.ConnsCount()
 			if min == -1 || numConns < min {
 				min = numConns
@@ -117,7 +118,7 @@ func hashing(pool UpstreamPool, s string) *Upstream {
 	index := hash(s) % poolLen
 	for i := uint32(0); i < poolLen; i++ {
 		upstream := pool[index%poolLen]
-		if upstream.Active() {
+		if upstream.Available() {
 			return upstream
 		}
 		index++
@@ -136,7 +137,7 @@ func hash(s string) uint32 {
 type Weight struct{}
 
 // Select implement Selector
-func (Weight) Select(pool UpstreamPool, srcAddr string) (b *Upstream) {
+func (Weight) Select(pool UpstreamPool, _ string) (b *Upstream) {
 	if len(pool) == 0 {
 		return
 	}
@@ -147,14 +148,14 @@ func (Weight) Select(pool UpstreamPool, srcAddr string) (b *Upstream) {
 	min := pool[0].ConnsCount() / int64(pool[0].Weight)
 	index := 0
 	for i, b := range pool {
-		if b.Active() {
+		if b.Available() {
 			min = b.ConnsCount() / int64(b.Weight)
 			index = i
 			break
 		}
 	}
 	for i, b := range pool {
-		if b.Active() && b.ConnsCount()/int64(b.Weight) <= min {
+		if b.Available() && b.ConnsCount()/int64(b.Weight) <= min {
 			min = b.ConnsCount()
 			index = i
 		}
@@ -162,32 +163,30 @@ func (Weight) Select(pool UpstreamPool, srcAddr string) (b *Upstream) {
 	return pool[index]
 }
 
-// LeastTime 使用连接时间最小的
+// LeastTime 最小响应时间
 type LeastTime struct{}
 
 // Select implement Selector
-func (LeastTime) Select(pool UpstreamPool, srcAddr string) (b *Upstream) {
-	if len(pool) == 0 {
-		return
-	}
-	if len(pool) == 1 {
-		return pool[0]
-	}
+func (LeastTime) Select(pool UpstreamPool, _ string) (b *Upstream) {
+	var best *Upstream
 
-	min := pool[0].ConnectUsedTime()
-	index := 0
-	for i, b := range pool {
-		if b.Active() {
-			min = b.ConnectUsedTime()
-			index = i
-			break
+	min, count := time.Duration(-1), 0
+	for _, b := range pool {
+		if b.Available() {
+			tm := b.LeastTime()
+			if min == -1 || tm < min {
+				min = tm
+				count = 0
+			}
+			// among hosts with same least connections, perform a reservoir
+			// sample: https://en.wikipedia.org/wiki/Reservoir_sampling
+			if tm == min {
+				count++
+				if rand.Int()%count == 0 {
+					best = b
+				}
+			}
 		}
 	}
-	for i, b := range pool {
-		if b.Active() && b.ConnectUsedTime() > 0 && b.ConnectUsedTime() <= min {
-			min = b.ConnectUsedTime()
-			index = i
-		}
-	}
-	return pool[index]
+	return best
 }

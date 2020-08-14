@@ -15,7 +15,7 @@ import (
 
 // Config 后端配置
 type Config struct {
-	Address     string        // 后端地址
+	Addr        string        // 后端地址
 	MinActive   int           // 最大测试已激活次数
 	MaxInactive int           // 最大测试未激活次数
 	Weight      int           // 权重
@@ -28,18 +28,21 @@ type Config struct {
 // Upstream 后端
 type Upstream struct {
 	Config
-	active          int32        // 是否处于活动状态
-	connections     int64        // 连接数
-	connectUsedTime atomic.Value // time.Duration dial 连接使用的时间 单位ms
-	mu              sync.Mutex
-	hasClosed       bool
-	stop            chan struct{}
-	dns             *idns.Resolver
-	log             logger.Logger
+	health         int32        // 是否健康
+	connections    int64        // 连接数
+	maxConnections int64        // 最大连接数,0表示不限制, default: 0
+	leastTime      atomic.Value // time.Duration 最小响应时间
+
+	mu        sync.Mutex
+	hasClosed bool
+	stop      chan struct{}
+	dns       *idns.Resolver
+	log       logger.Logger
 }
 
+// NewUpstream new a upstream
 func NewUpstream(config Config, dns *idns.Resolver, log logger.Logger) (*Upstream, error) {
-	if config.Address == "" {
+	if config.Addr == "" {
 		return nil, errors.New("address required")
 	}
 	if config.MinActive == 0 {
@@ -64,7 +67,7 @@ func NewUpstream(config Config, dns *idns.Resolver, log logger.Logger) (*Upstrea
 		dns:    dns,
 		log:    log,
 	}
-	b.connectUsedTime.Store(time.Duration(0))
+	b.leastTime.Store(time.Duration(0))
 	return b, nil
 }
 
@@ -77,10 +80,14 @@ func (b *Upstream) ConnsIncrease() { atomic.AddInt64(&b.connections, 1) }
 // ConnsDecrease connection count decrease one
 func (b *Upstream) ConnsDecrease() { atomic.AddInt64(&b.connections, -1) }
 
-// Active return active or not
-func (b *Upstream) Active() bool { return atomic.LoadInt32(&b.active) == 1 }
+// Healthy return health or not
+func (b *Upstream) Healthy() bool { return atomic.LoadInt32(&b.health) == 1 }
 
-func (b *Upstream) ConnectUsedTime() time.Duration { return b.connectUsedTime.Load().(time.Duration) }
+func (b *Upstream) Available() bool { return atomic.LoadInt32(&b.health) == 1 && !b.Full() }
+
+func (b *Upstream) LeastTime() time.Duration { return b.leastTime.Load().(time.Duration) }
+
+func (b *Upstream) Full() bool { return b.maxConnections > 0 && b.connections >= b.maxConnections }
 
 func (b *Upstream) StartHeartCheck() {
 	if b.IsMuxCheck {
@@ -114,12 +121,12 @@ func (b *Upstream) runMuxHeartCheck() {
 	for {
 		start := time.Now()
 		c, err := b.getConn()
-		b.connectUsedTime.Store(time.Since(start))
+		b.leastTime.Store(time.Since(start))
 		active := int32(1)
 		if err != nil {
 			active = 0
 		}
-		atomic.StoreInt32(&b.active, active)
+		atomic.StoreInt32(&b.health, active)
 		if err == nil {
 			c.Read(buf)
 		}
@@ -148,19 +155,19 @@ func (b *Upstream) runTCPHeartCheck() {
 	for {
 		start := time.Now()
 		c, err := b.getConn()
-		b.connectUsedTime.Store(time.Since(start))
+		b.leastTime.Store(time.Since(start))
 		if err != nil {
-			// Max tries larger than consider max inactive, active failed
+			// Max tries larger than consider max inactive, health failed
 			if inactiveTries++; inactiveTries >= b.MaxInactive {
 				activeTries = 0
-				atomic.StoreInt32(&b.active, 0)
+				atomic.StoreInt32(&b.health, 0)
 			}
 		} else {
 			c.Close()
-			// Max tries larger than consider max active, active success
+			// Max tries larger than consider max health, health success
 			if activeTries++; activeTries >= b.MinActive {
 				inactiveTries = 0
-				atomic.StoreInt32(&b.active, 1)
+				atomic.StoreInt32(&b.health, 1)
 			}
 		}
 		select {
@@ -172,10 +179,10 @@ func (b *Upstream) runTCPHeartCheck() {
 }
 
 func (b *Upstream) getConn() (conn net.Conn, err error) {
-	address := b.Address
+	address := b.Addr
 	if b.dns != nil && b.dns.PublicDNSAddr() != "" {
-		if address, err = b.dns.Resolve(b.Address); err != nil {
-			b.log.Errorf("dns resolve address: %s, %+v", b.Address, err)
+		if address, err = b.dns.Resolve(b.Addr); err != nil {
+			b.log.Errorf("dns resolve address: %s, %+v", b.Addr, err)
 		}
 	}
 	if b.ConnFactory != nil {
@@ -206,13 +213,10 @@ func NewUpstreamPool(configs []Config, dr *idns.Resolver, log logger.Logger) Ups
 // Len return upstreams total length
 func (ups UpstreamPool) Len() int { return len(ups) }
 
-// Backends return all upstreams
-func (ups UpstreamPool) Backends() UpstreamPool { return ups }
-
 // ConnsIncrease increase the addr conns count
 func (ups UpstreamPool) ConnsIncrease(addr string) {
 	for _, bk := range ups {
-		if bk.Address == addr {
+		if bk.Addr == addr {
 			bk.ConnsIncrease()
 			return
 		}
@@ -222,17 +226,17 @@ func (ups UpstreamPool) ConnsIncrease(addr string) {
 // ConnsDecrease decrease the addr conns count
 func (ups UpstreamPool) ConnsDecrease(addr string) {
 	for _, bk := range ups {
-		if bk.Address == addr {
+		if bk.Addr == addr {
 			bk.ConnsDecrease()
 			return
 		}
 	}
 }
 
-// HasActive has any active a backend
-func (ups UpstreamPool) HasActive() bool {
+// HasHealthy has any health upstream
+func (ups UpstreamPool) HasHealthy() bool {
 	for _, b := range ups {
-		if b.Active() {
+		if b.Healthy() {
 			return true
 		}
 	}
@@ -246,10 +250,10 @@ func (ups UpstreamPool) Stop() {
 	}
 }
 
-// ActiveCount active backend count
-func (ups UpstreamPool) ActiveCount() (count int) {
+// HealthyCount health backend count
+func (ups UpstreamPool) HealthyCount() (count int) {
 	for _, b := range ups {
-		if b.Active() {
+		if b.Healthy() {
 			count++
 		}
 	}

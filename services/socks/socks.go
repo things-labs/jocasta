@@ -270,7 +270,7 @@ func (sf *Socks) initService() (err error) {
 				}
 			}
 			configs = append(configs, lb.Config{
-				Address:     _addr,
+				Addr:        _addr,
 				Weight:      weight,
 				MinActive:   1,
 				MaxInactive: 2,
@@ -453,7 +453,7 @@ func (sf *Socks) proxyTCP(ctx context.Context, writer io.Writer, request *socks5
 		return newValue
 	})
 	if len(sf.cfg.Parent) > 0 {
-		sf.lb.IncreaseConns(lbAddr)
+		sf.lb.ConnsIncrease(lbAddr)
 	}
 	sf.log.Infof("[ Socks ] tcp %s --> %s connected", srcAddr, targetAddr)
 
@@ -461,7 +461,7 @@ func (sf *Socks) proxyTCP(ctx context.Context, writer io.Writer, request *socks5
 		sf.log.Infof("[ Socks ] tcp %s --> %s released", srcAddr, targetAddr)
 		sf.userConns.Remove(srcAddr)
 		if len(sf.cfg.Parent) > 0 {
-			sf.lb.DecreaseConns(lbAddr)
+			sf.lb.ConnsDecrease(lbAddr)
 		}
 	}()
 

@@ -91,34 +91,33 @@ func (sf *Group) Select(srcAddr string, onlyHa bool) (addr string) {
 	addr = ""
 
 	if len(sf.upstreams) == 1 {
-		return sf.upstreams[0].Address
+		return sf.upstreams[0].Addr
 	}
 	if onlyHa {
-		if sf.last != nil && (sf.last.Active() || sf.last.ConnectUsedTime() == 0) {
+		if sf.last != nil && (sf.last.Healthy() || sf.last.LeastTime() == 0) {
 			if sf.debug {
-				sf.log.Infof("############ choosed %s from lastest ############", sf.last.Address)
+				sf.log.Infof("############ choosed %s from lastest ############", sf.last.Addr)
 				printDebug(true, sf.log, nil, srcAddr, sf.upstreams)
 			}
-			return sf.last.Address
+			return sf.last.Addr
 		}
 		sf.last = sf.selector.Select(sf.upstreams, srcAddr)
-		if !sf.last.Active() && sf.last.ConnectUsedTime() > 0 {
+		if !sf.last.Healthy() && sf.last.LeastTime() > 0 {
 			sf.log.Infof("###warn### lb selected empty , return default , for : %s", srcAddr)
 		}
-		return sf.last.Address
+		return sf.last.Addr
 	}
 	b := sf.selector.Select(sf.upstreams, srcAddr)
-	return b.Address
-
+	return b.Addr
 }
 
-func (sf *Group) IncreaseConns(addr string) {
+func (sf *Group) ConnsIncrease(addr string) {
 	sf.mu.Lock()
 	defer sf.mu.Unlock()
 	sf.upstreams.ConnsIncrease(addr)
 }
 
-func (sf *Group) DecreaseConns(addr string) {
+func (sf *Group) ConnsDecrease(addr string) {
 	sf.mu.Lock()
 	defer sf.mu.Unlock()
 	sf.upstreams.ConnsDecrease(addr)
@@ -132,22 +131,22 @@ func (sf *Group) Stop() {
 	}
 }
 
-func (sf *Group) IsActive() bool {
+func (sf *Group) HasHealthy() bool {
 	sf.mu.Lock()
 	defer sf.mu.Unlock()
-	return sf.upstreams.HasActive()
+	return sf.upstreams.HasHealthy()
 }
 
-func (sf *Group) ActiveCount() int {
+func (sf *Group) HealthyCount() int {
 	sf.mu.Lock()
 	defer sf.mu.Unlock()
-	return sf.upstreams.ActiveCount()
+	return sf.upstreams.HealthyCount()
 }
 
 func (sf *Group) Reset(addrs []string) {
 	sf.mu.Lock()
 	defer sf.mu.Unlock()
-	bks := sf.upstreams.Backends()
+	bks := sf.upstreams
 	if len(bks) == 0 {
 		return
 	}
@@ -155,7 +154,7 @@ func (sf *Group) Reset(addrs []string) {
 	configs := make([]Config, 0, len(addrs))
 	for _, addr := range addrs {
 		c := cfg
-		c.Address = addr
+		c.Addr = addr
 		configs = append(configs, c)
 	}
 	// stop all old backends
@@ -169,10 +168,10 @@ func printDebug(isDebug bool, log logger.Logger, selected *Upstream, srcAddr str
 	if isDebug {
 		log.Debugf("############ LB start ############\n")
 		if selected != nil {
-			log.Debugf("choosed %s for %s\n", selected.Address, srcAddr)
+			log.Debugf("choosed %s for %s\n", selected.Addr, srcAddr)
 		}
 		for _, v := range backends {
-			log.Debugf("addr:%s,conns:%d,time:%d,weight:%d,active:%v\n", v.Address, v.ConnsCount(), v.ConnectUsedTime(), v.Weight, v.Active())
+			log.Debugf("addr:%s,conns:%d,time:%d,weight:%d,health:%v\n", v.Addr, v.ConnsCount(), v.LeastTime(), v.Weight, v.Healthy())
 		}
 		log.Debugf("############ LB end ############\n")
 	}

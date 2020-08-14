@@ -250,7 +250,7 @@ func (sf *SPS) InitService() (err error) {
 				}
 			}
 			configs = append(configs, lb.Config{
-				Address:     _addr,
+				Addr:        _addr,
 				Weight:      weight,
 				MinActive:   1,
 				MaxInactive: 2,
@@ -596,13 +596,13 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 		}
 		return newValue
 	})
-	sf.lb.IncreaseConns(lbAddr)
+	sf.lb.ConnsIncrease(lbAddr)
 	sf.log.Infof("conn %s - %s connected [%s]", inAddr, outAddr, address)
 
 	defer func() {
 		sf.log.Infof("conn %s - %s released [%s]", inAddr, outAddr, address)
 		sf.userConns.Remove(inAddr)
-		sf.lb.DecreaseConns(lbAddr)
+		sf.lb.ConnsDecrease(lbAddr)
 	}()
 	return sword.Binding.Proxy(inConn, outConn)
 }

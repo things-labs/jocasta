@@ -273,7 +273,7 @@ func (sf *HTTP) InitService() (err error) {
 				}
 			}
 			configs = append(configs, lb.Config{
-				Address:     _addr,
+				Addr:        _addr,
 				Weight:      weight,
 				MinActive:   1,
 				MaxInactive: 2,
@@ -502,14 +502,14 @@ func (sf *HTTP) handle(inConn net.Conn) {
 		return newValue
 	})
 	if len(sf.cfg.Parent) > 0 {
-		sf.lb.IncreaseConns(lbAddr)
+		sf.lb.ConnsIncrease(lbAddr)
 	}
 
 	sf.log.Debugf("conn %s - %s connected [%s]", srcAddr, targetAddr, req.Host)
 	defer func() {
 		sf.userConns.Remove(srcAddr)
 		if len(sf.cfg.Parent) > 0 {
-			sf.lb.DecreaseConns(lbAddr)
+			sf.lb.ConnsDecrease(lbAddr)
 		}
 		sf.log.Infof("conn %s - %s released [%s]", srcAddr, targetAddr, req.Host)
 	}()
