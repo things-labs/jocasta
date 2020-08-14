@@ -52,6 +52,9 @@ func TestRoundRobin_Select(t *testing.T) {
 	pool[1].connections = 1
 	h = robin.Select(pool, "")
 	assert.Equal(t, pool[2], h, "Expected to skip full host.")
+
+	// improve code coverage
+	robin.Select(pool[:0], "")
 }
 
 func TestLeastConn_Select(t *testing.T) {
@@ -214,6 +217,24 @@ func TestAddrHash_Select(t *testing.T) {
 
 	// improve code coverage
 	addrHash.Select(pool, "")
+}
+
+func TestWeight_Select(t *testing.T) {
+	pool := make([]*Upstream, 0, 3)
+	pool = append(pool, &Upstream{health: 1, Config: Config{Addr: ":80", Weight: 3}})
+	pool = append(pool, &Upstream{health: 1, Config: Config{Addr: ":81", Weight: 2}})
+	pool = append(pool, &Upstream{health: 1, Config: Config{Addr: ":82", Weight: 4}})
+
+	wantAddr := []string{":82", ":80", ":82", ":80", ":81", ":82", ":80", ":81", ":82"}
+
+	wei := NewWeight()
+
+	for i := 0; i < 18; i++ {
+		assert.Equal(t, wantAddr[i%len(wantAddr)], wei.Select(pool, "").Addr)
+	}
+
+	assert.Equal(t, ":80", wei.Select(pool[:1], "").Addr)
+	assert.Nil(t, wei.Select(pool[:0], ""))
 }
 
 func TestLeastTime_Select(t *testing.T) {

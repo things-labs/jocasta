@@ -6,6 +6,8 @@ import (
 	"net"
 	"sync/atomic"
 	"time"
+
+	"github.com/thinkgos/jocasta/lib/outil"
 )
 
 func init() {
@@ -15,7 +17,7 @@ func init() {
 	RegisterSelector("hash", func() Selector { return new(IPHash) })
 	RegisterSelector("addrhash", func() Selector { return new(AddrHash) })
 	RegisterSelector("leasttime", func() Selector { return new(LeastTime) })
-	RegisterSelector("weight", func() Selector { return new(Weight) })
+	RegisterSelector("weight", func() Selector { return NewWeight() })
 }
 
 // Random is a policy that selects an available backend at random.
@@ -134,33 +136,61 @@ func hash(s string) uint32 {
 }
 
 // Weight weight 根据权重和连接数
-type Weight struct{}
+type Weight struct {
+	index     int
+	curWeight int
+}
+
+// NewWeight new weight
+func NewWeight() *Weight {
+	return &Weight{index: -1}
+}
 
 // Select implement Selector
-func (Weight) Select(pool UpstreamPool, _ string) (b *Upstream) {
+func (sf *Weight) Select(pool UpstreamPool, _ string) *Upstream {
 	if len(pool) == 0 {
-		return
+		return nil
 	}
 	if len(pool) == 1 {
 		return pool[0]
 	}
+	maxWeight, gcd := getMaxWeightAndGCD(pool)
+	// 轮询加权调度算法
+	for {
+		//  index = (index + 1) mod n
+		// 当 (index + 1) mod n 的余数为0时,有两种情况:
+		//      1. 首次被调用执行时
+		//      2. 已经轮询完一整轮, 又回到起点时
+		sf.index = (sf.index + 1) % len(pool)
+		if sf.index == 0 {
+			// 最新权重值 = 当前权重值 - 最大公约数
+			sf.curWeight = sf.curWeight - gcd
+			if sf.curWeight <= 0 {
+				// curWeight <= 0 时, 有两种情况:
+				//      1. 首次被调用执行时, curWeight值初始化为0, 只要maxWeight最大权重数值在0以上, cw的最新值一定< 0
+				//      2. 当所有的元素按照权重都被调度/选择一遍之后, curWeight的值一定为0
+				//  此时需要将最大权重值(重新)赋值到curWeight
+				sf.curWeight = maxWeight
+			}
+		}
 
-	min := pool[0].ConnsCount() / int64(pool[0].Weight)
-	index := 0
-	for i, b := range pool {
-		if b.Available() {
-			min = b.ConnsCount() / int64(b.Weight)
-			index = i
-			break
+		// 当索引值 >= 最新权重值时, 返回名称
+		if pool[sf.index].Weight >= sf.curWeight {
+			return pool[sf.index]
 		}
 	}
-	for i, b := range pool {
-		if b.Available() && b.ConnsCount()/int64(b.Weight) <= min {
-			min = b.ConnsCount()
-			index = i
+}
+
+// GetMaxWeight 获取Slice中最大权重值
+func getMaxWeightAndGCD(pool UpstreamPool) (int, int) {
+	max, g := pool[0].Weight, pool[0].Weight
+	for i := 1; i < len(pool); i++ {
+		if pool[i].Weight > max {
+			max = pool[i].Weight
 		}
+		g = outil.Gcdx(g, pool[i].Weight)
 	}
-	return pool[index]
+	return max, g
 }
 
 // LeastTime 最小响应时间

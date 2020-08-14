@@ -23,13 +23,6 @@ import (
 	"github.com/thinkgos/jocasta/services/ccs"
 )
 
-// node type
-const (
-	typeClientControl = uint8(1)
-	typeServer        = uint8(4)
-	typeClient        = uint8(5)
-)
-
 type BridgeConfig struct {
 	LocalType string `validate:"required,oneof=tcp tls stcp kcp"` // tcp|tls|stcp|kcp, default tcp
 	Local     string `validate:"required"`                        // default :28080
