@@ -281,7 +281,7 @@ func (sf *HTTP) InitService() (err error) {
 				RetryTime:   sf.cfg.LoadBalanceRetryTime,
 			})
 		}
-		sf.lb = lb.NewGroup(lb.Method(sf.cfg.LoadBalanceMethod), configs, sf.domainResolver, sf.log, sf.cfg.Debug)
+		sf.lb = lb.NewGroup(sf.cfg.LoadBalanceMethod, configs, sf.domainResolver, sf.log, sf.cfg.Debug)
 	}
 
 	if sf.cfg.ParentType == "ssh" {
@@ -440,7 +440,7 @@ func (sf *HTTP) handle(inConn net.Conn) {
 			dialAddr := targetDomainAddr
 			if sf.cfg.ParentType != "ssh" {
 				selectAddr := inConn.RemoteAddr().String()
-				if lb.Method(sf.cfg.LoadBalanceMethod) == lb.ModeHash && sf.cfg.LoadBalanceHashTarget {
+				if sf.cfg.LoadBalanceMethod == "hash" && sf.cfg.LoadBalanceHashTarget {
 					selectAddr = targetDomainAddr
 				}
 				lbAddr = sf.lb.Select(selectAddr, sf.cfg.LoadBalanceOnlyHA)

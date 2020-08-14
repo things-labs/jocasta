@@ -8,149 +8,120 @@ import (
 	"github.com/thinkgos/jocasta/lib/logger"
 )
 
-// 负载均衡工作模式
-type Mode byte
-
-// 定义工作模式
-const (
-	ModeRoundRobin Mode = iota // 轮询
-	ModeLeastConn              // 最小连接
-	ModeHash                   // 根据客户端地址计算出一个固定上级
-	ModeWeight                 // 根据权重和连接数,选一个上级
-	ModeLeastTime              // 使用连接时间最小的
-)
-
-func Method(method string) Mode {
-	modes := map[string]Mode{
-		"weight":     ModeWeight,
-		"leasttime":  ModeLeastTime,
-		"leastconn":  ModeLeastConn,
-		"hash":       ModeHash,
-		"roundrobin": ModeRoundRobin,
-	}
-	return modes[strings.ToLower(method)]
+var selectorFactories = map[string]func(upstreams Upstreams) Selector{
+	"roundrobin": NewRoundRobin,
+	"leastconn":  NewLeastConn,
+	"hash":       NewHash,
+	"leasttime":  NewLeastTime,
+	"weight":     NewWeight,
 }
 
-// Selector 后端选择接口
-type Selector interface {
-	// 根据源地址,获得后端连接地址
-	Select(srcAddr string) (addr string)
-	// 根据源地址,获得后端连接
-	SelectBackend(srcAddr string) *Backend
-	// 增加一个连接
-	IncreaseConns(addr string)
-	// 减少一个连接
-	DecreaseConns(addr string)
-	// 是否有活动的后端
-	HasActive() bool
-	// 活动的后端数量
-	ActiveCount() int
-	// 停止所有后端
-	Stop()
+// IsSupport return the method support or not
+func IsSupport(method string) bool {
+	_, ok := selectorFactories[strings.ToLower(method)]
+	return ok
+}
+
+// getSelectorFactory return selector factory function
+func getSelectorFactory(method string) func(Upstreams) Selector {
+	newSelector, ok := selectorFactories[strings.ToLower(method)]
+	if !ok {
+		newSelector = NewRoundRobin
+	}
+	return newSelector
 }
 
 type Group struct {
-	dns   *idns.Resolver
-	last  *Backend
-	debug bool
-	log   logger.Logger
+	method string
+	dns    *idns.Resolver
+	last   *Backend
+	debug  bool
+	log    logger.Logger
 
-	mu        sync.Mutex
-	selector  Selector
-	upstreams Upstreams
-
-	newSelector func(backends []*Backend) Selector
+	mu       sync.Mutex
+	selector Selector
 }
 
-func NewGroup(selectType Mode, configs []Config, dns *idns.Resolver, log logger.Logger, debug bool) *Group {
-	bks := NewUpstreams(configs, dns, log)
-
-	var newSelector func(backends []*Backend) Selector
-
-	switch selectType {
-	case ModeRoundRobin:
-		newSelector = NewRoundRobin
-	case ModeLeastConn:
-		newSelector = NewLeastConn
-	case ModeHash:
-		newSelector = NewHash
-	case ModeWeight:
-		newSelector = NewWeight
-	case ModeLeastTime:
-		newSelector = NewLeastTime
-	}
+// if method not supprt,it will use roundrobin method.
+// support method:
+// 		roundrobin
+// 		leastconn
+// 		hash
+// 		leasttime
+// 		weight
+func NewGroup(method string, configs []Config, dns *idns.Resolver, log logger.Logger, debug bool) *Group {
+	newSelector := getSelectorFactory(method)
 	return &Group{
-		selector:  newSelector(bks),
-		dns:       dns,
-		upstreams: bks,
-		debug:     debug,
-		log:       log,
+		selector: newSelector(NewUpstreams(configs, dns, log)),
+		dns:      dns,
+		debug:    debug,
+		log:      log,
 	}
 }
 
-func (g *Group) Select(srcAddr string, onlyHa bool) (addr string) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+func (sf *Group) Select(srcAddr string, onlyHa bool) (addr string) {
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
 	addr = ""
-	if len(g.upstreams) == 1 {
-		return g.upstreams[0].Address
+	streams := sf.selector.Backends()
+	if len(streams) == 1 {
+		return streams[0].Address
 	}
 	if onlyHa {
-
-		if g.last != nil && (g.last.Active() || g.last.ConnectUsedTime() == 0) {
-			if g.debug {
-				g.log.Infof("############ choosed %s from lastest ############", g.last.Address)
-				printDebug(true, g.log, nil, srcAddr, g.upstreams)
+		if sf.last != nil && (sf.last.Active() || sf.last.ConnectUsedTime() == 0) {
+			if sf.debug {
+				sf.log.Infof("############ choosed %s from lastest ############", sf.last.Address)
+				printDebug(true, sf.log, nil, srcAddr, streams)
 			}
-			return g.last.Address
+			return sf.last.Address
 		}
-		g.last = g.selector.SelectBackend(srcAddr)
-		if !g.last.Active() && g.last.ConnectUsedTime() > 0 {
-			g.log.Infof("###warn### lb selected empty , return default , for : %s", srcAddr)
+		sf.last = sf.selector.SelectBackend(srcAddr)
+		if !sf.last.Active() && sf.last.ConnectUsedTime() > 0 {
+			sf.log.Infof("###warn### lb selected empty , return default , for : %s", srcAddr)
 		}
-		return g.last.Address
+		return sf.last.Address
 	}
-	b := g.selector.SelectBackend(srcAddr)
+	b := sf.selector.SelectBackend(srcAddr)
 	return b.Address
 
 }
 
-func (g *Group) IncreaseConns(addr string) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.selector.IncreaseConns(addr)
+func (sf *Group) IncreaseConns(addr string) {
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
+	sf.selector.ConnsIncrease(addr)
 }
 
-func (g *Group) DecreaseConns(addr string) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.selector.DecreaseConns(addr)
+func (sf *Group) DecreaseConns(addr string) {
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
+	sf.selector.ConnsDecrease(addr)
 }
 
-func (g *Group) Stop() {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if g.selector != nil {
-		g.selector.Stop()
+func (sf *Group) Stop() {
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
+	if sf.selector != nil {
+		sf.selector.Stop()
 	}
 }
 
-func (g *Group) IsActive() bool {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.selector.HasActive()
+func (sf *Group) IsActive() bool {
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
+	return sf.selector.HasActive()
 }
 
-func (g *Group) ActiveCount() int {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.selector.ActiveCount()
+func (sf *Group) ActiveCount() int {
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
+	return sf.selector.ActiveCount()
 }
 
-func (g *Group) Reset(addrs []string) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	bks := g.upstreams
+func (sf *Group) Reset(addrs []string) {
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
+	bks := sf.selector.Backends()
 	if len(bks) == 0 {
 		return
 	}
@@ -161,12 +132,11 @@ func (g *Group) Reset(addrs []string) {
 		c.Address = addr
 		configs = append(configs, c)
 	}
-	g.selector.Stop()
-
+	// stop all old backends
+	bks.Stop()
 	// create new
-	bks = NewUpstreams(configs, g.dns, g.log)
-	g.upstreams = bks
-	g.selector = g.newSelector(bks)
+	newSelector := getSelectorFactory(sf.method)
+	sf.selector = newSelector(NewUpstreams(configs, sf.dns, sf.log))
 }
 
 func printDebug(isDebug bool, log logger.Logger, selected *Backend, srcAddr string, backends []*Backend) {
@@ -176,7 +146,7 @@ func printDebug(isDebug bool, log logger.Logger, selected *Backend, srcAddr stri
 			log.Debugf("choosed %s for %s\n", selected.Address, srcAddr)
 		}
 		for _, v := range backends {
-			log.Debugf("addr:%s,conns:%d,time:%d,weight:%d,active:%v\n", v.Address, v.Connections(), v.ConnectUsedTime(), v.Weight, v.Active())
+			log.Debugf("addr:%s,conns:%d,time:%d,weight:%d,active:%v\n", v.Address, v.ConnsCount(), v.ConnectUsedTime(), v.Weight, v.Active())
 		}
 		log.Debugf("############ LB end ############\n")
 	}

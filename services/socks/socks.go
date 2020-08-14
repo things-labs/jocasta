@@ -278,7 +278,7 @@ func (sf *Socks) initService() (err error) {
 				RetryTime:   sf.cfg.LoadBalanceRetryTime,
 			})
 		}
-		sf.lb = lb.NewGroup(lb.Method(sf.cfg.LoadBalanceMethod), configs, sf.domainResolver, sf.log, sf.cfg.Debug)
+		sf.lb = lb.NewGroup(sf.cfg.LoadBalanceMethod, configs, sf.domainResolver, sf.log, sf.cfg.Debug)
 	}
 	// init ssh connect
 	if sf.cfg.ParentType == "ssh" {
@@ -501,7 +501,7 @@ func (sf *Socks) dialForTcp(ctx context.Context, request *socks5.Request) (conn 
 			socksAddr := targetAddr
 			if sf.cfg.ParentType != "ssh" {
 				selectAddr := srcAddr
-				if lb.Method(sf.cfg.LoadBalanceMethod) == lb.ModeHash && sf.cfg.LoadBalanceHashTarget {
+				if sf.cfg.LoadBalanceMethod == "hash" && sf.cfg.LoadBalanceHashTarget {
 					selectAddr = targetAddr
 				}
 				lbAddr = sf.lb.Select(selectAddr, sf.cfg.LoadBalanceOnlyHA)

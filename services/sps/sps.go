@@ -258,7 +258,7 @@ func (sf *SPS) InitService() (err error) {
 				RetryTime:   sf.cfg.LoadBalanceRetryTime,
 			})
 		}
-		sf.lb = lb.NewGroup(lb.Method(sf.cfg.LoadBalanceMethod), configs, sf.domainResolver, sf.log, sf.cfg.Debug)
+		sf.lb = lb.NewGroup(sf.cfg.LoadBalanceMethod, configs, sf.domainResolver, sf.log, sf.cfg.Debug)
 	}
 
 	if sf.cfg.SSMethod != "" && sf.cfg.SSKey != "" {
@@ -474,7 +474,7 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 	//connect to parent
 	var outConn net.Conn
 	selectAddr := inConn.RemoteAddr().String()
-	if lb.Method(sf.cfg.LoadBalanceMethod) == lb.ModeHash && sf.cfg.LoadBalanceHashTarget {
+	if sf.cfg.LoadBalanceMethod == "hash" && sf.cfg.LoadBalanceHashTarget {
 		selectAddr = address
 	}
 	lbAddr := sf.lb.Select(selectAddr, sf.cfg.LoadBalanceOnlyHA)

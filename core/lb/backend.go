@@ -6,9 +6,8 @@ import (
 	"net"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
-
-	"go.uber.org/atomic"
 
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/lib/logger"
@@ -29,9 +28,9 @@ type Config struct {
 // Backend 后端
 type Backend struct {
 	Config
-	active          atomic.Bool     // 是否处于活动状态
-	connections     atomic.Int64    // 连接数
-	connectUsedTime atomic.Duration // dial 连接使用的时间 单位ms
+	active          int32        // 是否处于活动状态
+	connections     int64        // 连接数
+	connectUsedTime atomic.Value // time.Duration dial 连接使用的时间 单位ms
 	mu              sync.Mutex
 	hasClosed       bool
 	stop            chan struct{}
@@ -58,33 +57,30 @@ func NewBackend(config Config, dns *idns.Resolver, log logger.Logger) (*Backend,
 	if config.RetryTime == 0 {
 		config.RetryTime = time.Second * 2
 	}
-	return &Backend{
+
+	b := &Backend{
 		Config: config,
 		stop:   make(chan struct{}, 1),
 		dns:    dns,
 		log:    log,
-	}, nil
+	}
+	b.connectUsedTime.Store(time.Duration(0))
+	return b, nil
 }
 
-func (b *Backend) Connections() (total int64) {
-	return b.connections.Load()
-}
+// ConnsCount connection count
+func (b *Backend) ConnsCount() int64 { return atomic.LoadInt64(&b.connections) }
 
-func (b *Backend) IncreaseConns() {
-	b.connections.Add(1)
-}
+// ConnsIncrease connection count increase one
+func (b *Backend) ConnsIncrease() { atomic.AddInt64(&b.connections, 1) }
 
-func (b *Backend) DecreaseConns() {
-	b.connections.Add(-1)
-}
+// ConnsDecrease connection count decrease one
+func (b *Backend) ConnsDecrease() { atomic.AddInt64(&b.connections, -1) }
 
-func (b *Backend) Active() bool {
-	return b.active.Load()
-}
+// Active return active or not
+func (b *Backend) Active() bool { return atomic.LoadInt32(&b.active) == 1 }
 
-func (b *Backend) ConnectUsedTime() time.Duration {
-	return b.connectUsedTime.Load()
-}
+func (b *Backend) ConnectUsedTime() time.Duration { return b.connectUsedTime.Load().(time.Duration) }
 
 func (b *Backend) StartHeartCheck() {
 	if b.IsMuxCheck {
@@ -119,7 +115,11 @@ func (b *Backend) runMuxHeartCheck() {
 		start := time.Now()
 		c, err := b.getConn()
 		b.connectUsedTime.Store(time.Since(start))
-		b.active.Store(err == nil)
+		active := int32(1)
+		if err != nil {
+			active = 0
+		}
+		atomic.StoreInt32(&b.active, active)
 		if err == nil {
 			c.Read(buf)
 		}
@@ -153,14 +153,14 @@ func (b *Backend) runTCPHeartCheck() {
 			// Max tries larger than consider max inactive, active failed
 			if inactiveTries++; inactiveTries >= b.MaxInactive {
 				activeTries = 0
-				b.active.Store(false)
+				atomic.StoreInt32(&b.active, 0)
 			}
 		} else {
 			c.Close()
 			// Max tries larger than consider max active, active success
 			if activeTries++; activeTries >= b.MinActive {
 				inactiveTries = 0
-				b.active.Store(true)
+				atomic.StoreInt32(&b.active, 1)
 			}
 		}
 		select {
@@ -186,6 +186,7 @@ func (b *Backend) getConn() (conn net.Conn, err error) {
 
 /******************************************************************************/
 
+// Upstreams upstream backend
 type Upstreams []*Backend
 
 // NewUpstreams new stream
@@ -206,23 +207,23 @@ func NewUpstreams(configs []Config, dr *idns.Resolver, log logger.Logger) Upstre
 func (ups Upstreams) Len() int { return len(ups) }
 
 // Backends return all upstreams
-func (ups Upstreams) Backends() []*Backend { return ups }
+func (ups Upstreams) Backends() Upstreams { return ups }
 
-// IncreaseConns increase the addr conns count
-func (ups Upstreams) IncreaseConns(addr string) {
+// ConnsIncrease increase the addr conns count
+func (ups Upstreams) ConnsIncrease(addr string) {
 	for _, bk := range ups {
 		if bk.Address == addr {
-			bk.IncreaseConns()
+			bk.ConnsIncrease()
 			return
 		}
 	}
 }
 
-// DecreaseConns decrease the addr conns count
-func (ups Upstreams) DecreaseConns(addr string) {
+// ConnsDecrease decrease the addr conns count
+func (ups Upstreams) ConnsDecrease(addr string) {
 	for _, bk := range ups {
 		if bk.Address == addr {
-			bk.DecreaseConns()
+			bk.ConnsDecrease()
 			return
 		}
 	}
