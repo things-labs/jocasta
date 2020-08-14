@@ -27,7 +27,7 @@ import (
 	"github.com/thinkgos/jocasta/core/filter"
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/core/issh"
-	"github.com/thinkgos/jocasta/core/lb"
+	"github.com/thinkgos/jocasta/core/loadbalance"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
@@ -116,7 +116,7 @@ type HTTP struct {
 	channels        []cs.Server
 	filters         *filter.Filter
 	basicAuthCenter *basicAuth.Center
-	lb              *lb.Group
+	lb              *loadbalance.Group
 	domainResolver  *idns.Resolver
 	sshClient       atomic.Value
 	userConns       cmap.ConcurrentMap
@@ -260,7 +260,7 @@ func (sf *HTTP) InitService() (err error) {
 		}
 
 		// init lb
-		configs := []lb.Config{}
+		configs := []loadbalance.Config{}
 
 		for _, addr := range sf.cfg.Parent {
 			_addrInfo := strings.Split(addr, "@")
@@ -272,7 +272,7 @@ func (sf *HTTP) InitService() (err error) {
 					weight = 1
 				}
 			}
-			configs = append(configs, lb.Config{
+			configs = append(configs, loadbalance.Config{
 				Addr:        _addr,
 				Weight:      weight,
 				MinActive:   1,
@@ -281,7 +281,7 @@ func (sf *HTTP) InitService() (err error) {
 				RetryTime:   sf.cfg.LoadBalanceRetryTime,
 			})
 		}
-		sf.lb = lb.NewGroup(sf.cfg.LoadBalanceMethod, configs, sf.domainResolver, sf.log, sf.cfg.Debug)
+		sf.lb = loadbalance.NewGroup(sf.cfg.LoadBalanceMethod, configs, sf.domainResolver, sf.log, sf.cfg.Debug)
 	}
 
 	if sf.cfg.ParentType == "ssh" {

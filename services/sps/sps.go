@@ -24,7 +24,7 @@ import (
 	"github.com/thinkgos/jocasta/connection/sni"
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/idns"
-	"github.com/thinkgos/jocasta/core/lb"
+	"github.com/thinkgos/jocasta/core/loadbalance"
 	"github.com/thinkgos/jocasta/core/socks5"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
@@ -106,7 +106,7 @@ type SPS struct {
 	localCipher           *shadowsocks.Cipher
 	parentCipher          *shadowsocks.Cipher
 	udpRelatedPacketConns cmap.ConcurrentMap
-	lb                    *lb.Group
+	lb                    *loadbalance.Group
 	udpLocalKey           []byte
 	udpParentKey          []byte
 	jumper                *cs.Jumper
@@ -207,7 +207,7 @@ func (sf *SPS) InitService() (err error) {
 	}
 	// init lb
 	if len(sf.cfg.Parent) > 0 {
-		configs := []lb.Config{}
+		configs := []loadbalance.Config{}
 
 		for _, addr := range sf.cfg.Parent {
 			var _addrInfo []string
@@ -249,7 +249,7 @@ func (sf *SPS) InitService() (err error) {
 					weight = 1
 				}
 			}
-			configs = append(configs, lb.Config{
+			configs = append(configs, loadbalance.Config{
 				Addr:        _addr,
 				Weight:      weight,
 				MinActive:   1,
@@ -258,7 +258,7 @@ func (sf *SPS) InitService() (err error) {
 				RetryTime:   sf.cfg.LoadBalanceRetryTime,
 			})
 		}
-		sf.lb = lb.NewGroup(sf.cfg.LoadBalanceMethod, configs, sf.domainResolver, sf.log, sf.cfg.Debug)
+		sf.lb = loadbalance.NewGroup(sf.cfg.LoadBalanceMethod, configs, sf.domainResolver, sf.log, sf.cfg.Debug)
 	}
 
 	if sf.cfg.SSMethod != "" && sf.cfg.SSKey != "" {
