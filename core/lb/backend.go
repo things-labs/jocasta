@@ -39,7 +39,7 @@ type Backend struct {
 	log             logger.Logger
 }
 
-func New(config Config, dns *idns.Resolver, log logger.Logger) (*Backend, error) {
+func NewBackend(config Config, dns *idns.Resolver, log logger.Logger) (*Backend, error) {
 	if config.Address == "" {
 		return nil, errors.New("address required")
 	}
@@ -182,4 +182,75 @@ func (b *Backend) getConn() (conn net.Conn, err error) {
 		return b.ConnFactory(address, b.Timeout)
 	}
 	return net.DialTimeout("tcp", address, b.Timeout)
+}
+
+/******************************************************************************/
+
+type Upstreams []*Backend
+
+// NewUpstreams new stream
+func NewUpstreams(configs []Config, dr *idns.Resolver, log logger.Logger) Upstreams {
+	bks := make([]*Backend, 0, len(configs))
+	for _, c := range configs {
+		b, err := NewBackend(c, dr, log)
+		if err != nil {
+			continue
+		}
+		b.StartHeartCheck()
+		bks = append(bks, b)
+	}
+	return bks
+}
+
+// Len return upstreams total length
+func (ups Upstreams) Len() int { return len(ups) }
+
+// Backends return all upstreams
+func (ups Upstreams) Backends() []*Backend { return ups }
+
+// IncreaseConns increase the addr conns count
+func (ups Upstreams) IncreaseConns(addr string) {
+	for _, bk := range ups {
+		if bk.Address == addr {
+			bk.IncreaseConns()
+			return
+		}
+	}
+}
+
+// DecreaseConns decrease the addr conns count
+func (ups Upstreams) DecreaseConns(addr string) {
+	for _, bk := range ups {
+		if bk.Address == addr {
+			bk.DecreaseConns()
+			return
+		}
+	}
+}
+
+// HasActive has any active a backend
+func (ups Upstreams) HasActive() bool {
+	for _, b := range ups {
+		if b.Active() {
+			return true
+		}
+	}
+	return false
+}
+
+// Stop stop all the backend
+func (ups Upstreams) Stop() {
+	for _, b := range ups {
+		b.StopHeartCheck()
+	}
+}
+
+// ActiveCount active backend count
+func (ups Upstreams) ActiveCount() (count int) {
+	for _, b := range ups {
+		if b.Active() {
+			count++
+		}
+	}
+	return
 }

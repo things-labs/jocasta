@@ -474,7 +474,7 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 	//connect to parent
 	var outConn net.Conn
 	selectAddr := inConn.RemoteAddr().String()
-	if lb.Method(sf.cfg.LoadBalanceMethod) == lb.SELECT_HASH && sf.cfg.LoadBalanceHashTarget {
+	if lb.Method(sf.cfg.LoadBalanceMethod) == lb.ModeHash && sf.cfg.LoadBalanceHashTarget {
 		selectAddr = address
 	}
 	lbAddr := sf.lb.Select(selectAddr, sf.cfg.LoadBalanceOnlyHA)

@@ -501,7 +501,7 @@ func (sf *Socks) dialForTcp(ctx context.Context, request *socks5.Request) (conn 
 			socksAddr := targetAddr
 			if sf.cfg.ParentType != "ssh" {
 				selectAddr := srcAddr
-				if lb.Method(sf.cfg.LoadBalanceMethod) == lb.SELECT_HASH && sf.cfg.LoadBalanceHashTarget {
+				if lb.Method(sf.cfg.LoadBalanceMethod) == lb.ModeHash && sf.cfg.LoadBalanceHashTarget {
 					selectAddr = targetAddr
 				}
 				lbAddr = sf.lb.Select(selectAddr, sf.cfg.LoadBalanceOnlyHA)

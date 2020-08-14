@@ -440,7 +440,7 @@ func (sf *HTTP) handle(inConn net.Conn) {
 			dialAddr := targetDomainAddr
 			if sf.cfg.ParentType != "ssh" {
 				selectAddr := inConn.RemoteAddr().String()
-				if lb.Method(sf.cfg.LoadBalanceMethod) == lb.SELECT_HASH && sf.cfg.LoadBalanceHashTarget {
+				if lb.Method(sf.cfg.LoadBalanceMethod) == lb.ModeHash && sf.cfg.LoadBalanceHashTarget {
 					selectAddr = targetDomainAddr
 				}
 				lbAddr = sf.lb.Select(selectAddr, sf.cfg.LoadBalanceOnlyHA)
