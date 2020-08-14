@@ -2,15 +2,9 @@ package loadbalance
 
 import (
 	"errors"
-	"fmt"
 	"net"
-	"runtime/debug"
-	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/thinkgos/jocasta/core/idns"
-	"github.com/thinkgos/jocasta/lib/logger"
 )
 
 // Config 后端配置
@@ -21,8 +15,7 @@ type Config struct {
 	Weight      int           // 权重
 	Timeout     time.Duration // 连接超时时间
 	RetryTime   time.Duration // 检查时间间隔
-	IsMuxCheck  bool          // TODO: not used
-	ConnFactory func(address string, timeout time.Duration) (net.Conn, error)
+	Dial        func(address string, timeout time.Duration) (net.Conn, error)
 }
 
 // Upstream 后端
@@ -32,16 +25,10 @@ type Upstream struct {
 	connections    int64        // 连接数
 	maxConnections int64        // 最大连接数,0表示不限制, default: 0
 	leastTime      atomic.Value // time.Duration 最小响应时间
-
-	mu        sync.Mutex
-	hasClosed bool
-	stop      chan struct{}
-	dns       *idns.Resolver
-	log       logger.Logger
 }
 
 // NewUpstream new a upstream
-func NewUpstream(config Config, dns *idns.Resolver, log logger.Logger) (*Upstream, error) {
+func NewUpstream(config Config) (*Upstream, error) {
 	if config.Addr == "" {
 		return nil, errors.New("address required")
 	}
@@ -61,134 +48,58 @@ func NewUpstream(config Config, dns *idns.Resolver, log logger.Logger) (*Upstrea
 		config.RetryTime = time.Second * 2
 	}
 
-	b := &Upstream{
-		Config: config,
-		stop:   make(chan struct{}, 1),
-		dns:    dns,
-		log:    log,
-	}
+	b := &Upstream{Config: config}
 	b.leastTime.Store(time.Duration(0))
 	return b, nil
 }
 
 // ConnsCount connection count
-func (b *Upstream) ConnsCount() int64 { return atomic.LoadInt64(&b.connections) }
+func (sf *Upstream) ConnsCount() int64 { return atomic.LoadInt64(&sf.connections) }
 
 // ConnsIncrease connection count increase one
-func (b *Upstream) ConnsIncrease() { atomic.AddInt64(&b.connections, 1) }
+func (sf *Upstream) ConnsIncrease() { atomic.AddInt64(&sf.connections, 1) }
 
 // ConnsDecrease connection count decrease one
-func (b *Upstream) ConnsDecrease() { atomic.AddInt64(&b.connections, -1) }
+func (sf *Upstream) ConnsDecrease() { atomic.AddInt64(&sf.connections, -1) }
 
 // Healthy return health or not
-func (b *Upstream) Healthy() bool { return atomic.LoadInt32(&b.health) == 1 }
+func (sf *Upstream) Healthy() bool { return atomic.LoadInt32(&sf.health) == 1 }
 
-func (b *Upstream) Available() bool { return atomic.LoadInt32(&b.health) == 1 && !b.Full() }
+func (sf *Upstream) Available() bool { return atomic.LoadInt32(&sf.health) == 1 && !sf.Full() }
 
-func (b *Upstream) LeastTime() time.Duration { return b.leastTime.Load().(time.Duration) }
+func (sf *Upstream) LeastTime() time.Duration { return sf.leastTime.Load().(time.Duration) }
 
-func (b *Upstream) Full() bool { return b.maxConnections > 0 && b.connections >= b.maxConnections }
-
-func (b *Upstream) StartHeartCheck() {
-	if b.IsMuxCheck {
-		go b.runMuxHeartCheck()
-	} else {
-		go b.runTCPHeartCheck()
-	}
-}
-
-func (b *Upstream) StopHeartCheck() {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if !b.hasClosed {
-		b.hasClosed = true
-		close(b.stop)
-		return
-	}
-}
-
-func (b *Upstream) runMuxHeartCheck() {
-	var t = time.NewTicker(b.RetryTime)
-
-	defer func() {
-		t.Stop()
-		if e := recover(); e != nil {
-			fmt.Printf("crashed %s\nstack:\n%s", e, string(debug.Stack()))
-		}
-	}()
-
-	buf := make([]byte, 1)
-	for {
-		start := time.Now()
-		c, err := b.getConn()
-		b.leastTime.Store(time.Since(start))
-		active := int32(1)
-		if err != nil {
-			active = 0
-		}
-		atomic.StoreInt32(&b.health, active)
-		if err == nil {
-			c.Read(buf)
-		}
-
-		select {
-		case <-b.stop:
-			return
-		case <-t.C:
-		}
-	}
-}
+func (sf *Upstream) Full() bool { return sf.maxConnections > 0 && sf.connections >= sf.maxConnections }
 
 // Monitoring the backend
-func (b *Upstream) runTCPHeartCheck() {
+func (sf *Upstream) tcpHealthyCheck(addr string) {
 	var activeTries int
 	var inactiveTries int
-	var t = time.NewTicker(b.RetryTime)
+	var c net.Conn
+	var err error
 
-	defer func() {
-		t.Stop()
-		if e := recover(); e != nil {
-			b.log.DPanicf("crashed %s\nstack:\n%s", e, string(debug.Stack()))
-		}
-	}()
+	start := time.Now()
+	if sf.Dial != nil {
+		c, err = sf.Dial(addr, sf.Timeout)
+	} else {
+		c, err = net.DialTimeout("tcp", addr, sf.Timeout)
+	}
 
-	for {
-		start := time.Now()
-		c, err := b.getConn()
-		b.leastTime.Store(time.Since(start))
-		if err != nil {
-			// Max tries larger than consider max inactive, health failed
-			if inactiveTries++; inactiveTries >= b.MaxInactive {
-				activeTries = 0
-				atomic.StoreInt32(&b.health, 0)
-			}
-		} else {
-			c.Close()
-			// Max tries larger than consider max health, health success
-			if activeTries++; activeTries >= b.MinActive {
-				inactiveTries = 0
-				atomic.StoreInt32(&b.health, 1)
-			}
+	sf.leastTime.Store(time.Since(start))
+	if err != nil {
+		// Max tries larger than consider max inactive, health failed
+		if inactiveTries++; inactiveTries >= sf.MaxInactive {
+			activeTries = 0
+			atomic.StoreInt32(&sf.health, 0)
 		}
-		select {
-		case <-b.stop:
-			return
-		case <-t.C:
+	} else {
+		c.Close()
+		// Max tries larger than consider max health, health success
+		if activeTries++; activeTries >= sf.MinActive {
+			inactiveTries = 0
+			atomic.StoreInt32(&sf.health, 1)
 		}
 	}
-}
-
-func (b *Upstream) getConn() (conn net.Conn, err error) {
-	address := b.Addr
-	if b.dns != nil && b.dns.PublicDNSAddr() != "" {
-		if address, err = b.dns.Resolve(b.Addr); err != nil {
-			b.log.Errorf("dns resolve address: %s, %+v", b.Addr, err)
-		}
-	}
-	if b.ConnFactory != nil {
-		return b.ConnFactory(address, b.Timeout)
-	}
-	return net.DialTimeout("tcp", address, b.Timeout)
 }
 
 /******************************************************************************/
@@ -197,14 +108,13 @@ func (b *Upstream) getConn() (conn net.Conn, err error) {
 type UpstreamPool []*Upstream
 
 // NewUpstreamPool new stream pool
-func NewUpstreamPool(configs []Config, dr *idns.Resolver, log logger.Logger) UpstreamPool {
+func NewUpstreamPool(configs []Config) UpstreamPool {
 	bks := make([]*Upstream, 0, len(configs))
 	for _, c := range configs {
-		b, err := NewUpstream(c, dr, log)
+		b, err := NewUpstream(c)
 		if err != nil {
 			continue
 		}
-		b.StartHeartCheck()
 		bks = append(bks, b)
 	}
 	return bks
@@ -241,13 +151,6 @@ func (ups UpstreamPool) HasHealthy() bool {
 		}
 	}
 	return false
-}
-
-// Stop stop all the backend
-func (ups UpstreamPool) Stop() {
-	for _, b := range ups {
-		b.StopHeartCheck()
-	}
 }
 
 // HealthyCount health backend count

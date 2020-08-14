@@ -258,7 +258,12 @@ func (sf *SPS) InitService() (err error) {
 				RetryTime:   sf.cfg.LoadBalanceRetryTime,
 			})
 		}
-		sf.lb = loadbalance.NewGroup(sf.cfg.LoadBalanceMethod, configs, sf.domainResolver, sf.log, sf.cfg.Debug)
+		sf.lb = loadbalance.NewGroup(sf.cfg.LoadBalanceMethod, configs,
+			loadbalance.WithDNSServer(sf.domainResolver),
+			loadbalance.WithLogger(sf.log),
+			loadbalance.WithEnableDebug(sf.cfg.Debug),
+			loadbalance.WithGPool(sword.GPool),
+		)
 	}
 
 	if sf.cfg.SSMethod != "" && sf.cfg.SSKey != "" {
@@ -337,7 +342,7 @@ func (sf *SPS) Stop() {
 		}
 	}
 	if sf.lb != nil {
-		sf.lb.Stop()
+		sf.lb.Close()
 	}
 	for _, c := range sf.udpRelatedPacketConns.Items() {
 		c.(*net.UDPConn).Close()

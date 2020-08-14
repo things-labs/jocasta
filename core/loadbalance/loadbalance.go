@@ -2,10 +2,13 @@ package loadbalance
 
 import (
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/thinkgos/jocasta/core/idns"
+	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
 )
 
@@ -48,8 +51,8 @@ func getNewSelectorFunction(method string) func() Selector {
 	return newSelector
 }
 
-// IsSupport return the method support or not
-func IsSupport(method string) bool {
+// HasSupportMethod return the method support or not
+func HasSupportMethod(method string) bool {
 	selectorMux.Lock()
 	defer selectorMux.Unlock()
 	_, ok := selectors[strings.ToLower(method)]
@@ -57,13 +60,16 @@ func IsSupport(method string) bool {
 }
 
 type Group struct {
-	method string
-	dns    *idns.Resolver
-	last   *Upstream
-	debug  bool
-	log    logger.Logger
+	method   string
+	Interval time.Duration
+	debug    bool
+	last     *Upstream
+	dns      *idns.Resolver
+	goPool   gpool.Pool
+	log      logger.Logger
 
 	mu        sync.Mutex
+	closeChan chan struct{}
 	upstreams UpstreamPool
 	selector  Selector
 }
@@ -75,14 +81,19 @@ type Group struct {
 // 		hash
 // 		leasttime
 // 		weight
-func NewGroup(method string, configs []Config, dns *idns.Resolver, log logger.Logger, debug bool) *Group {
-	return &Group{
+func NewGroup(method string, configs []Config, opts ...Option) *Group {
+	g := &Group{
 		selector:  getNewSelectorFunction(method)(),
-		upstreams: NewUpstreamPool(configs, dns, log),
-		dns:       dns,
-		debug:     debug,
-		log:       log,
+		upstreams: NewUpstreamPool(configs),
+		log:       logger.NewDiscard(),
+		closeChan: make(chan struct{}),
 	}
+
+	for _, opt := range opts {
+		opt(g)
+	}
+	go g.activeHealthChecker()
+	return g
 }
 
 func (sf *Group) Select(srcAddr string, onlyHa bool) (addr string) {
@@ -123,12 +134,15 @@ func (sf *Group) ConnsDecrease(addr string) {
 	sf.upstreams.ConnsDecrease(addr)
 }
 
-func (sf *Group) Stop() {
+func (sf *Group) Close() error {
 	sf.mu.Lock()
 	defer sf.mu.Unlock()
-	if sf.selector != nil {
-		sf.upstreams.Stop()
+	select {
+	case <-sf.closeChan:
+	default:
+		close(sf.closeChan)
 	}
+	return nil
 }
 
 func (sf *Group) HasHealthy() bool {
@@ -157,11 +171,37 @@ func (sf *Group) Reset(addrs []string) {
 		c.Addr = addr
 		configs = append(configs, c)
 	}
-	// stop all old backends
-	bks.Stop()
 	// create new
-	sf.upstreams = NewUpstreamPool(configs, sf.dns, sf.log)
+	sf.upstreams = NewUpstreamPool(configs)
 	sf.selector = getNewSelectorFunction(sf.method)()
+}
+
+func (sf *Group) resolve(addr string) string {
+	if sf.dns != nil && sf.dns.PublicDNSAddr() != "" {
+		addr = sf.dns.MustResolve(addr)
+	}
+	return addr
+}
+
+func (sf *Group) activeHealthChecker() {
+	defer func() {
+		if err := recover(); err != nil {
+			sf.log.DPanicf("active health checks: %v\n%s", err, debug.Stack())
+		}
+	}()
+	ticker := time.NewTicker(sf.Interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+		case <-sf.closeChan:
+			return
+		}
+		for _, upstream := range sf.upstreams {
+			ups := upstream
+			gpool.Go(sf.goPool, func() { ups.tcpHealthyCheck(sf.resolve(ups.Addr)) })
+		}
+	}
 }
 
 func printDebug(isDebug bool, log logger.Logger, selected *Upstream, srcAddr string, backends []*Upstream) {

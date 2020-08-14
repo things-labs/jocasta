@@ -12,7 +12,7 @@ func init() {
 	RegisterSelector("random", func() Selector { return new(Random) })
 	RegisterSelector("roundrobin", func() Selector { return new(RoundRobin) })
 	RegisterSelector("leastconn", func() Selector { return new(LeastConn) })
-	RegisterSelector("iphash", func() Selector { return new(IPHash) })
+	RegisterSelector("hash", func() Selector { return new(IPHash) })
 	RegisterSelector("addrhash", func() Selector { return new(AddrHash) })
 	RegisterSelector("leasttime", func() Selector { return new(LeastTime) })
 	RegisterSelector("weight", func() Selector { return new(Weight) })

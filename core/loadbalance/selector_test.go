@@ -137,6 +137,9 @@ func TestIPHash_Select(t *testing.T) {
 	pool[1].health = 0
 	h = ipHash.Select(pool, "172.0.0.4:80")
 	assert.Nil(t, h, "Expected ip hash policy host to be the second host.")
+
+	// improve code coverage
+	ipHash.Select(pool, "")
 }
 
 func TestAddrHash_Select(t *testing.T) {
@@ -208,6 +211,9 @@ func TestAddrHash_Select(t *testing.T) {
 	pool[1].health = 0
 	h = addrHash.Select(pool, "172.0.0.4:80")
 	assert.Nil(t, h, "Expected ip hash policy host to be the second host.")
+
+	// improve code coverage
+	addrHash.Select(pool, "")
 }
 
 func TestLeastTime_Select(t *testing.T) {
