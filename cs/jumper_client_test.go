@@ -93,16 +93,17 @@ func TestJumper_socks5_tcp(t *testing.T) {
 			require.NoError(t, err)
 			// t.Logf("socks5 proxy url: %v", proxyURL)
 
-			jumptcp := &JumperTCP{jump, compress}
-			conn, err := jumptcp.DialTimeout(srv.LocalAddr(), time.Second)
+			// client
+			cli := &JumperTCP{jump, compress}
+			conn, err := cli.DialTimeout(srv.LocalAddr(), time.Second)
 			require.NoError(t, err)
 			defer conn.Close() // nolint: errcheck
 			_, err = conn.Write([]byte("ping"))
 			require.NoError(t, err)
-			b := make([]byte, 4)
+			b := make([]byte, 20)
 			n, err := conn.Read(b)
 			require.NoError(t, err)
-			require.Equal(t, "pong", string(b[:n]), "client revecive pong excepted,revecived : %s", string(b[:n]))
+			require.Equal(t, "pong", string(b[:n]))
 		}()
 	}
 }
@@ -112,7 +113,7 @@ func TestJumper_socks5_tls(t *testing.T) {
 		func() {
 			// server
 			srv := &TCPTlsServer{
-				Addr:   ":",
+				Addr:   "127.0.0.1:0",
 				CaCert: nil,
 				Cert:   []byte(crt),
 				Key:    []byte(key),
@@ -173,10 +174,10 @@ func TestJumper_socks5_tls(t *testing.T) {
 			defer conn.Close() // nolint: errcheck
 			_, err = conn.Write([]byte("ping"))
 			require.NoError(t, err)
-			b := make([]byte, 4)
+			b := make([]byte, 20)
 			n, err := conn.Read(b)
 			require.NoError(t, err)
-			require.Equal(t, "pong", string(b[:n]), "client revecive pong excepted,revecived : %s", string(b[:n]))
+			require.Equal(t, "pong", string(b[:n]))
 		}()
 	}
 }
@@ -247,10 +248,10 @@ func TestJumper_socks5_stcp(t *testing.T) {
 				defer conn.Close() // nolint: errcheck
 				_, err = conn.Write([]byte("ping"))
 				require.NoError(t, err)
-				b := make([]byte, 4)
+				b := make([]byte, 20)
 				n, err := conn.Read(b)
 				require.NoError(t, err)
-				require.Equal(t, "pong", string(b[:n]), "client revecive pong excepted,revecived : %s", string(b[:n]))
+				require.Equal(t, "pong", string(b[:n]))
 			}()
 		}
 	}

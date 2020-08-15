@@ -14,7 +14,7 @@ func TestTCP(t *testing.T) {
 		func() {
 			// server
 			srv := &TCPServer{
-				Addr:     ":",
+				Addr:     "127.0.0.1:0",
 				Compress: compress,
 				Status:   make(chan error, 1),
 				Handler: HandlerFunc(func(inconn net.Conn) {
@@ -45,7 +45,7 @@ func TestTCP(t *testing.T) {
 			b := make([]byte, 20)
 			n, err := cli.Read(b)
 			require.NoError(t, err)
-			require.Equal(t, "pong", string(b[:n]), "client revecive pong excepted,revecived : %s", string(b[:n]))
+			require.Equal(t, "pong", string(b[:n]))
 		}()
 	}
 }

@@ -70,12 +70,13 @@ func TestSSSSTCP(t *testing.T) {
 		Compress: compress,
 		Status:   make(chan error, 1),
 		Handler: HandlerFunc(func(inconn net.Conn) {
-			buf := make([]byte, 2048)
+			buf := make([]byte, 512)
 			n, err := inconn.Read(buf)
 			if !assert.NoError(t, err) {
 				return
 			}
-			_, err = inconn.Write(buf[:n])
+			assert.Equal(t, want, buf[:n])
+			_, err = inconn.Write(want)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -98,7 +99,7 @@ func TestSSSSTCP(t *testing.T) {
 			_, err = cli.Write(want)
 			require.NoError(t, err)
 
-			got := make([]byte, 2048)
+			got := make([]byte, 512)
 			n, err := cli.Read(got)
 			require.NoError(t, err)
 			require.Equal(t, want, got[:n])

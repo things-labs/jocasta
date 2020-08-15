@@ -44,16 +44,17 @@ func TestKcp(t *testing.T) {
 
 				// server
 				srv := &KCPServer{
-					Addr:   ":",
+					Addr:   "127.0.0.1:0",
 					Config: config,
 					Status: make(chan error, 1),
 					Handler: HandlerFunc(func(inconn net.Conn) {
-						buf := make([]byte, 2048)
-						_, err := inconn.Read(buf)
+						buf := make([]byte, 20)
+						n, err := inconn.Read(buf)
 						if !assert.NoError(t, err) {
 							return
 						}
-						_, err = inconn.Write([]byte("okay"))
+						assert.Equal(t, "ping", string(buf[:n]))
+						_, err = inconn.Write([]byte("pong"))
 						if !assert.NoError(t, err) {
 							return
 						}
@@ -70,13 +71,13 @@ func TestKcp(t *testing.T) {
 				require.NoError(t, err)
 				defer cli.Close()
 
-				_, err = cli.Write([]byte("test"))
+				_, err = cli.Write([]byte("ping"))
 				require.NoError(t, err)
 
 				b := make([]byte, 20)
 				n, err := cli.Read(b)
 				require.NoError(t, err)
-				require.Equal(t, "okay", string(b[:n]))
+				require.Equal(t, "pong", string(b[:n]))
 			}()
 		}
 	}

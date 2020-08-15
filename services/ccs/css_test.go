@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/thinkgos/go-socks5"
 
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/encrypt"
@@ -26,42 +27,46 @@ func Test_InvalidProtocol(t *testing.T) {
 
 func Test_TCP(t *testing.T) {
 	for _, compress := range []bool{true, false} {
-		// server
-		srv := &Server{
-			Protocol: "tcp",
-			Addr:     ":",
-			Config: Config{
-				Compress: compress,
-			},
-			status: make(chan error, 1),
-			Handler: cs.HandlerFunc(func(inconn net.Conn) {
-				buf := make([]byte, 2048)
-				_, err := inconn.Read(buf)
-				if !assert.NoError(t, err) {
-					return
-				}
-				_, err = inconn.Write([]byte("okay"))
-				if !assert.NoError(t, err) {
-					return
-				}
-			}),
-		}
-		channel, errChan := srv.RunListenAndServe()
-		require.NoError(t, <-errChan)
-		defer channel.Close()
+		func() {
+			// server
+			srv := &Server{
+				Protocol: "tcp",
+				Addr:     "127.0.0.1:0",
+				Config: Config{
+					Compress: compress,
+				},
+				status: make(chan error, 1),
+				Handler: cs.HandlerFunc(func(inconn net.Conn) {
+					buf := make([]byte, 20)
+					n, err := inconn.Read(buf)
+					if !assert.NoError(t, err) {
+						return
+					}
+					assert.Equal(t, "ping", string(buf[:n]))
+					_, err = inconn.Write([]byte("pong"))
+					if !assert.NoError(t, err) {
+						return
+					}
+				}),
+			}
+			channel, errChan := srv.RunListenAndServe()
+			require.NoError(t, <-errChan)
+			defer channel.Close()
 
-		// client
-		d := &Dialer{"tcp", Config{Compress: compress}}
-		cli, err := d.DialTimeout(channel.LocalAddr(), 5*time.Second)
-		require.NoError(t, err)
-		defer cli.Close()
+			// client
+			d := &Dialer{"tcp", Config{Compress: compress}}
+			cli, err := d.DialTimeout(channel.LocalAddr(), 5*time.Second)
+			require.NoError(t, err)
+			defer cli.Close()
 
-		_, err = cli.Write([]byte("test"))
-		require.NoError(t, err)
-		b := make([]byte, 20)
-		n, err := cli.Read(b)
-		require.NoError(t, err)
-		require.Equal(t, "okay", string(b[:n]), "client revecive okay excepted,revecived : %s", string(b[:n]))
+			_, err = cli.Write([]byte("ping"))
+			require.NoError(t, err)
+			b := make([]byte, 20)
+			n, err := cli.Read(b)
+			require.NoError(t, err)
+			require.Equal(t, "pong", string(b[:n]))
+
+		}()
 	}
 }
 
@@ -76,35 +81,34 @@ func Test_Stcp(t *testing.T) {
 				// server
 				srv := &Server{
 					Protocol: "stcp",
-					Addr:     ":",
+					Addr:     "127.0.0.1:0",
 					Config:   config,
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
-						buf := make([]byte, 2048)
-						_, err := inconn.Read(buf)
-						if err != nil {
-							t.Error(err)
+						buf := make([]byte, 512)
+						n, err := inconn.Read(buf)
+						if !assert.NoError(t, err) {
 							return
 						}
+						assert.Equal(t, want, buf[:n])
 						_, err = inconn.Write(want)
-						if err != nil {
-							t.Error(err)
+						if !assert.NoError(t, err) {
 							return
 						}
 					}),
 				}
-				s, errChan := srv.RunListenAndServe()
+				channel, errChan := srv.RunListenAndServe()
 				require.NoError(t, <-errChan)
-				defer s.Close()
+				defer channel.Close()
 
 				// client
 				d := &Dialer{"stcp", config}
-				cli, err := d.DialTimeout(s.LocalAddr(), 5*time.Second)
+				cli, err := d.DialTimeout(channel.LocalAddr(), 5*time.Second)
 				require.NoError(t, err)
 				defer cli.Close()
 
 				_, err = cli.Write(want)
 				require.NoError(t, err)
-				b := make([]byte, 2048)
+				b := make([]byte, 512)
 				n, err := cli.Read(b)
 				require.NoError(t, err)
 				require.Equal(t, want, b[:n])
@@ -167,7 +171,7 @@ func TestTcpTls(t *testing.T) {
 		// server
 		srv := &Server{
 			Protocol: "tls",
-			Addr:     ":",
+			Addr:     "127.0.0.1:0",
 			Config: Config{
 				CaCert:    nil,
 				Cert:      []byte(crt),
@@ -176,12 +180,13 @@ func TestTcpTls(t *testing.T) {
 			},
 			status: make(chan error, 1),
 			Handler: cs.HandlerFunc(func(inconn net.Conn) {
-				buf := make([]byte, 2048)
-				_, err := inconn.Read(buf)
+				buf := make([]byte, 20)
+				n, err := inconn.Read(buf)
 				if !assert.NoError(t, err) {
 					return
 				}
-				_, err = inconn.Write([]byte("okay"))
+				assert.Equal(t, "ping", string(buf[:n]))
+				_, err = inconn.Write([]byte("pong"))
 				if !assert.NoError(t, err) {
 					return
 				}
@@ -209,12 +214,12 @@ func TestTcpTls(t *testing.T) {
 		require.NoError(t, err)
 		defer cli.Close()
 
-		_, err = cli.Write([]byte("test"))
+		_, err = cli.Write([]byte("ping"))
 		require.NoError(t, err)
 		b := make([]byte, 20)
 		n, err := cli.Read(b)
 		require.NoError(t, err)
-		require.Equal(t, "okay", string(b[:n]))
+		require.Equal(t, "pong", string(b[:n]))
 	}
 }
 
@@ -246,16 +251,17 @@ func TestKcp(t *testing.T) {
 				// server
 				srv := &Server{
 					Protocol: "kcp",
-					Addr:     ":",
+					Addr:     "127.0.0.1:0",
 					Config:   Config{KcpConfig: config},
 					status:   make(chan error, 1),
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
-						buf := make([]byte, 2048)
-						_, err := inconn.Read(buf)
+						buf := make([]byte, 20)
+						n, err := inconn.Read(buf)
 						if !assert.NoError(t, err) {
 							return
 						}
-						_, err = inconn.Write([]byte("okay"))
+						assert.Equal(t, "ping", string(buf[:n]))
+						_, err = inconn.Write([]byte("pong"))
 						if !assert.NoError(t, err) {
 							return
 						}
@@ -271,13 +277,229 @@ func TestKcp(t *testing.T) {
 				require.NoError(t, err)
 				defer cli.Close()
 
-				_, err = cli.Write([]byte("test"))
+				_, err = cli.Write([]byte("ping"))
 				require.NoError(t, err)
 
 				b := make([]byte, 20)
 				n, err := cli.Read(b)
 				require.NoError(t, err)
-				require.Equal(t, "okay", string(b[:n]))
+				require.Equal(t, "pong", string(b[:n]))
+			}()
+		}
+	}
+}
+
+func TestJumper_socks5_tcp(t *testing.T) {
+	for _, compress := range []bool{true, false} {
+		func() {
+			// server
+			srv := &Server{
+				Protocol: "tcp",
+				Addr:     "127.0.0.1:0",
+				Config: Config{
+					Compress: compress,
+				},
+				status: make(chan error, 1),
+				Handler: cs.HandlerFunc(func(inconn net.Conn) {
+					buf := make([]byte, 20)
+					n, err := inconn.Read(buf)
+					if !assert.NoError(t, err) {
+						return
+					}
+					assert.Equal(t, "ping", string(buf[:n]))
+					_, err = inconn.Write([]byte("pong"))
+					if !assert.NoError(t, err) {
+						return
+					}
+				}),
+			}
+			channel, errChan := srv.RunListenAndServe()
+			require.NoError(t, <-errChan)
+			defer channel.Close()
+
+			// start socks5 proxy server
+			cator := &socks5.UserPassAuthenticator{Credentials: socks5.StaticCredentials{"user": "password"}}
+			proxySrv := socks5.NewServer(
+				socks5.WithAuthMethods(
+					[]socks5.Authenticator{
+						new(socks5.NoAuthAuthenticator),
+						cator,
+					}),
+			)
+			proxyLn, err := net.Listen("tcp", "127.0.0.1:0")
+			require.NoError(t, err)
+			defer proxyLn.Close() // nolint: errcheck
+
+			go func() {
+				proxySrv.Serve(proxyLn) // nolint: errcheck
+			}()
+
+			time.Sleep(time.Millisecond * 100)
+			// t.Logf("proxy server address: %v", proxyLn.Addr().String())
+
+			// start jumper to socks5
+			proxyURL := "socks5://" + "user:password@" + proxyLn.Addr().String()
+			jump, err := cs.NewJumper(proxyURL)
+			require.NoError(t, err)
+			// t.Logf("socks5 proxy url: %v", proxyURL)
+
+			// client
+			d := &Dialer{"tcp", Config{Compress: compress, Jumper: jump}}
+			conn, err := d.DialTimeout(channel.LocalAddr(), time.Second)
+			require.NoError(t, err)
+			defer conn.Close() // nolint: errcheck
+			_, err = conn.Write([]byte("ping"))
+			require.NoError(t, err)
+			b := make([]byte, 4)
+			n, err := conn.Read(b)
+			require.NoError(t, err)
+			require.Equal(t, "pong", string(b[:n]))
+		}()
+	}
+}
+
+func TestJumper_socks5_tls(t *testing.T) {
+	for _, single := range []bool{true, false} {
+		func() {
+			srv := &Server{
+				Protocol: "tls",
+				Addr:     "127.0.0.1:0",
+				Config: Config{
+					CaCert:    nil,
+					Cert:      []byte(crt),
+					Key:       []byte(key),
+					SingleTLS: single,
+				},
+				status: make(chan error, 1),
+				Handler: cs.HandlerFunc(func(inconn net.Conn) {
+					buf := make([]byte, 20)
+					n, err := inconn.Read(buf)
+					if !assert.NoError(t, err) {
+						return
+					}
+					assert.Equal(t, "ping", string(buf[:n]))
+					_, err = inconn.Write([]byte("pong"))
+					if !assert.NoError(t, err) {
+						return
+					}
+				}),
+			}
+			channel, errChan := srv.RunListenAndServe()
+			require.NoError(t, <-errChan)
+			defer channel.Close()
+
+			// start socks5 proxy server
+			cator := &socks5.UserPassAuthenticator{Credentials: socks5.StaticCredentials{"user": "password"}}
+			proxySrv := socks5.NewServer(
+				socks5.WithAuthMethods([]socks5.Authenticator{new(socks5.NoAuthAuthenticator), cator}),
+			)
+			proxyLn, err := net.Listen("tcp", "127.0.0.1:0")
+			require.NoError(t, err)
+			defer proxyLn.Close() // nolint: errcheck
+
+			go func() {
+				proxySrv.Serve(proxyLn) // nolint: errcheck
+			}()
+
+			time.Sleep(time.Millisecond * 100)
+			// t.Logf("proxy server address: %v", proxyLn.Addr().String())
+
+			// start jumper to socks5
+			proxyURL := "socks5://" + "user:password@" + proxyLn.Addr().String()
+			jump, err := cs.NewJumper(proxyURL)
+			require.NoError(t, err)
+			// t.Logf("socks5 proxy url: %v", proxyURL)
+
+			// client
+			d := &Dialer{
+				"tls",
+				Config{
+					CaCert:    []byte(crt),
+					Cert:      []byte(crt),
+					Key:       []byte(key),
+					SingleTLS: single,
+					Jumper:    jump,
+				},
+			}
+			if !single {
+				d.CaCert = nil
+			}
+			conn, err := d.DialTimeout(channel.LocalAddr(), time.Second)
+			require.NoError(t, err)
+			defer conn.Close() // nolint: errcheck
+			_, err = conn.Write([]byte("ping"))
+			require.NoError(t, err)
+			b := make([]byte, 4)
+			n, err := conn.Read(b)
+			require.NoError(t, err)
+			require.Equal(t, "pong", string(b[:n]))
+		}()
+	}
+}
+
+func TestJumper_socks5_stcp(t *testing.T) {
+	password := "pass_word"
+	for _, method := range encrypt.CipherMethods() {
+		for _, compress := range []bool{true, false} {
+			func() {
+				config := Config{STCPMethod: method, STCPPassword: password, Compress: compress}
+
+				// server
+				srv := &Server{
+					Protocol: "stcp",
+					Addr:     "127.0.0.1:0",
+					Config:   config,
+					Handler: cs.HandlerFunc(func(inconn net.Conn) {
+						buf := make([]byte, 20)
+						n, err := inconn.Read(buf)
+						if !assert.NoError(t, err) {
+							return
+						}
+						assert.Equal(t, "ping", string(buf[:n]))
+						_, err = inconn.Write([]byte("pong"))
+						if !assert.NoError(t, err) {
+							return
+						}
+					}),
+				}
+				channel, errChan := srv.RunListenAndServe()
+				require.NoError(t, <-errChan)
+				defer channel.Close()
+
+				// start socks5 proxy server
+				cator := &socks5.UserPassAuthenticator{Credentials: socks5.StaticCredentials{"user": "password"}}
+				proxySrv := socks5.NewServer(
+					socks5.WithAuthMethods([]socks5.Authenticator{new(socks5.NoAuthAuthenticator), cator}),
+				)
+				proxyLn, err := net.Listen("tcp", "127.0.0.1:0")
+				require.NoError(t, err)
+				defer proxyLn.Close() // nolint: errcheck
+
+				go func() {
+					proxySrv.Serve(proxyLn) // nolint: errcheck
+				}()
+
+				time.Sleep(time.Millisecond * 100)
+				// t.Logf("proxy server address: %v", proxyLn.Addr().String())
+
+				// start jumper to socks5
+				proxyURL := "socks5://" + "user:password@" + proxyLn.Addr().String()
+				jump, err := cs.NewJumper(proxyURL)
+				require.NoError(t, err)
+				// t.Logf("socks5 proxy url: %v", proxyURL)
+
+				// client
+				config.Jumper = jump
+				d := &Dialer{"stcp", config}
+				conn, err := d.DialTimeout(channel.LocalAddr(), time.Second)
+				require.NoError(t, err)
+				defer conn.Close() // nolint: errcheck
+				_, err = conn.Write([]byte("ping"))
+				require.NoError(t, err)
+				b := make([]byte, 4)
+				n, err := conn.Read(b)
+				require.NoError(t, err)
+				require.Equal(t, "pong", string(b[:n]))
 			}()
 		}
 	}

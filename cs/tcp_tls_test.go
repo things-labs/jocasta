@@ -63,7 +63,7 @@ func TestTcpTls(t *testing.T) {
 		func() {
 			// server
 			srv := &TCPTlsServer{
-				Addr:   ":",
+				Addr:   "127.0.0.1:0",
 				CaCert: nil,
 				Cert:   []byte(crt),
 				Key:    []byte(key),
