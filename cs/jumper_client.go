@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 
 	"golang.org/x/net/proxy"
@@ -23,8 +25,17 @@ type Jumper struct {
 
 // ValidJumperProxyURL 校验proxyURL是否正确
 func ValidJumperProxyURL(proxyURL string) bool {
-	_, err := url.Parse(proxyURL)
+	_, err := parseProxyURL(proxyURL)
 	return err == nil
+}
+
+// parseProxyURL parse proxy url
+func parseProxyURL(proxyURL string) (*url.URL, error) {
+	if strings.HasPrefix(proxyURL, "socks5://") ||
+		strings.HasPrefix(proxyURL, "https://") {
+		return url.Parse(proxyURL)
+	}
+	return nil, errors.New("invalid proxy url")
 }
 
 // NewJumper 创建跳板
@@ -34,7 +45,7 @@ func ValidJumperProxyURL(proxyURL string) bool {
 // socks5://username:password@host:port
 // socks5://host:port
 func NewJumper(proxyURL string) (*Jumper, error) {
-	u, err := url.Parse(proxyURL)
+	u, err := parseProxyURL(proxyURL)
 	if err != nil {
 		return nil, err
 	}
@@ -44,12 +55,21 @@ func NewJumper(proxyURL string) (*Jumper, error) {
 // JumperTCP tcp jumper
 type JumperTCP struct {
 	*Jumper
+	Compress bool
 }
 
 // DialTimeout tcp dialer
 func (sf *JumperTCP) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	d := dialer{sf.Jumper}
-	return d.DialTimeout(address, timeout)
+
+	conn, err := d.DialTimeout(address, timeout)
+	if err != nil {
+		return nil, err
+	}
+	if sf.Compress {
+		conn = csnappy.New(conn)
+	}
+	return conn, nil
 }
 
 // JumperTCPTls tcp tls jumper
@@ -112,26 +132,26 @@ type dialer struct {
 	*Jumper
 }
 
-func (sf *dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
+func (sf *dialer) DialTimeout(addr string, timeout time.Duration) (net.Conn, error) {
 	switch sf.proxyURL.Scheme {
 	case "https":
-		return sf.dialHTTPS(address, timeout)
+		return sf.dialHTTPS(addr, timeout)
 	case "socks5":
-		return sf.dialSOCKS5(address, timeout)
+		return sf.dialSOCKS5(addr, timeout)
 	default:
 		return nil, fmt.Errorf("unkown scheme of %s", sf.proxyURL.String())
 	}
 }
 
-func (sf *dialer) dialHTTPS(address string, timeout time.Duration) (net.Conn, error) {
+func (sf *dialer) dialHTTPS(addr string, timeout time.Duration) (net.Conn, error) {
 	conn, err := net.DialTimeout("tcp", sf.proxyURL.Host, timeout)
 	if err != nil {
 		return nil, err
 	}
 	pb := new(bytes.Buffer)
-	pb.WriteString(fmt.Sprintf("CONNECT %s HTTP/1.1\r\n", address))
-	pb.WriteString(fmt.Sprintf("Host: %s\r\n", address))
-	pb.WriteString(fmt.Sprintf("Proxy-Host: %s\r\n", address))
+	pb.WriteString(fmt.Sprintf("CONNECT %s HTTP/1.1\r\n", addr))
+	pb.WriteString(fmt.Sprintf("Host: %s\r\n", addr))
+	pb.WriteString(fmt.Sprintf("Proxy-Host: %s\r\n", addr))
 	pb.WriteString("Proxy-Connection: Keep-Alive\r\n")
 	pb.WriteString("Connection: Keep-Alive\r\n")
 	if sf.proxyURL.User != nil {
@@ -162,7 +182,7 @@ func (sf *dialer) dialHTTPS(address string, timeout time.Duration) (net.Conn, er
 	return conn, nil
 }
 
-func (sf *dialer) dialSOCKS5(address string, timeout time.Duration) (net.Conn, error) {
+func (sf *dialer) dialSOCKS5(addr string, timeout time.Duration) (net.Conn, error) {
 	var auth *proxy.Auth
 
 	if sf.proxyURL.User != nil {
@@ -177,7 +197,7 @@ func (sf *dialer) dialSOCKS5(address string, timeout time.Duration) (net.Conn, e
 	if err != nil {
 		return nil, fmt.Errorf("connecting to proxy, %+v", err)
 	}
-	return dialSocksProxy.Dial("tcp", address)
+	return dialSocksProxy.Dial("tcp", addr)
 }
 
 type directTimeout struct {

@@ -40,7 +40,7 @@ func (sf *Dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, 
 	switch sf.Protocol {
 	case "tcp":
 		if sf.Jumper != nil {
-			dialer = &cs.JumperTCP{Jumper: sf.Jumper}
+			dialer = &cs.JumperTCP{Jumper: sf.Jumper, Compress: sf.Compress}
 		} else {
 			dialer = &cs.TCPDialer{Compress: sf.Compress}
 		}

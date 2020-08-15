@@ -19,7 +19,7 @@ require (
 	github.com/rs/xid v1.2.1
 	github.com/stretchr/testify v1.6.1
 	github.com/templexxx/cpu v0.0.7 // indirect
-	github.com/thinkgos/go-socks5 v0.2.1
+	github.com/thinkgos/go-socks5 v0.2.2
 	github.com/thinkgos/meter v0.0.4
 	github.com/thinkgos/strext v0.3.2
 	github.com/tjfoc/gmsm v1.3.2 // indirect

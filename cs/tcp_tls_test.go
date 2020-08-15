@@ -60,50 +60,53 @@ TL44tBTU3E0Bl+fyBSRkAXbVVTcYsxTeHsSuYm3pARTpKsw=
 
 func TestTcpTls(t *testing.T) {
 	for _, single := range []bool{true, false} {
-		// server
-		srv := &TCPTlsServer{
-			Addr:   ":",
-			CaCert: nil,
-			Cert:   []byte(crt),
-			Key:    []byte(key),
-			Single: single,
-			Status: make(chan error, 1),
-			Handler: HandlerFunc(func(inconn net.Conn) {
-				buf := make([]byte, 2048)
-				_, err := inconn.Read(buf)
-				if !assert.NoError(t, err) {
-					return
-				}
-				_, err = inconn.Write([]byte("okay"))
-				if !assert.NoError(t, err) {
-					return
-				}
-			}),
-		}
-		go func() { _ = srv.ListenAndServe() }()
-		require.NoError(t, <-srv.Status)
-		defer srv.Close()
+		func() {
+			// server
+			srv := &TCPTlsServer{
+				Addr:   ":",
+				CaCert: nil,
+				Cert:   []byte(crt),
+				Key:    []byte(key),
+				Single: single,
+				Status: make(chan error, 1),
+				Handler: HandlerFunc(func(inconn net.Conn) {
+					buf := make([]byte, 20)
+					n, err := inconn.Read(buf)
+					if !assert.NoError(t, err) {
+						return
+					}
+					assert.Equal(t, "ping", string(buf[:n]))
+					_, err = inconn.Write([]byte("pong"))
+					if !assert.NoError(t, err) {
+						return
+					}
+				}),
+			}
+			go func() { _ = srv.ListenAndServe() }()
+			require.NoError(t, <-srv.Status)
+			defer srv.Close()
 
-		// client
-		d := &TCPTlsDialer{
-			CaCert: []byte(crt),
-			Cert:   []byte(crt),
-			Key:    []byte(key),
-			Single: single,
-		}
-		if !single {
-			d.CaCert = nil
-		}
+			// client
+			d := &TCPTlsDialer{
+				CaCert: []byte(crt),
+				Cert:   []byte(crt),
+				Key:    []byte(key),
+				Single: single,
+			}
+			if !single {
+				d.CaCert = nil
+			}
 
-		cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
-		require.NoError(t, err)
-		defer cli.Close()
+			cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
+			require.NoError(t, err)
+			defer cli.Close()
 
-		_, err = cli.Write([]byte("test"))
-		require.NoError(t, err)
-		b := make([]byte, 20)
-		n, err := cli.Read(b)
-		require.NoError(t, err)
-		require.Equal(t, "okay", string(b[:n]))
+			_, err = cli.Write([]byte("ping"))
+			require.NoError(t, err)
+			b := make([]byte, 20)
+			n, err := cli.Read(b)
+			require.NoError(t, err)
+			require.Equal(t, "pong", string(b[:n]))
+		}()
 	}
 }
