@@ -25,6 +25,7 @@ func TestUpstream(t *testing.T) {
 			}
 		}
 	}()
+	defer ln.Close() // nolint: errcheck
 
 	ups, err := NewUpstream(Config{
 		Addr:             ln.Addr().String(),

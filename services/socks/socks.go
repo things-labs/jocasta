@@ -114,7 +114,7 @@ type Socks struct {
 	socks5Srv             *socks5.Server
 	filters               *filter.Filter
 	basicAuthCenter       *basicAuth.Center
-	lb                    *loadbalance.Group
+	lb                    *loadbalance.Balanced
 	domainResolver        *idns.Resolver
 	sshClient             atomic.Value
 	userConns             cmap.ConcurrentMap
@@ -278,7 +278,7 @@ func (sf *Socks) initService() (err error) {
 				Period:           sf.cfg.LoadBalanceRetryTime,
 			})
 		}
-		sf.lb = loadbalance.NewGroup(sf.cfg.LoadBalanceMethod, configs,
+		sf.lb = loadbalance.New(sf.cfg.LoadBalanceMethod, configs,
 			loadbalance.WithDNSServer(sf.domainResolver),
 			loadbalance.WithLogger(sf.log),
 			loadbalance.WithEnableDebug(sf.cfg.Debug),

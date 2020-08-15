@@ -229,7 +229,7 @@ func TestWeight_Select(t *testing.T) {
 
 	wei := NewWeight()
 
-	for i := 0; i < 18; i++ {
+	for i := 0; i < len(wantAddr)*2; i++ {
 		assert.Equal(t, wantAddr[i%len(wantAddr)], wei.Select(pool, "").Addr)
 	}
 

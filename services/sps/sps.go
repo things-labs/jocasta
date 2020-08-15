@@ -106,7 +106,7 @@ type SPS struct {
 	localCipher           *shadowsocks.Cipher
 	parentCipher          *shadowsocks.Cipher
 	udpRelatedPacketConns cmap.ConcurrentMap
-	lb                    *loadbalance.Group
+	lb                    *loadbalance.Balanced
 	udpLocalKey           []byte
 	udpParentKey          []byte
 	jumper                *cs.Jumper
@@ -258,7 +258,7 @@ func (sf *SPS) InitService() (err error) {
 				Timeout:          sf.cfg.LoadBalanceTimeout,
 			})
 		}
-		sf.lb = loadbalance.NewGroup(sf.cfg.LoadBalanceMethod, configs,
+		sf.lb = loadbalance.New(sf.cfg.LoadBalanceMethod, configs,
 			loadbalance.WithDNSServer(sf.domainResolver),
 			loadbalance.WithLogger(sf.log),
 			loadbalance.WithEnableDebug(sf.cfg.Debug),

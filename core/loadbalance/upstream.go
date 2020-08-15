@@ -49,7 +49,7 @@ func NewUpstream(config Config) (*Upstream, error) {
 		config.Timeout = time.Second * 1
 	}
 	if config.Period <= 0 {
-		config.Period = time.Second * 2
+		config.Period = time.Second * 30
 	}
 
 	b := &Upstream{Config: config}

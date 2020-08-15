@@ -135,7 +135,7 @@ func hash(s string) uint32 {
 	return h.Sum32()
 }
 
-// Weight weight 根据权重和连接数
+// Weight weight 平滑权重轮询调度
 type Weight struct {
 	index     int
 	curWeight int
@@ -183,21 +183,21 @@ func (sf *Weight) Select(pool UpstreamPool, _ string) *Upstream {
 
 // GetMaxWeight 获取Slice中最大权重值
 func getMaxWeightAndGCD(pool UpstreamPool) (int, int) {
-	max, g := pool[0].Weight, pool[0].Weight
+	maxWeight, g := pool[0].Weight, pool[0].Weight
 	for i := 1; i < len(pool); i++ {
-		if pool[i].Weight > max {
-			max = pool[i].Weight
+		if pool[i].Weight > maxWeight {
+			maxWeight = pool[i].Weight
 		}
 		g = outil.Gcdx(g, pool[i].Weight)
 	}
-	return max, g
+	return maxWeight, g
 }
 
 // LeastTime 最小响应时间
 type LeastTime struct{}
 
 // Select implement Selector
-func (LeastTime) Select(pool UpstreamPool, _ string) (b *Upstream) {
+func (LeastTime) Select(pool UpstreamPool, _ string) *Upstream {
 	var best *Upstream
 
 	min, count := time.Duration(-1), 0

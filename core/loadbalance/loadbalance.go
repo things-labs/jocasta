@@ -59,51 +59,59 @@ func HasSupportMethod(method string) bool {
 	return ok
 }
 
-type Group struct {
+// Balanced load balance
+type Balanced struct {
 	method   string
 	interval time.Duration
 	debug    bool
-	last     *Upstream
 	dns      *idns.Resolver
 	goPool   gpool.Pool
 	log      logger.Logger
 
-	mu        sync.Mutex
+	rw        sync.RWMutex
 	closeChan chan struct{}
+	last      *Upstream
 	upstreams UpstreamPool
 	selector  Selector
 }
 
+// New new a load balance with method and upstream config
 // if method not supprt,it will use roundrobin method.
 // support method:
+//      random
 // 		roundrobin
 // 		leastconn
 // 		hash
+//      addrhash
 // 		leasttime
 // 		weight
-func NewGroup(method string, configs []Config, opts ...Option) *Group {
-	g := &Group{
+func New(method string, configs []Config, opts ...Option) *Balanced {
+	lb := &Balanced{
+		method:    method,
+		interval:  time.Second * 30,
 		selector:  getNewSelectorFunction(method)(),
 		upstreams: NewUpstreamPool(configs),
 		log:       logger.NewDiscard(),
 		closeChan: make(chan struct{}),
 	}
-
 	for _, opt := range opts {
-		opt(g)
+		opt(lb)
 	}
-	go g.activeHealthChecker()
-	return g
+	if lb.interval > 0 {
+		go lb.activeHealthChecker()
+	}
+	return lb
 }
 
-func (sf *Group) Select(srcAddr string, onlyHa bool) (addr string) {
-	sf.mu.Lock()
-	defer sf.mu.Unlock()
-	addr = ""
+// Select select the upstream with srcAddr then return the upstream addr
+func (sf *Balanced) Select(srcAddr string, onlyHa bool) string {
+	sf.rw.RLock()
+	defer sf.rw.RUnlock()
 
 	if len(sf.upstreams) == 1 {
 		return sf.upstreams[0].Addr
 	}
+
 	if onlyHa {
 		if sf.last != nil && (sf.last.Healthy() || sf.last.LeastTime() == 0) {
 			if sf.debug {
@@ -122,21 +130,24 @@ func (sf *Group) Select(srcAddr string, onlyHa bool) (addr string) {
 	return b.Addr
 }
 
-func (sf *Group) ConnsIncrease(addr string) {
-	sf.mu.Lock()
-	defer sf.mu.Unlock()
+// ConnsIncrease increase the addr conns count
+func (sf *Balanced) ConnsIncrease(addr string) {
+	sf.rw.Lock()
+	defer sf.rw.Unlock()
 	sf.upstreams.ConnsIncrease(addr)
 }
 
-func (sf *Group) ConnsDecrease(addr string) {
-	sf.mu.Lock()
-	defer sf.mu.Unlock()
+// ConnsDecrease decrease the addr conns count
+func (sf *Balanced) ConnsDecrease(addr string) {
+	sf.rw.Lock()
+	defer sf.rw.Unlock()
 	sf.upstreams.ConnsDecrease(addr)
 }
 
-func (sf *Group) Close() error {
-	sf.mu.Lock()
-	defer sf.mu.Unlock()
+// Close close the balanced
+func (sf *Balanced) Close() error {
+	sf.rw.Lock()
+	defer sf.rw.Unlock()
 	select {
 	case <-sf.closeChan:
 	default:
@@ -145,50 +156,39 @@ func (sf *Group) Close() error {
 	return nil
 }
 
-func (sf *Group) HasHealthy() bool {
-	sf.mu.Lock()
-	defer sf.mu.Unlock()
+// HasHealthy has any health upstream
+func (sf *Balanced) HasHealthy() bool {
+	sf.rw.RLock()
+	defer sf.rw.RUnlock()
 	return sf.upstreams.HasHealthy()
 }
 
-func (sf *Group) HealthyCount() int {
-	sf.mu.Lock()
-	defer sf.mu.Unlock()
+// HealthyCount health backend count
+func (sf *Balanced) HealthyCount() int {
+	sf.rw.RLock()
+	defer sf.rw.RUnlock()
 	return sf.upstreams.HealthyCount()
 }
 
-func (sf *Group) Reset(addrs []string) {
-	sf.mu.Lock()
-	defer sf.mu.Unlock()
-	bks := sf.upstreams
-	if len(bks) == 0 {
-		return
-	}
-	cfg := bks[0].Config
-	configs := make([]Config, 0, len(addrs))
-	for _, addr := range addrs {
-		c := cfg
-		c.Addr = addr
-		configs = append(configs, c)
-	}
-	// create new
+// Reset reset to the new upstream
+func (sf *Balanced) Reset(configs []Config) {
+	sf.rw.Lock()
+	defer sf.rw.Unlock()
 	sf.upstreams = NewUpstreamPool(configs)
 	sf.selector = getNewSelectorFunction(sf.method)()
 }
 
-func (sf *Group) resolve(addr string) string {
+// resolve resolve the addr to ip:port
+func (sf *Balanced) resolve(addr string) string {
 	if sf.dns != nil && sf.dns.PublicDNSAddr() != "" {
 		addr = sf.dns.MustResolve(addr)
 	}
 	return addr
 }
 
-func (sf *Group) activeHealthChecker() {
-	defer func() {
-		if err := recover(); err != nil {
-			sf.log.DPanicf("active health checks: %v\n%s", err, debug.Stack())
-		}
-	}()
+// activeHealthChecker healthy checker
+// it must be run in a goroutine
+func (sf *Balanced) activeHealthChecker() {
 	ticker := time.NewTicker(sf.interval)
 	defer ticker.Stop()
 	for {
@@ -197,10 +197,19 @@ func (sf *Group) activeHealthChecker() {
 		case <-sf.closeChan:
 			return
 		}
+		sf.rw.Lock()
 		for _, upstream := range sf.upstreams {
 			ups := upstream
-			gpool.Go(sf.goPool, func() { ups.healthyCheck(sf.resolve(ups.Addr)) })
+			gpool.Go(sf.goPool, func() {
+				defer func() {
+					if err := recover(); err != nil {
+						sf.log.DPanicf("active health checks: %v\n%s", err, debug.Stack())
+					}
+				}()
+				ups.healthyCheck(sf.resolve(ups.Addr))
+			})
 		}
+		sf.rw.Unlock()
 	}
 }
 
