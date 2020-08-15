@@ -10,20 +10,21 @@ import (
 
 // Config 后端配置
 type Config struct {
-	Addr        string        // 后端地址
-	MinActive   int           // 最大测试已激活次数
-	MaxInactive int           // 最大测试未激活次数
-	Weight      int           // 权重
-	Timeout     time.Duration // 连接超时时间
-	RetryTime   time.Duration // 检查时间间隔
-
-	LivenessProbe func(ctx context.Context, addr string, timeout time.Duration) error
+	Addr             string        // 后端地址
+	Weight           int           // 权重
+	SuccessThreshold uint32        // liveness成功阀值
+	FailureThreshold uint32        // liveness失败阀值
+	Period           time.Duration // 检查时间间隔 TODO: Not used
+	Timeout          time.Duration // dial 连接超时时间
+	LivenessProbe    func(ctx context.Context, addr string, timeout time.Duration) error
 }
 
 // Upstream 后端
 type Upstream struct {
 	Config
-	health         int32        // 是否健康
+	health         uint32 // 是否健康
+	successCount   uint32
+	failureCount   uint32
 	connections    int64        // 连接数
 	maxConnections int64        // 最大连接数,0表示不限制, default: 0
 	leastTime      atomic.Value // time.Duration 最小响应时间
@@ -34,11 +35,11 @@ func NewUpstream(config Config) (*Upstream, error) {
 	if config.Addr == "" {
 		return nil, errors.New("address required")
 	}
-	if config.MinActive == 0 {
-		config.MinActive = 3
+	if config.SuccessThreshold == 0 {
+		config.SuccessThreshold = 3
 	}
-	if config.MaxInactive == 0 {
-		config.MaxInactive = 3
+	if config.FailureThreshold == 0 {
+		config.FailureThreshold = 3
 	}
 	if config.Weight == 0 {
 		config.Weight = 1
@@ -46,8 +47,8 @@ func NewUpstream(config Config) (*Upstream, error) {
 	if config.Timeout == 0 {
 		config.Timeout = time.Millisecond * 1500
 	}
-	if config.RetryTime == 0 {
-		config.RetryTime = time.Second * 2
+	if config.Period == 0 {
+		config.Period = time.Second * 2
 	}
 
 	b := &Upstream{Config: config}
@@ -65,19 +66,19 @@ func (sf *Upstream) ConnsIncrease() { atomic.AddInt64(&sf.connections, 1) }
 func (sf *Upstream) ConnsDecrease() { atomic.AddInt64(&sf.connections, -1) }
 
 // Healthy return health or not
-func (sf *Upstream) Healthy() bool { return atomic.LoadInt32(&sf.health) == 1 }
+func (sf *Upstream) Healthy() bool { return atomic.LoadUint32(&sf.health) == 1 }
 
-func (sf *Upstream) Available() bool { return atomic.LoadInt32(&sf.health) == 1 && !sf.Full() }
+// Available return health and not connections not full
+func (sf *Upstream) Available() bool { return sf.Healthy() && !sf.Full() }
 
+// LeastTime return the least time connect
 func (sf *Upstream) LeastTime() time.Duration { return sf.leastTime.Load().(time.Duration) }
 
+// Full return connections is full or not.
 func (sf *Upstream) Full() bool { return sf.maxConnections > 0 && sf.connections >= sf.maxConnections }
 
 // Monitoring the backend
-func (sf *Upstream) tcpHealthyCheck(addr string) {
-	var activeTries int
-	var inactiveTries int
-
+func (sf *Upstream) healthyCheck(addr string) {
 	livenessProbe := tcpLivenessProbe
 	if sf.LivenessProbe != nil {
 		livenessProbe = sf.LivenessProbe
@@ -87,15 +88,15 @@ func (sf *Upstream) tcpHealthyCheck(addr string) {
 	sf.leastTime.Store(time.Since(start))
 	if err != nil {
 		// Max tries larger than consider max inactive, health failed
-		if inactiveTries++; inactiveTries >= sf.MaxInactive {
-			activeTries = 0
-			atomic.StoreInt32(&sf.health, 0)
+		if failure := atomic.AddUint32(&sf.failureCount, 1); failure >= sf.FailureThreshold {
+			atomic.StoreUint32(&sf.successCount, 0)
+			atomic.StoreUint32(&sf.health, 0)
 		}
 	} else {
 		// Max tries larger than consider max health, health success
-		if activeTries++; activeTries >= sf.MinActive {
-			inactiveTries = 0
-			atomic.StoreInt32(&sf.health, 1)
+		if success := atomic.AddUint32(&sf.failureCount, 1); success >= sf.SuccessThreshold {
+			atomic.StoreUint32(&sf.failureCount, 0)
+			atomic.StoreUint32(&sf.health, 1)
 		}
 	}
 }

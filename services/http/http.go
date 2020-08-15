@@ -273,12 +273,12 @@ func (sf *HTTP) InitService() (err error) {
 				}
 			}
 			configs = append(configs, loadbalance.Config{
-				Addr:        _addr,
-				Weight:      weight,
-				MinActive:   1,
-				MaxInactive: 2,
-				Timeout:     sf.cfg.LoadBalanceTimeout,
-				RetryTime:   sf.cfg.LoadBalanceRetryTime,
+				Addr:             _addr,
+				Weight:           weight,
+				SuccessThreshold: 1,
+				FailureThreshold: 2,
+				Period:           sf.cfg.LoadBalanceRetryTime,
+				Timeout:          sf.cfg.LoadBalanceTimeout,
 			})
 		}
 		sf.lb = loadbalance.NewGroup(sf.cfg.LoadBalanceMethod, configs,

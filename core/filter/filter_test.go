@@ -134,28 +134,28 @@ func TestFilter_direct(t *testing.T) {
 	isProxy, inMap, fail, succ := filte.IsProxy("pa.com")
 	assert.True(t, isProxy)
 	assert.True(t, inMap)
-	assert.Equal(t, 0, fail)
-	assert.Equal(t, 0, succ)
+	assert.Equal(t, uint(0), fail)
+	assert.Equal(t, uint(0), succ)
 
 	isProxy, inMap, fail, succ = filte.IsProxy("da.com")
 	assert.False(t, isProxy)
 	assert.True(t, inMap)
-	assert.Equal(t, 0, fail)
-	assert.Equal(t, 0, succ)
+	assert.Equal(t, uint(0), fail)
+	assert.Equal(t, uint(0), succ)
 
 	// in cache
 	isProxy, inMap, fail, succ = filte.IsProxy("ca.com")
 	assert.False(t, isProxy)
 	assert.True(t, inMap)
-	assert.Equal(t, 0, fail)
-	assert.Equal(t, 0, succ)
+	assert.Equal(t, uint(0), fail)
+	assert.Equal(t, uint(0), succ)
 
 	// not in cache
 	isProxy, inMap, fail, succ = filte.IsProxy("ia.com")
 	assert.True(t, isProxy)
 	assert.False(t, inMap)
-	assert.Equal(t, 0, fail)
-	assert.Equal(t, 0, succ)
+	assert.Equal(t, uint(0), fail)
+	assert.Equal(t, uint(0), succ)
 }
 
 func TestFilter_Proxy(t *testing.T) {
@@ -169,8 +169,8 @@ func TestFilter_Proxy(t *testing.T) {
 	isProxy, inMap, fail, succ := filte.IsProxy("ca.com")
 	assert.True(t, isProxy)
 	assert.True(t, inMap)
-	assert.Equal(t, 0, fail)
-	assert.Equal(t, 0, succ)
+	assert.Equal(t, uint(0), fail)
+	assert.Equal(t, uint(0), succ)
 }
 
 func TestFilter_intelligent(t *testing.T) {
@@ -196,8 +196,8 @@ func TestFilter_intelligent(t *testing.T) {
 	isProxy, inMap, fail, succ := filte.IsProxy("localhost")
 	assert.False(t, isProxy)
 	assert.True(t, inMap)
-	assert.Equal(t, 0, fail)
-	assert.Equal(t, 0, succ)
+	assert.Equal(t, uint(0), fail)
+	assert.Equal(t, uint(0), succ)
 	time.Sleep(time.Second * 5)
 }
 

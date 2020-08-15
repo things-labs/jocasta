@@ -199,7 +199,7 @@ func (sf *Group) activeHealthChecker() {
 		}
 		for _, upstream := range sf.upstreams {
 			ups := upstream
-			gpool.Go(sf.goPool, func() { ups.tcpHealthyCheck(sf.resolve(ups.Addr)) })
+			gpool.Go(sf.goPool, func() { ups.healthyCheck(sf.resolve(ups.Addr)) })
 		}
 	}
 }

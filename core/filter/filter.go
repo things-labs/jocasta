@@ -34,8 +34,8 @@ type Filter struct {
 	timeout          time.Duration                                                       // 域名检测超时时间, default: 1s
 	livenessPeriod   time.Duration                                                       // 域名存活控测周期, default: 30s
 	livenessProbe    func(ctx context.Context, addr string, timeout time.Duration) error // 域名探针接口, default: tcp dial
-	successThreshold int
-	failureThreshold int
+	successThreshold uint
+	failureThreshold uint
 	aliveThreshold   int64
 	cancel           context.CancelFunc
 	ctx              context.Context
@@ -43,11 +43,11 @@ type Filter struct {
 	log              logger.Logger
 }
 
-// Item table cache item, 存的是拷贝,无需考虑线程安全操作.
+// Item table cache item
 type Item struct {
 	addr           string
-	successCount   int
-	failureCount   int
+	successCount   uint
+	failureCount   uint
 	lastActiveTime int64
 }
 
@@ -55,7 +55,7 @@ type Item struct {
 // 仅检查cache表,在proxy表或direct表中,无需检查
 // 无需活性探测条件:
 //    successCount < successThreshold 且 successCount > failureCount 且 探测时隔小于activeDiff
-func (sf *Item) isNeedLivenessProde(successThreshold, failureThreshold int, aliveThreshold int64) bool {
+func (sf *Item) isNeedLivenessProde(successThreshold, failureThreshold uint, aliveThreshold int64) bool {
 	return !((sf.successCount >= successThreshold || sf.failureCount >= failureThreshold) &&
 		(sf.successCount > sf.failureCount) && (time.Now().Unix()-sf.lastActiveTime < aliveThreshold))
 }
@@ -133,7 +133,7 @@ func (sf *Filter) Add(domain, addr string) {
 // 4. 根据策略,如果是direct或proxy策略,直接返回策略规则,否则采用intelligent,进行智能判断.
 // intelligent 策略判断规则:
 //
-func (sf *Filter) IsProxy(domain string) (proxy, inMap bool, failN, successN int) {
+func (sf *Filter) IsProxy(domain string) (proxy, inMap bool, failN, successN uint) {
 	domain = hostname(domain)
 	if sf.Match(domain, true) {
 		return true, true, 0, 0

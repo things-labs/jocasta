@@ -63,9 +63,9 @@ func WithAliveThreshold(sec int64) Option {
 
 // WithSuccessThreshold 成功次数达到指定阀值才算成功,默认3次
 // 0: use defaultThreshold 3次
-func WithSuccessThreshold(cnt int) Option {
+func WithSuccessThreshold(cnt uint) Option {
 	return func(f *Filter) {
-		if cnt <= 0 {
+		if cnt == 0 {
 			cnt = defaultThreshold
 		}
 		f.successThreshold = cnt
@@ -73,10 +73,10 @@ func WithSuccessThreshold(cnt int) Option {
 }
 
 // WithFailureThreshold 失败次数达到指定阀值才算失败,默认3次
-// <=0: use defaultThreshold 3次
-func WithFailureThreshold(cnt int) Option {
+// 0: use defaultThreshold 3次
+func WithFailureThreshold(cnt uint) Option {
 	return func(f *Filter) {
-		if cnt <= 0 {
+		if cnt == 0 {
 			cnt = defaultThreshold
 		}
 		f.failureThreshold = cnt
