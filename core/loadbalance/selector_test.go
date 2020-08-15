@@ -48,7 +48,7 @@ func TestRoundRobin_Select(t *testing.T) {
 	assert.Equal(t, pool[2], h, "Expected to balance evenly among healthy hosts")
 
 	// mark host as full
-	pool[1].maxConnections = 1
+	pool[1].MaxConnections = 1
 	pool[1].connections = 1
 	h = robin.Select(pool, "")
 	assert.Equal(t, pool[2], h, "Expected to skip full host.")

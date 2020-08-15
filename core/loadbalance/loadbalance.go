@@ -61,7 +61,7 @@ func HasSupportMethod(method string) bool {
 
 type Group struct {
 	method   string
-	Interval time.Duration
+	interval time.Duration
 	debug    bool
 	last     *Upstream
 	dns      *idns.Resolver
@@ -189,7 +189,7 @@ func (sf *Group) activeHealthChecker() {
 			sf.log.DPanicf("active health checks: %v\n%s", err, debug.Stack())
 		}
 	}()
-	ticker := time.NewTicker(sf.Interval)
+	ticker := time.NewTicker(sf.interval)
 	defer ticker.Stop()
 	for {
 		select {

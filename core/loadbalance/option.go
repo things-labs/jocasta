@@ -1,6 +1,8 @@
 package loadbalance
 
 import (
+	"time"
+
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/lib/gpool"
 	"github.com/thinkgos/jocasta/lib/logger"
@@ -32,9 +34,15 @@ func WithEnableDebug(b bool) Option {
 
 // WithGPool 使用协程池
 func WithGPool(pool gpool.Pool) Option {
-	return func(f *Group) {
+	return func(g *Group) {
 		if pool != nil {
-			f.goPool = pool
+			g.goPool = pool
 		}
+	}
+}
+
+func WithInterval(interval time.Duration) Option {
+	return func(g *Group) {
+		g.interval = interval
 	}
 }
