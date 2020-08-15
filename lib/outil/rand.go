@@ -25,7 +25,7 @@ const (
 
 )
 
-var globalRand = rand.New(rand.NewSource(time.Now().UnixNano() + rand.Int63()))
+var globalRand = rand.New(rand.NewSource(time.Now().UnixNano() + rand.Int63() + rand.Int63() + rand.Int63()))
 
 // RandString rand string  with give length
 func RandString(length int) string {

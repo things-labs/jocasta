@@ -1,6 +1,7 @@
 package loadbalance
 
 import (
+	"context"
 	"errors"
 	"net"
 	"sync/atomic"
@@ -15,7 +16,8 @@ type Config struct {
 	Weight      int           // 权重
 	Timeout     time.Duration // 连接超时时间
 	RetryTime   time.Duration // 检查时间间隔
-	Dial        func(address string, timeout time.Duration) (net.Conn, error)
+
+	LivenessProbe func(ctx context.Context, addr string, timeout time.Duration) error
 }
 
 // Upstream 后端
@@ -75,16 +77,13 @@ func (sf *Upstream) Full() bool { return sf.maxConnections > 0 && sf.connections
 func (sf *Upstream) tcpHealthyCheck(addr string) {
 	var activeTries int
 	var inactiveTries int
-	var c net.Conn
-	var err error
 
-	start := time.Now()
-	if sf.Dial != nil {
-		c, err = sf.Dial(addr, sf.Timeout)
-	} else {
-		c, err = net.DialTimeout("tcp", addr, sf.Timeout)
+	livenessProbe := tcpLivenessProbe
+	if sf.LivenessProbe != nil {
+		livenessProbe = sf.LivenessProbe
 	}
-
+	start := time.Now()
+	err := livenessProbe(context.TODO(), addr, sf.Timeout)
 	sf.leastTime.Store(time.Since(start))
 	if err != nil {
 		// Max tries larger than consider max inactive, health failed
@@ -93,13 +92,21 @@ func (sf *Upstream) tcpHealthyCheck(addr string) {
 			atomic.StoreInt32(&sf.health, 0)
 		}
 	} else {
-		c.Close()
 		// Max tries larger than consider max health, health success
 		if activeTries++; activeTries >= sf.MinActive {
 			inactiveTries = 0
 			atomic.StoreInt32(&sf.health, 1)
 		}
 	}
+}
+
+func tcpLivenessProbe(_ context.Context, addr string, timeout time.Duration) error {
+	c, err := net.DialTimeout("tcp", addr, timeout)
+	if err != nil {
+		return err
+	}
+	c.Close() // nolint: errcheck
+	return nil
 }
 
 /******************************************************************************/
