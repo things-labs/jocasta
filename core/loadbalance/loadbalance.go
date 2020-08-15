@@ -70,7 +70,6 @@ type Balanced struct {
 
 	rw        sync.RWMutex
 	closeChan chan struct{}
-	last      *Upstream
 	upstreams UpstreamPool
 	selector  Selector
 }
@@ -103,30 +102,24 @@ func New(method string, configs []Config, opts ...Option) *Balanced {
 	return lb
 }
 
-// Select select the upstream with srcAddr then return the upstream addr
-func (sf *Balanced) Select(srcAddr string, onlyHa bool) string {
+// Select select the upstream with srcAddr and ha mode then return the upstream addr
+func (sf *Balanced) Select(srcAddr string) string {
 	sf.rw.RLock()
 	defer sf.rw.RUnlock()
 
-	if len(sf.upstreams) == 1 {
-		return sf.upstreams[0].Addr
-	}
-
-	if onlyHa {
-		if sf.last != nil && (sf.last.Healthy() || sf.last.LeastTime() == 0) {
-			if sf.debug {
-				sf.log.Infof("############ choosed %s from lastest ############", sf.last.Addr)
-				printDebug(true, sf.log, nil, srcAddr, sf.upstreams)
-			}
-			return sf.last.Addr
-		}
-		sf.last = sf.selector.Select(sf.upstreams, srcAddr)
-		if !sf.last.Healthy() && sf.last.LeastTime() > 0 {
-			sf.log.Infof("###warn### lb selected empty , return default , for : %s", srcAddr)
-		}
-		return sf.last.Addr
-	}
 	b := sf.selector.Select(sf.upstreams, srcAddr)
+	if b == nil {
+		return ""
+	}
+	if sf.debug {
+		sf.log.Infof("#########--> choose %s <--#########", b.Addr)
+		sf.log.Debugf("############ Load Balance start ############")
+		for _, ups := range sf.upstreams {
+			sf.log.Debugf("addr: %s,conns: %d,time: %d,weight: %d,health: %v\n",
+				ups.Addr, ups.ConnsCount(), ups.LeastTime(), ups.Weight, ups.Healthy())
+		}
+		sf.log.Debugf("############ Load Balance end ############")
+	}
 	return b.Addr
 }
 
@@ -210,18 +203,5 @@ func (sf *Balanced) activeHealthChecker() {
 			})
 		}
 		sf.rw.Unlock()
-	}
-}
-
-func printDebug(isDebug bool, log logger.Logger, selected *Upstream, srcAddr string, backends []*Upstream) {
-	if isDebug {
-		log.Debugf("############ LB start ############\n")
-		if selected != nil {
-			log.Debugf("choosed %s for %s\n", selected.Addr, srcAddr)
-		}
-		for _, v := range backends {
-			log.Debugf("addr:%s,conns:%d,time:%d,weight:%d,health:%v\n", v.Addr, v.ConnsCount(), v.LeastTime(), v.Weight, v.Healthy())
-		}
-		log.Debugf("############ LB end ############\n")
 	}
 }

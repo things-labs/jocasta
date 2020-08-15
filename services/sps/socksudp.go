@@ -91,7 +91,7 @@ func (sf *SPS) proxyUDP(inConn net.Conn, serverConn *socks5.Server) {
 		}
 	}()
 	//parent proxy
-	lbAddr := sf.lb.Select(inConn.RemoteAddr().String(), sf.cfg.LoadBalanceOnlyHA)
+	lbAddr := sf.lb.Select(inConn.RemoteAddr().String())
 
 	outconn, err := sf.dialParent(lbAddr)
 	//outconn, err := s.dialParent(nil, nil, "", false)

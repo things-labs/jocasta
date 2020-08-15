@@ -221,9 +221,10 @@ func TestAddrHash_Select(t *testing.T) {
 
 func TestWeight_Select(t *testing.T) {
 	pool := make([]*Upstream, 0, 3)
-	pool = append(pool, &Upstream{health: 1, Config: Config{Addr: ":80", Weight: 3}})
-	pool = append(pool, &Upstream{health: 1, Config: Config{Addr: ":81", Weight: 2}})
-	pool = append(pool, &Upstream{health: 1, Config: Config{Addr: ":82", Weight: 4}})
+	p1 := &Upstream{health: 1, Config: Config{Addr: ":80", Weight: 3}}
+	p2 := &Upstream{health: 1, Config: Config{Addr: ":81", Weight: 2}}
+	p3 := &Upstream{health: 1, Config: Config{Addr: ":82", Weight: 4}}
+	pool = append(pool, p1, p2, p3)
 
 	wantAddr := []string{":82", ":80", ":82", ":80", ":81", ":82", ":80", ":81", ":82"}
 
@@ -235,6 +236,11 @@ func TestWeight_Select(t *testing.T) {
 
 	assert.Equal(t, ":80", wei.Select(pool[:1], "").Addr)
 	assert.Nil(t, wei.Select(pool[:0], ""))
+
+	p1.health = 0
+	p2.health = 0
+	p3.health = 0
+	assert.Nil(t, wei.Select(pool, ""))
 }
 
 func TestLeastTime_Select(t *testing.T) {

@@ -83,7 +83,6 @@ func init() {
 	flags.DurationVar(&socksCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp duration timeout of connecting to parent")
 	flags.DurationVar(&socksCfg.LoadBalanceRetryTime, "lb-retrytime", 1*time.Second, "sleep time duration after checking")
 	flags.BoolVar(&socksCfg.LoadBalanceHashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")
-	flags.BoolVar(&socksCfg.LoadBalanceOnlyHA, "lb-onlyha", false, "use only `high availability mode` to choose parent for LB")
 	// 限速器
 	flags.StringVarP(&socksCfg.RateLimit, "rate-limit", "l", "0", "rate limit (bytes/second) of each connection, such as: 100K 1.5M . 0 means no limitation")
 	flags.StringSliceVarP(&socksCfg.LocalIPS, "local-bind-ips", "g", nil, "if your host behind a nat,set your public ip here avoid dead loop")

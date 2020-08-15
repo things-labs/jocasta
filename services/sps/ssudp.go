@@ -89,7 +89,7 @@ func (sf *SPS) RunSSUDP(addr string) (err error) {
 
 			if v, ok := sf.udpRelatedPacketConns.Get(inconnRemoteAddr); !ok {
 				//socks client
-				lbAddr := sf.lb.Select(inconnRemoteAddr, sf.cfg.LoadBalanceOnlyHA)
+				lbAddr := sf.lb.Select(inconnRemoteAddr)
 				outconn, err := sf.dialParent(lbAddr)
 				if err != nil {
 					clean("connnect fail", fmt.Sprintf("%s", err))

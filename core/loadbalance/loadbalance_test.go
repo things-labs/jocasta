@@ -93,15 +93,23 @@ func TestBalanced(t *testing.T) {
 	for i := 0; i < len(wantAddr); i++ {
 		addr := wantAddr[i%len(wantAddr)]
 		lbWeight.ConnsIncrease(addr)
-		assert.Equal(t, addr, lbWeight.Select("", false))
+		assert.Equal(t, addr, lbWeight.Select(""))
 	}
 
 	for i := 0; i < len(wantAddr); i++ {
 		addr := wantAddr[i%len(wantAddr)]
 		lbWeight.ConnsDecrease(addr)
-		assert.Equal(t, addr, lbWeight.Select("", false))
+		assert.Equal(t, addr, lbWeight.Select(""))
 	}
 
+	lbWeight.debug = true
+	assert.Equal(t, lnAddr2, lbWeight.Select(""))
+	lbWeight.debug = false
+
 	lbWeight.Reset(cfg[:1])
-	assert.Equal(t, lnAddr1, lbWeight.Select("", false))
+	assert.Equal(t, lnAddr1, lbWeight.Select(""))
+
+	lbWeight.Reset(cfg[:0])
+	assert.Equal(t, "", lbWeight.Select(""))
+
 }

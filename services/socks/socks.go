@@ -93,7 +93,6 @@ type Config struct {
 	LoadBalanceTimeout    time.Duration // 负载均衡dial超时时间 default 500 单位ms
 	LoadBalanceRetryTime  time.Duration // 负载均衡重试时间间隔 default 1000 单位ms
 	LoadBalanceHashTarget bool          // hash方法时,选择hash的目标, 默认false
-	LoadBalanceOnlyHA     bool          // 高可用模式, default false
 	// 限速器
 	RateLimit  string   //  限制速字节/s,可设置为2m, 100k等数值,default 0,不限速
 	LocalIPS   []string // default empty
@@ -287,7 +286,7 @@ func (sf *Socks) initService() (err error) {
 	}
 	// init ssh connect
 	if sf.cfg.ParentType == "ssh" {
-		sshClient, err := sf.dialSSH(sf.resolve(sf.lb.Select("", sf.cfg.LoadBalanceOnlyHA)))
+		sshClient, err := sf.dialSSH(sf.resolve(sf.lb.Select("")))
 		if err != nil {
 			return fmt.Errorf("dial ssh fail, %s", err)
 		}
@@ -302,7 +301,7 @@ func (sf *Socks) initService() (err error) {
 
 			//循环检查ssh网络连通性
 			for {
-				address := sf.resolve(sf.lb.Select("", sf.cfg.LoadBalanceOnlyHA))
+				address := sf.resolve(sf.lb.Select(""))
 				conn, err := net.DialTimeout("tcp", address, sf.cfg.Timeout*2)
 				if err != nil {
 					sf.sshClient.Load().(*ssh.Client).Close()
@@ -509,7 +508,7 @@ func (sf *Socks) dialForTcp(ctx context.Context, request *socks5.Request) (conn 
 				if sf.cfg.LoadBalanceMethod == "hash" && sf.cfg.LoadBalanceHashTarget {
 					selectAddr = targetAddr
 				}
-				lbAddr = sf.lb.Select(selectAddr, sf.cfg.LoadBalanceOnlyHA)
+				lbAddr = sf.lb.Select(selectAddr)
 				socksAddr = lbAddr
 			}
 

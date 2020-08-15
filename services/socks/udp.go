@@ -211,7 +211,7 @@ func (sf *Socks) dialForUdp(ctx context.Context, useProxy bool, request *sockv5.
 
 	if useProxy {
 		//parent proxy
-		lbAddr := sf.lb.Select(srcAddr, sf.cfg.LoadBalanceOnlyHA)
+		lbAddr := sf.lb.Select(srcAddr)
 		conn, err = sf.dialParent(lbAddr)
 		if err != nil {
 			return nil, nil, err

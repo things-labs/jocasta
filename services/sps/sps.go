@@ -76,7 +76,6 @@ type Config struct {
 	LoadBalanceTimeout    time.Duration
 	LoadBalanceRetryTime  time.Duration
 	LoadBalanceHashTarget bool
-	LoadBalanceOnlyHA     bool
 
 	ParentServiceType string
 	ParentSSMethod    string
@@ -482,7 +481,7 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 	if sf.cfg.LoadBalanceMethod == "hash" && sf.cfg.LoadBalanceHashTarget {
 		selectAddr = address
 	}
-	lbAddr := sf.lb.Select(selectAddr, sf.cfg.LoadBalanceOnlyHA)
+	lbAddr := sf.lb.Select(selectAddr)
 	outConn, err = sf.dialParent(lbAddr)
 	if err != nil {
 		sf.log.Errorf("connect to %s , err:%s", lbAddr, err)

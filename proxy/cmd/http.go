@@ -75,7 +75,6 @@ func init() {
 	flags.DurationVar(&httpCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp timeout duration of connecting to parent")
 	flags.DurationVar(&httpCfg.LoadBalanceRetryTime, "lb-retrytime", time.Second, "sleep time duration after checking")
 	flags.BoolVar(&httpCfg.LoadBalanceHashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")
-	flags.BoolVar(&httpCfg.LoadBalanceOnlyHA, "lb-onlyha", false, "use only `high availability mode` to choose parent for LB")
 	// 限速器
 	flags.StringVarP(&httpCfg.RateLimit, "rate-limit", "l", "0", "rate limit (bytes/second) of each connection, such as: 100K 1.5M . 0 means no limitation")
 	flags.BoolVarP(&httpCfg.BindListen, "bind-listen", "B", false, "using listener binding IP when connect to target")

@@ -290,7 +290,7 @@ func (sf *HTTP) InitService() (err error) {
 	}
 
 	if sf.cfg.ParentType == "ssh" {
-		sshClient, err := sf.dialSSH(sf.resolve(sf.lb.Select("", sf.cfg.LoadBalanceOnlyHA)))
+		sshClient, err := sf.dialSSH(sf.resolve(sf.lb.Select("")))
 		if err != nil {
 			return fmt.Errorf("dial ssh fail, %s", err)
 		}
@@ -308,7 +308,7 @@ func (sf *HTTP) InitService() (err error) {
 
 			//循环检查ssh网络连通性
 			for {
-				address := sf.resolve(sf.lb.Select("", sf.cfg.LoadBalanceOnlyHA))
+				address := sf.resolve(sf.lb.Select(""))
 				conn, err := net.DialTimeout("tcp", address, sf.cfg.Timeout*2)
 				if err != nil {
 					sf.sshClient.Load().(*ssh.Client).Close()
@@ -448,7 +448,7 @@ func (sf *HTTP) handle(inConn net.Conn) {
 				if sf.cfg.LoadBalanceMethod == "hash" && sf.cfg.LoadBalanceHashTarget {
 					selectAddr = targetDomainAddr
 				}
-				lbAddr = sf.lb.Select(selectAddr, sf.cfg.LoadBalanceOnlyHA)
+				lbAddr = sf.lb.Select(selectAddr)
 				dialAddr = lbAddr
 			}
 			targetConn, er = sf.dialParent(dialAddr)

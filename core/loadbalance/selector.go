@@ -92,7 +92,7 @@ func (LeastConn) Select(pool UpstreamPool, _ string) *Upstream {
 // IPHash ip hash 实现
 type IPHash struct{}
 
-// Select implement Selector
+// Select implement Selector,  if srcAddr is empty it will use random mode
 func (IPHash) Select(pool UpstreamPool, srcAddr string) *Upstream {
 	if srcAddr == "" {
 		return Random{}.Select(pool, srcAddr)
@@ -107,7 +107,7 @@ func (IPHash) Select(pool UpstreamPool, srcAddr string) *Upstream {
 // AddrHash host:port hash 实现
 type AddrHash struct{}
 
-// Select implement Selector
+// Select implement Selector, if srcAddr is empty it will use random mode
 func (AddrHash) Select(pool UpstreamPool, srcAddr string) *Upstream {
 	if srcAddr == "" {
 		return Random{}.Select(pool, srcAddr)
@@ -156,7 +156,7 @@ func (sf *Weight) Select(pool UpstreamPool, _ string) *Upstream {
 	}
 	maxWeight, gcd := getMaxWeightAndGCD(pool)
 	// 轮询加权调度算法
-	for {
+	for i := 0; i < len(pool); i++ {
 		//  index = (index + 1) mod n
 		// 当 (index + 1) mod n 的余数为0时,有两种情况:
 		//      1. 首次被调用执行时
@@ -175,10 +175,11 @@ func (sf *Weight) Select(pool UpstreamPool, _ string) *Upstream {
 		}
 
 		// 当索引值 >= 最新权重值时, 返回名称
-		if pool[sf.index].Weight >= sf.curWeight {
+		if pool[sf.index].Weight >= sf.curWeight && pool[sf.index].Available() {
 			return pool[sf.index]
 		}
 	}
+	return nil
 }
 
 // GetMaxWeight 获取Slice中最大权重值

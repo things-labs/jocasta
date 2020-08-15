@@ -71,7 +71,6 @@ func init() {
 	flags.DurationVar(&spsCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp duration timeout of connecting to parent")
 	flags.DurationVar(&spsCfg.LoadBalanceRetryTime, "lb-retrytime", time.Second, "sleep time duration after checking")
 	flags.BoolVar(&spsCfg.LoadBalanceHashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")
-	flags.BoolVar(&spsCfg.LoadBalanceOnlyHA, "lb-onlyha", false, "use only `high availability mode` to choose parent for LB")
 	// 限速器
 	flags.StringVarP(&spsCfg.RateLimit, "rate-limit", "l", "0", "rate limit (bytes/second) of each connection, such as: 100K 1.5M . 0 means no limitation")
 	flags.StringSliceVarP(&spsCfg.LocalIPS, "local-bind-ips", "g", nil, "if your host behind a nat,set your public ip here avoid dead loop")
