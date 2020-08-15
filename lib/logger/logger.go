@@ -89,6 +89,6 @@ func (sf Std) DPanicf(format string, args ...interface{}) {
 // Fatalf implement Logger interface.
 func (sf Std) Fatalf(format string, args ...interface{}) {
 	if atomic.LoadUint32(&sf.has) == 1 {
-		sf.Logger.Printf("[F]: "+format, args...)
+		sf.Logger.Fatalf("[F]: "+format, args...)
 	}
 }

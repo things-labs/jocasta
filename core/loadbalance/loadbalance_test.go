@@ -111,5 +111,4 @@ func TestBalanced(t *testing.T) {
 
 	lbWeight.Reset(cfg[:0])
 	assert.Equal(t, "", lbWeight.Select(""))
-
 }
