@@ -74,7 +74,7 @@ func init() {
 	// 限速器
 	flags.StringVarP(&spsCfg.RateLimit, "rate-limit", "l", "0", "rate limit (bytes/second) of each connection, such as: 100K 1.5M . 0 means no limitation")
 	flags.StringSliceVarP(&spsCfg.LocalIPS, "local-bind-ips", "g", nil, "if your host behind a nat,set your public ip here avoid dead loop")
-	flags.StringVar(&spsCfg.Jumper, "jumper", "", "https or socks5 proxies used when connecting to parent, only worked of -T is tls or tcp, format is https://username:password@host:port https://host:port or socks5://username:password@host:port socks5://host:port")
+	flags.StringVar(&spsCfg.RawProxyURL, "proxy", "", "https or socks5 proxies used when connecting to parent, only worked of -T is tls or tcp, format is https://username:password@host:port https://host:port or socks5://username:password@host:port socks5://host:port")
 
 	flags.StringVarP(&spsCfg.ParentServiceType, "parent-service-type", "S", "", "parent service type <http|socks|ss>")
 	flags.StringVarP(&spsCfg.ParentSSMethod, "parent-ss-method", "X", "aes-256-cfb", "the following methods are supported: aes-128-cfb, aes-192-cfb, aes-256-cfb, bf-cfb, cast5-cfb, des-cfb, rc4-md5, rc4-md5-6, chacha20, salsa20, rc4, table, des-cfb, chacha20-ietf; if you use ss server as parent, \"-T tcp\" is required")

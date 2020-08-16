@@ -44,7 +44,7 @@ type ClientConfig struct {
 	// 其它
 	Timeout time.Duration `validate:"required"` // default 2s 单位ms
 	// 跳板机
-	Jumper string // default empty
+	RawProxyURL string // default empty
 	// private
 	cert []byte
 	key  []byte
@@ -107,11 +107,11 @@ func (sf *Client) inspectConfig() (err error) {
 			return err
 		}
 	}
-	if sf.cfg.Jumper != "" {
+	if sf.cfg.RawProxyURL != "" {
 		if sf.cfg.ParentType != "tls" && sf.cfg.ParentType != "tcp" {
 			return fmt.Errorf("proxyURL only worked on tls or tcp")
 		}
-		sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.Jumper)
+		sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.RawProxyURL)
 		if err != nil {
 			return fmt.Errorf("invalid proxyURL parameter, %s", err)
 		}

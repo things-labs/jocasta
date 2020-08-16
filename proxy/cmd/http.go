@@ -80,6 +80,6 @@ func init() {
 	flags.BoolVarP(&httpCfg.BindListen, "bind-listen", "B", false, "using listener binding IP when connect to target")
 	flags.StringSliceVarP(&httpCfg.LocalIPS, "local-bind-ips", "g", nil, "if your host behind a nat,set your public ip here avoid dead loop")
 	// 跳板机
-	flags.StringVarP(&httpCfg.Jumper, "jumper", "J", "", "https or socks5 proxies used when connecting to parent, only worked of -T is tls or tcp, format is https://username:password@host:port https://host:port or socks5://username:password@host:port socks5://host:port")
+	flags.StringVar(&httpCfg.RawProxyURL, "proxy", "", "https or socks5 proxies used when connecting to parent, only worked of -T is tls or tcp, format is https://username:password@host:port https://host:port or socks5://username:password@host:port socks5://host:port")
 	rootCmd.AddCommand(httpCmd)
 }

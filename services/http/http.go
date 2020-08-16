@@ -98,12 +98,12 @@ type Config struct {
 	LocalIPS   []string
 	BindListen bool
 	Debug      bool
-	// 跳板机 仅支持tls,tcp下使用
-	// https://username:password@host:port
-	// https://host:port
-	// socks5://username:password@host:port
-	// socks5://host:port
-	Jumper string
+	// 通过代理 支持tcp,tls,tcp下使用
+	//      https://username:password@host:port
+	//      https://host:port
+	//      socks5://username:password@host:port
+	//      socks5://host:port
+	RawProxyURL string
 
 	cert          []byte
 	key           []byte
@@ -199,11 +199,11 @@ func (sf *HTTP) inspectConfig() (err error) {
 		}
 		sf.cfg.rateLimit = rate.Limit(size)
 	}
-	if sf.cfg.Jumper != "" {
+	if sf.cfg.RawProxyURL != "" {
 		if !strext.Contains([]string{"tls", "tcp"}, sf.cfg.ParentType) {
 			return fmt.Errorf("proxyURL only support one of <tls|tcp> but %s", sf.cfg.ParentType)
 		}
-		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.Jumper); err != nil {
+		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.RawProxyURL); err != nil {
 			return fmt.Errorf("new proxyURL, %+v", err)
 		}
 	}

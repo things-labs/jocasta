@@ -57,7 +57,7 @@ func init() {
 	// 其它
 	flags.DurationVarP(&tcpCfg.Timeout, "timeout", "e", time.Second*2, "tcp timeout duration when connect to real server or parent proxy")
 	// 跳板机
-	flags.StringVarP(&tcpCfg.Jumper, "jumper", "J", "", "https or socks5 proxies used when connecting to parent, only worked of -T is tls or tcp, format is https://username:password@host:port https://host:port or socks5://username:password@host:port socks5://host:port")
+	flags.StringVar(&tcpCfg.RawProxyURL, "proxy", "", "https or socks5 proxies used when connecting to parent, only worked of -T is tls or tcp, format is https://username:password@host:port https://host:port or socks5://username:password@host:port socks5://host:port")
 
 	rootCmd.AddCommand(tcpCmd)
 }

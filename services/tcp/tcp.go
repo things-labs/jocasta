@@ -53,12 +53,12 @@ type Config struct {
 	STCPPassword string // stcp 加密密钥 default: thinkgos's_jocasta
 	// 其它
 	Timeout time.Duration `validate:"required"` // 连接父级或真实服务器超时时间, default: 2s
-	// 跳板机 仅支持tls,tcp下使用
-	// https://username:password@host:port
-	// https://host:port
-	// socks5://username:password@host:port
-	// socks5://host:port
-	Jumper string
+	// 通过代理, 支持tcp,tls,stcp下使用
+	//      https://username:password@host:port
+	//      https://host:port
+	//      socks5://username:password@host:port
+	//      socks5://host:port
+	RawProxyURL string
 	// private
 	cert   []byte
 	key    []byte
@@ -144,11 +144,11 @@ func (sf *TCP) inspectConfig() (err error) {
 		return fmt.Errorf("stcp cipher method support one of %s", strings.Join(encrypt.CipherMethods(), ","))
 	}
 
-	if sf.cfg.Jumper != "" {
+	if sf.cfg.RawProxyURL != "" {
 		if !strext.Contains([]string{"tcp", "tls"}, sf.cfg.ParentType) {
 			return fmt.Errorf("proxyURL only support one of parent type <tcp|tls> but give %s", sf.cfg.ParentType)
 		}
-		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.Jumper); err != nil {
+		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.RawProxyURL); err != nil {
 			return fmt.Errorf("new proxyURL, %+v", err)
 		}
 	}

@@ -87,10 +87,10 @@ type Config struct {
 	DisableSocks5     bool
 	DisableSS         bool
 
-	RateLimit string
-	LocalIPS  []string
-	Jumper    string
-	Debug     bool
+	RateLimit   string
+	LocalIPS    []string
+	RawProxyURL string
+	Debug       bool
 
 	cert      []byte
 	key       []byte
@@ -165,11 +165,11 @@ func (sf *SPS) InspectConfig() (err error) {
 	}
 	sf.udpLocalKey = sf.LocalUDPKey()
 	sf.udpParentKey = sf.ParentUDPKey()
-	if sf.cfg.Jumper != "" {
+	if sf.cfg.RawProxyURL != "" {
 		if sf.cfg.ParentType != "tls" && sf.cfg.ParentType != "tcp" {
 			return fmt.Errorf("proxyURL only worked of -T is tls or tcp")
 		}
-		sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.Jumper)
+		sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.RawProxyURL)
 		if err != nil {
 			return fmt.Errorf("new proxyURL, %s", err)
 		}

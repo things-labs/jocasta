@@ -40,11 +40,11 @@ type ServerConfig struct {
 	SKCPConfig ccs.SKCPConfig
 	// stcp有效
 	STCPMethod   string `validate:"required"` // default aes-192-cfb
-	STCPPassword string // default thinkgos's_goproxy
+	STCPPassword string // default thinkgos's_jocasta
 	// 其它
 	Timeout time.Duration `validate:"required"` // default 2s
 	// 跳板机
-	Jumper string // default empty
+	RawProxyURL string // default empty
 
 	// 路由
 	// protocol://localIP:localPort@[clientKey]clientLocalHost:ClientLocalPort
@@ -124,11 +124,11 @@ func (sf *Server) inspectConfig() (err error) {
 		}
 	}
 
-	if sf.cfg.Jumper != "" {
+	if sf.cfg.RawProxyURL != "" {
 		if sf.cfg.ParentType != "tls" && sf.cfg.ParentType != "tcp" {
 			return fmt.Errorf("proxyURL only worked on tls or tcp")
 		}
-		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.Jumper); err != nil {
+		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.RawProxyURL); err != nil {
 			return fmt.Errorf("invalid proxyURL parameter, %s", err)
 		}
 	}
