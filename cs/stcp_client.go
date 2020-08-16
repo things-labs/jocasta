@@ -7,18 +7,18 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"github.com/thinkgos/jocasta/connection/cencrypt"
-	"github.com/thinkgos/jocasta/connection/csnappy"
 	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
 // StcpDialer stcp dialer
 type StcpDialer struct {
-	Method   string
-	Password string
-	Compress bool
-	Timeout  time.Duration
-	Forward  proxy.Dialer
+	Method      string
+	Password    string
+	Compress    bool
+	Timeout     time.Duration
+	Forward     proxy.Dialer
+	PreChains   AdornConnsChain
+	AfterChains AdornConnsChain
 }
 
 // Dial dial the remote server
@@ -33,24 +33,14 @@ func (sf *StcpDialer) DialContext(ctx context.Context, network, addr string) (ne
 		return nil, err
 	}
 
-	var d proxy.Dialer = &net.Dialer{Timeout: sf.Timeout}
-	if sf.Forward != nil {
-		d = sf.Forward
+	d := Dialer{
+		sf.Timeout,
+		sf.Forward,
+		AdornConnsChain{
+			ChainCsnappy(sf.Compress), ChainCencrypt(cip),
+		},
+		sf.PreChains,
+		sf.AfterChains,
 	}
-
-	contextDial := func(ctx context.Context, network, addr string) (net.Conn, error) {
-		return DialContext(ctx, d, network, addr)
-	}
-	if f, ok := d.(proxy.ContextDialer); ok {
-		contextDial = f.DialContext
-	}
-
-	conn, err := contextDial(ctx, network, addr)
-	if err != nil {
-		return nil, err
-	}
-	if sf.Compress {
-		conn = csnappy.New(conn)
-	}
-	return cencrypt.New(conn, cip), nil
+	return d.DialContext(ctx, network, addr)
 }

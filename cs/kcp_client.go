@@ -31,8 +31,9 @@ func (sf *KCPDialer) DialContext(_ context.Context, _, addr string) (net.Conn, e
 	conn.SetMtu(sf.Config.MTU)
 	conn.SetWindowSize(sf.Config.SndWnd, sf.Config.RcvWnd)
 	conn.SetACKNoDelay(sf.Config.AckNodelay)
+
 	if sf.Config.NoComp {
-		return conn, err
+		return conn, nil
 	}
-	return csnappy.New(conn), err
+	return csnappy.New(conn), nil
 }

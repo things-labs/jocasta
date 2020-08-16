@@ -104,9 +104,9 @@ func TestTCP_Forward_socks5(t *testing.T) {
 
 			// client
 			cli := &TCPDialer{
-				compress,
-				time.Second,
-				Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
+				Compress: compress,
+				Timeout:  time.Second,
+				Forward:  Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
 			}
 			conn, err := cli.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)
