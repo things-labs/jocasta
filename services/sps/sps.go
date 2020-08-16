@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -108,7 +109,7 @@ type SPS struct {
 	lb                    *loadbalance.Balanced
 	udpLocalKey           []byte
 	udpParentKey          []byte
-	jumper                *cs.Jumper
+	proxyURL              *url.URL
 	parentAuthData        *sync.Map
 	parentCipherData      *sync.Map
 	log                   logger.Logger
@@ -166,11 +167,11 @@ func (sf *SPS) InspectConfig() (err error) {
 	sf.udpParentKey = sf.ParentUDPKey()
 	if sf.cfg.Jumper != "" {
 		if sf.cfg.ParentType != "tls" && sf.cfg.ParentType != "tcp" {
-			return fmt.Errorf("jumper only worked of -T is tls or tcp")
+			return fmt.Errorf("proxyURL only worked of -T is tls or tcp")
 		}
-		sf.jumper, err = cs.NewJumper(sf.cfg.Jumper)
+		sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.Jumper)
 		if err != nil {
-			return fmt.Errorf("new jumper, %s", err)
+			return fmt.Errorf("new proxyURL, %s", err)
 		}
 	}
 	return
@@ -682,7 +683,7 @@ func (sf *SPS) dialParent(address string) (net.Conn, error) {
 			STCPMethod:   sf.cfg.STCPMethod,
 			STCPPassword: sf.cfg.STCPPassword,
 			Compress:     sf.cfg.ParentCompress,
-			Jumper:       sf.jumper,
+			ProxyURL:     sf.proxyURL,
 		},
 	}
 	conn, err := d.DialTimeout(address, sf.cfg.Timeout)

@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"net/url"
 	"runtime/debug"
 	"strings"
 	"sync/atomic"
@@ -81,7 +82,7 @@ type TCP struct {
 	// src地址对其它连接的绑定
 	userConns   *connection.Manager
 	single      singleflight.Group
-	jumper      *cs.Jumper
+	proxyURL    *url.URL
 	dnsResolver *idns.Resolver
 	goPool      sword.GoPool
 	cancel      context.CancelFunc
@@ -145,10 +146,10 @@ func (sf *TCP) inspectConfig() (err error) {
 
 	if sf.cfg.Jumper != "" {
 		if !strext.Contains([]string{"tcp", "tls"}, sf.cfg.ParentType) {
-			return fmt.Errorf("jumper only support one of parent type <tcp|tls> but give %s", sf.cfg.ParentType)
+			return fmt.Errorf("proxyURL only support one of parent type <tcp|tls> but give %s", sf.cfg.ParentType)
 		}
-		if sf.jumper, err = cs.NewJumper(sf.cfg.Jumper); err != nil {
-			return fmt.Errorf("new jumper, %+v", err)
+		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.Jumper); err != nil {
+			return fmt.Errorf("new proxyURL, %+v", err)
 		}
 	}
 	return
@@ -379,7 +380,7 @@ func (sf *TCP) dialParent(address string) (net.Conn, error) {
 			STCPPassword: sf.cfg.STCPPassword,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.ParentCompress,
-			Jumper:       sf.jumper,
+			ProxyURL:     sf.proxyURL,
 		},
 	}
 	return d.DialTimeout(address, sf.cfg.Timeout)

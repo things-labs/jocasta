@@ -34,3 +34,11 @@ func setStatus(Status chan<- error, err error) {
 		Status <- err
 	}
 }
+
+// TCPDirect tcp Direct
+type TCPDirect struct{}
+
+// DialTimeout tcp dial
+func (TCPDirect) DialTimeout(addr string, timeout time.Duration) (net.Conn, error) {
+	return net.DialTimeout("tcp", addr, timeout)
+}

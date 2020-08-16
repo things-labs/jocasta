@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -75,7 +76,7 @@ type Server struct {
 	sessions *smux.Session
 	udpConns *connection.Manager // 本地udp地址 -> 远端连接 映射
 	mu       sync.Mutex
-	jumper   *cs.Jumper
+	proxyURL *url.URL
 	gPool    sword.GoPool
 	cancel   context.CancelFunc
 	ctx      context.Context
@@ -125,10 +126,10 @@ func (sf *Server) inspectConfig() (err error) {
 
 	if sf.cfg.Jumper != "" {
 		if sf.cfg.ParentType != "tls" && sf.cfg.ParentType != "tcp" {
-			return fmt.Errorf("jumper only worked on tls or tcp")
+			return fmt.Errorf("proxyURL only worked on tls or tcp")
 		}
-		if sf.jumper, err = cs.NewJumper(sf.cfg.Jumper); err != nil {
-			return fmt.Errorf("invalid jumper parameter, %s", err)
+		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.Jumper); err != nil {
+			return fmt.Errorf("invalid proxyURL parameter, %s", err)
 		}
 	}
 
@@ -309,7 +310,7 @@ func (sf *Server) dialParent() (net.Conn, error) {
 			STCPPassword: sf.cfg.STCPPassword,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.Compress,
-			Jumper:       sf.jumper,
+			ProxyURL:     sf.proxyURL,
 		},
 	}
 	return d.DialTimeout(sf.cfg.Parent, sf.cfg.Timeout)

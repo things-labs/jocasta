@@ -10,11 +10,18 @@ import (
 // TCPDialer tcp dialer
 type TCPDialer struct {
 	Compress bool
+	Forward  Dialer
 }
 
 // DialTimeout dial the remote server
 func (sf *TCPDialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
-	conn, err := net.DialTimeout("tcp", address, timeout)
+	var dial Dialer = TCPDirect{}
+
+	if sf.Forward != nil {
+		dial = sf.Forward
+	}
+	conn, err := dial.DialTimeout(address, timeout)
+
 	if err != nil {
 		return nil, err
 	}

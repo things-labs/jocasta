@@ -11,10 +11,11 @@ import (
 
 // TCPTlsDialer tcp tls dialer
 type TCPTlsDialer struct {
-	CaCert []byte
-	Cert   []byte
-	Key    []byte
-	Single bool
+	CaCert  []byte
+	Cert    []byte
+	Key     []byte
+	Single  bool
+	Forward Dialer
 }
 
 // DialTimeout dial the remote server
@@ -30,7 +31,11 @@ func (sf *TCPTlsDialer) DialTimeout(address string, timeout time.Duration) (net.
 	if err != nil {
 		return nil, err
 	}
-	conn, err := net.DialTimeout("tcp", address, timeout)
+	var dial Dialer = TCPDirect{}
+	if sf.Forward != nil {
+		dial = sf.Forward
+	}
+	conn, err := dial.DialTimeout(address, timeout)
 	if err != nil {
 		return nil, err
 	}

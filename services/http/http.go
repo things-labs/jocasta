@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"runtime/debug"
 	"strconv"
 	"sync/atomic"
@@ -123,7 +124,7 @@ type HTTP struct {
 	cancel          context.CancelFunc
 	ctx             context.Context
 	log             logger.Logger
-	jumper          *cs.Jumper
+	proxyURL        *url.URL
 	goPool          sword.GoPool
 }
 
@@ -200,10 +201,10 @@ func (sf *HTTP) inspectConfig() (err error) {
 	}
 	if sf.cfg.Jumper != "" {
 		if !strext.Contains([]string{"tls", "tcp"}, sf.cfg.ParentType) {
-			return fmt.Errorf("jumper only support one of <tls|tcp> but %s", sf.cfg.ParentType)
+			return fmt.Errorf("proxyURL only support one of <tls|tcp> but %s", sf.cfg.ParentType)
 		}
-		if sf.jumper, err = cs.NewJumper(sf.cfg.Jumper); err != nil {
-			return fmt.Errorf("new jumper, %+v", err)
+		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.Jumper); err != nil {
+			return fmt.Errorf("new proxyURL, %+v", err)
 		}
 	}
 	return nil
@@ -583,7 +584,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 				STCPMethod:   sf.cfg.STCPMethod,
 				STCPPassword: sf.cfg.STCPPassword,
 				Compress:     sf.cfg.ParentCompress,
-				Jumper:       sf.jumper,
+				ProxyURL:     sf.proxyURL,
 			}}
 		outConn, err = d.DialTimeout(address, sf.cfg.Timeout)
 	case "ssh":

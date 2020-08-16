@@ -14,6 +14,7 @@ type StcpDialer struct {
 	Method   string
 	Password string
 	Compress bool
+	Forward  Dialer
 }
 
 // DialTimeout dial the remote server
@@ -22,7 +23,13 @@ func (sf *StcpDialer) DialTimeout(address string, timeout time.Duration) (net.Co
 	if err != nil {
 		return nil, err
 	}
-	conn, err := net.DialTimeout("tcp", address, timeout)
+
+	var dial Dialer = TCPDirect{}
+	if sf.Forward != nil {
+		dial = sf.Forward
+	}
+
+	conn, err := dial.DialTimeout(address, timeout)
 	if err != nil {
 		return nil, err
 	}

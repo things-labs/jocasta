@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"sync/atomic"
 	"time"
 
@@ -62,7 +63,7 @@ type Client struct {
 	cfg      ClientConfig
 	sessions *smux.Session
 	udpConns *connection.Manager
-	jumper   *cs.Jumper
+	proxyURL *url.URL
 	gPool    sword.GoPool
 	cancel   context.CancelFunc
 	ctx      context.Context
@@ -108,11 +109,11 @@ func (sf *Client) inspectConfig() (err error) {
 	}
 	if sf.cfg.Jumper != "" {
 		if sf.cfg.ParentType != "tls" && sf.cfg.ParentType != "tcp" {
-			return fmt.Errorf("jumper only worked on tls or tcp")
+			return fmt.Errorf("proxyURL only worked on tls or tcp")
 		}
-		sf.jumper, err = cs.NewJumper(sf.cfg.Jumper)
+		sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.Jumper)
 		if err != nil {
-			return fmt.Errorf("invalid jumper parameter, %s", err)
+			return fmt.Errorf("invalid proxyURL parameter, %s", err)
 		}
 	}
 	sf.log.Infof("[ Client ] use parent %s < %s >", sf.cfg.ParentType, sf.cfg.Parent)
@@ -394,7 +395,7 @@ func (sf *Client) dialParent(address string) (net.Conn, error) {
 			STCPPassword: sf.cfg.STCPPassword,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			Compress:     sf.cfg.Compress,
-			Jumper:       sf.jumper,
+			ProxyURL:     sf.proxyURL,
 		},
 	}
 	return d.DialTimeout(address, sf.cfg.Timeout)

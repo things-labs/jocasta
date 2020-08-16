@@ -3,6 +3,7 @@ package ccs
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"time"
 
 	"github.com/thinkgos/jocasta/cs"
@@ -23,8 +24,8 @@ type Config struct {
 	KcpConfig cs.KcpConfig
 	// stcp支持压缩,tcp支持压缩,但jumper的tcp暂不支持压缩
 	Compress bool // 是否压缩
-	// 支持tcp(暂不支持压缩), tls, stcp
-	Jumper *cs.Jumper //only client used
+	// 支持tcp, tls, stcp
+	ProxyURL *url.URL //only client used
 }
 
 // Dialer Client dialer
@@ -36,37 +37,34 @@ type Dialer struct {
 // DialTimeout dial tthe remote server
 func (sf *Dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
 	var dialer cs.Dialer
+	var forward cs.Dialer
+
+	if sf.ProxyURL != nil {
+		switch sf.ProxyURL.Scheme {
+		case "socks5":
+			forward = cs.Socks5{ProxyURL: sf.ProxyURL}
+		case "https":
+			forward = cs.HTTPS{ProxyURL: sf.ProxyURL}
+		default:
+			return nil, fmt.Errorf("unkown scheme of %s", sf.ProxyURL.String())
+		}
+	}
 
 	switch sf.Protocol {
 	case "tcp":
-		if sf.Jumper != nil {
-			dialer = &cs.JumperTCP{Jumper: sf.Jumper, Compress: sf.Compress}
-		} else {
-			dialer = &cs.TCPDialer{Compress: sf.Compress}
+		dialer = &cs.TCPDialer{
+			Compress: sf.Compress, Forward: forward,
 		}
 	case "tls":
-		if sf.Jumper != nil {
-			dialer = &cs.JumperTCPTls{
-				Jumper: sf.Jumper,
-				CaCert: sf.CaCert, Cert: sf.Cert, Key: sf.Key, Single: sf.SingleTLS,
-			}
-		} else {
-			dialer = &cs.TCPTlsDialer{
-				CaCert: sf.CaCert, Cert: sf.Cert, Key: sf.Key, Single: sf.SingleTLS,
-			}
+		dialer = &cs.TCPTlsDialer{
+			CaCert: sf.CaCert, Cert: sf.Cert, Key: sf.Key, Single: sf.SingleTLS,
+			Forward: forward,
 		}
 	case "stcp":
-		if sf.Jumper != nil {
-			dialer = &cs.JumperStcp{
-				Jumper: sf.Jumper,
-				Method: sf.STCPMethod, Password: sf.STCPPassword, Compress: sf.Compress,
-			}
-		} else {
-			dialer = &cs.StcpDialer{
-				Method: sf.STCPMethod, Password: sf.STCPPassword, Compress: sf.Compress,
-			}
+		dialer = &cs.StcpDialer{
+			Method: sf.STCPMethod, Password: sf.STCPPassword, Compress: sf.Compress,
+			Forward: forward,
 		}
-
 	case "kcp":
 		dialer = &cs.KCPDialer{Config: sf.KcpConfig}
 	default:
