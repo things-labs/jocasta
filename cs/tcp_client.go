@@ -26,7 +26,7 @@ func (sf *TCPDialer) DialContext(ctx context.Context, network, addr string) (net
 		sf.Timeout,
 		sf.Forward,
 		AdornConnsChain{
-			ChainCsnappy(sf.Compress),
+			AdornCsnappy(sf.Compress),
 		},
 		sf.PreChains,
 		sf.AfterChains,

@@ -35,7 +35,7 @@ func (sf *StcpDialer) DialContext(ctx context.Context, network, addr string) (ne
 		sf.Timeout,
 		sf.Forward,
 		AdornConnsChain{
-			ChainCsnappy(sf.Compress), ChainCencrypt(cip),
+			AdornCsnappy(sf.Compress), AdornCencrypt(cip),
 		},
 		sf.PreChains,
 		sf.AfterChains,

@@ -45,7 +45,7 @@ func (sf *TCPTlsDialer) DialContext(ctx context.Context, network, addr string) (
 		sf.Timeout,
 		sf.Forward,
 		AdornConnsChain{
-			ChainTls(conf),
+			AdornTls(conf),
 		},
 		sf.PreChains,
 		sf.AfterChains,

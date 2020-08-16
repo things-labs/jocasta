@@ -10,14 +10,14 @@ import (
 
 // Config 后端配置
 type Config struct {
-	Addr             string        // 后端地址
-	Weight           int           // 权重 default: 1
-	MaxConnections   int           // 最大连接数,<= 0表示不限制, default: 0
-	SuccessThreshold uint32        // liveness成功阀值 default: 3
-	FailureThreshold uint32        // liveness失败阀值 default: 3
-	Period           time.Duration // 检查时间间隔  default: 2s TODO: Not used
-	Timeout          time.Duration // dial 连接超时时间 default: 1s
-	LivenessProbe    func(ctx context.Context, addr string, timeout time.Duration) error
+	Addr             string                                                              // 后端地址
+	Weight           int                                                                 // 权重 default: 1
+	MaxConnections   int                                                                 // 最大连接数,<= 0表示不限制, default: 0
+	SuccessThreshold uint32                                                              // liveness成功阀值 default: 3
+	FailureThreshold uint32                                                              // liveness失败阀值 default: 3
+	Period           time.Duration                                                       // 检查时间间隔  default: 2s TODO: Not used
+	Timeout          time.Duration                                                       // dial 连接超时时间 default: 1s
+	LivenessProbe    func(ctx context.Context, addr string, timeout time.Duration) error // liveness 自定义探针
 }
 
 // Upstream 后端
