@@ -7,8 +7,6 @@ import (
 	"net/url"
 	"time"
 
-	"golang.org/x/net/proxy"
-
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/gpool"
 )
@@ -33,8 +31,10 @@ type Config struct {
 
 // Dialer Client dialer
 type Dialer struct {
-	Protocol string
-	Timeout  time.Duration
+	Protocol    string
+	Timeout     time.Duration
+	PreChains   cs.AdornConnsChain
+	AfterChains cs.AdornConnsChain
 	Config
 }
 
@@ -46,8 +46,8 @@ func (sf *Dialer) Dial(network, addr string) (net.Conn, error) {
 // DialContext connects to the address on the named network using the provided context.
 
 func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
-	var d proxy.Dialer
-	var forward proxy.Dialer
+	var d cs.ContextDialer
+	var forward cs.Dialer
 
 	if sf.ProxyURL != nil {
 		switch sf.ProxyURL.Scheme {
@@ -71,26 +71,32 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 	switch sf.Protocol {
 	case "tcp":
 		d = &cs.TCPDialer{
-			Compress: sf.Compress,
-			Timeout:  sf.Timeout,
-			Forward:  forward,
+			Compress:    sf.Compress,
+			Timeout:     sf.Timeout,
+			Forward:     forward,
+			PreChains:   sf.PreChains,
+			AfterChains: sf.AfterChains,
 		}
 	case "tls":
 		d = &cs.TCPTlsDialer{
-			CaCert:  sf.CaCert,
-			Cert:    sf.Cert,
-			Key:     sf.Key,
-			Single:  sf.SingleTLS,
-			Timeout: sf.Timeout,
-			Forward: forward,
+			CaCert:      sf.CaCert,
+			Cert:        sf.Cert,
+			Key:         sf.Key,
+			Single:      sf.SingleTLS,
+			Timeout:     sf.Timeout,
+			Forward:     forward,
+			PreChains:   sf.PreChains,
+			AfterChains: sf.AfterChains,
 		}
 	case "stcp":
 		d = &cs.StcpDialer{
-			Method:   sf.STCPMethod,
-			Password: sf.STCPPassword,
-			Compress: sf.Compress,
-			Timeout:  sf.Timeout,
-			Forward:  forward,
+			Method:      sf.STCPMethod,
+			Password:    sf.STCPPassword,
+			Compress:    sf.Compress,
+			Timeout:     sf.Timeout,
+			Forward:     forward,
+			PreChains:   sf.PreChains,
+			AfterChains: sf.AfterChains,
 		}
 	case "kcp":
 		d = &cs.KCPDialer{Config: sf.KcpConfig}
@@ -98,13 +104,7 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 		return nil, fmt.Errorf("protocol support one of <tcp|tls|stcp|kcp> but give <%s>", sf.Protocol)
 	}
 
-	contextDial := func(ctx context.Context, network, addr string) (net.Conn, error) {
-		return cs.DialContext(ctx, d, network, addr)
-	}
-	if f, ok := d.(proxy.ContextDialer); ok {
-		contextDial = f.DialContext
-	}
-	return contextDial(ctx, network, addr)
+	return d.DialContext(ctx, network, addr)
 }
 
 // Server server

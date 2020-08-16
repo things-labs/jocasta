@@ -8,8 +8,6 @@ import (
 	"errors"
 	"net"
 	"time"
-
-	"golang.org/x/net/proxy"
 )
 
 // TCPTlsDialer tcp tls dialer
@@ -19,7 +17,7 @@ type TCPTlsDialer struct {
 	Key         []byte
 	Single      bool
 	Timeout     time.Duration
-	Forward     proxy.Dialer
+	Forward     Dialer
 	PreChains   AdornConnsChain
 	AfterChains AdornConnsChain
 }
@@ -43,7 +41,7 @@ func (sf *TCPTlsDialer) DialContext(ctx context.Context, network, addr string) (
 		return nil, err
 	}
 
-	d := Dialer{
+	d := NetDialer{
 		sf.Timeout,
 		sf.Forward,
 		AdornConnsChain{

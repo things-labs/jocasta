@@ -1,9 +1,20 @@
 package cs
 
 import (
+	"context"
 	"io"
 	"net"
 )
+
+// Dialer A Dialer is a means to establish a connection.
+type Dialer interface {
+	Dial(network, address string) (net.Conn, error)
+}
+
+// ContextDialer A ContextDialer dials using a context.
+type ContextDialer interface {
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+}
 
 // Server server interface
 type Server interface {

@@ -5,8 +5,6 @@ import (
 	"net"
 	"time"
 
-	"golang.org/x/net/proxy"
-
 	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
@@ -16,7 +14,7 @@ type StcpDialer struct {
 	Password    string
 	Compress    bool
 	Timeout     time.Duration
-	Forward     proxy.Dialer
+	Forward     Dialer
 	PreChains   AdornConnsChain
 	AfterChains AdornConnsChain
 }
@@ -33,7 +31,7 @@ func (sf *StcpDialer) DialContext(ctx context.Context, network, addr string) (ne
 		return nil, err
 	}
 
-	d := Dialer{
+	d := NetDialer{
 		sf.Timeout,
 		sf.Forward,
 		AdornConnsChain{

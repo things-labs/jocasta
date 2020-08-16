@@ -4,15 +4,13 @@ import (
 	"context"
 	"net"
 	"time"
-
-	"golang.org/x/net/proxy"
 )
 
 // TCPDialer tcp dialer
 type TCPDialer struct {
 	Compress    bool
 	Timeout     time.Duration
-	Forward     proxy.Dialer
+	Forward     Dialer
 	PreChains   AdornConnsChain
 	AfterChains AdornConnsChain
 }
@@ -24,7 +22,7 @@ func (sf *TCPDialer) Dial(network, addr string) (net.Conn, error) {
 
 // DialContext connects to the address on the named network using the provided context.
 func (sf *TCPDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
-	d := Dialer{
+	d := NetDialer{
 		sf.Timeout,
 		sf.Forward,
 		AdornConnsChain{

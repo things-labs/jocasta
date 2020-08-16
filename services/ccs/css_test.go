@@ -54,7 +54,11 @@ func Test_TCP_Forward_Direct(t *testing.T) {
 			defer channel.Close()
 
 			// client
-			d := &Dialer{"tcp", time.Second, Config{Compress: compress}}
+			d := &Dialer{
+				Protocol: "tcp",
+				Timeout:  time.Second,
+				Config:   Config{Compress: compress},
+			}
 			cli, err := d.Dial("tcp", channel.LocalAddr())
 			require.NoError(t, err)
 			defer cli.Close()
@@ -125,7 +129,11 @@ func Test_TCP_Forward_socks5(t *testing.T) {
 			// t.Logf("socks5 proxy url: %v", proxyURL)
 
 			// client
-			d := &Dialer{"tcp", time.Second, Config{Compress: compress, ProxyURL: pURL}}
+			d := &Dialer{
+				Protocol: "tcp",
+				Timeout:  time.Second,
+				Config:   Config{Compress: compress, ProxyURL: pURL},
+			}
 			conn, err := d.Dial("tcp", channel.LocalAddr())
 			require.NoError(t, err)
 			defer conn.Close() // nolint: errcheck
@@ -170,7 +178,11 @@ func Test_Stcp_Forward_Direct(t *testing.T) {
 				defer channel.Close()
 
 				// client
-				d := &Dialer{"stcp", time.Second, config}
+				d := &Dialer{
+					Protocol: "stcp",
+					Timeout:  time.Second,
+					Config:   config,
+				}
 				cli, err := d.Dial("tcp", channel.LocalAddr())
 				require.NoError(t, err)
 				defer cli.Close()
@@ -239,7 +251,11 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 
 				// client
 				config.ProxyURL = pURL
-				d := &Dialer{"stcp", time.Second, config}
+				d := &Dialer{
+					Protocol: "stcp",
+					Timeout:  time.Second,
+					Config:   config,
+				}
 				conn, err := d.Dial("tcp", channel.LocalAddr())
 				require.NoError(t, err)
 				defer conn.Close() // nolint: errcheck
@@ -335,9 +351,9 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 
 		// client
 		d := &Dialer{
-			"tls",
-			time.Second,
-			Config{
+			Protocol: "tls",
+			Timeout:  time.Second,
+			Config: Config{
 				CaCert:    []byte(crt),
 				Cert:      []byte(crt),
 				Key:       []byte(key),
@@ -415,9 +431,9 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 
 			// client
 			d := &Dialer{
-				"tls",
-				time.Second,
-				Config{
+				Protocol: "tls",
+				Timeout:  time.Second,
+				Config: Config{
 					CaCert:    []byte(crt),
 					Cert:      []byte(crt),
 					Key:       []byte(key),
@@ -490,7 +506,11 @@ func TestKcp(t *testing.T) {
 				defer channel.Close()
 
 				// client
-				d := &Dialer{"kcp", time.Second, Config{KcpConfig: config}}
+				d := &Dialer{
+					Protocol: "kcp",
+					Timeout:  time.Second,
+					Config:   Config{KcpConfig: config},
+				}
 				cli, err := d.Dial("tcp", channel.LocalAddr())
 				require.NoError(t, err)
 				defer cli.Close()
