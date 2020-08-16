@@ -3,7 +3,6 @@ package cs
 import (
 	"net"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,7 +66,7 @@ func TestKcp(t *testing.T) {
 
 				// client
 				d := &KCPDialer{config}
-				cli, err := d.DialTimeout(srv.LocalAddr(), time.Second)
+				cli, err := d.Dial("", srv.LocalAddr())
 				require.NoError(t, err)
 				defer cli.Close()
 

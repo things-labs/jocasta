@@ -303,6 +303,7 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 func (sf *Server) dialParent() (net.Conn, error) {
 	d := ccs.Dialer{
 		Protocol: sf.cfg.ParentType,
+		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
 			Cert:         sf.cfg.cert,
 			Key:          sf.cfg.key,
@@ -313,7 +314,7 @@ func (sf *Server) dialParent() (net.Conn, error) {
 			ProxyURL:     sf.proxyURL,
 		},
 	}
-	return d.DialTimeout(sf.cfg.Parent, sf.cfg.Timeout)
+	return d.Dial("tcp", sf.cfg.Parent)
 }
 
 func (sf *Server) runUDPReceive(key, id string) {

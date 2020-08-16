@@ -41,8 +41,13 @@ func TestSTCP_Forward_Direct(t *testing.T) {
 				require.NoError(t, <-srv.Status)
 				defer srv.Close()
 
-				d := &StcpDialer{method, password, compress, nil}
-				cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
+				d := &StcpDialer{
+					method,
+					password,
+					compress,
+					time.Second,
+					nil}
+				cli, err := d.Dial("tcp", srv.LocalAddr())
 				require.NoError(t, err)
 				defer cli.Close()
 
@@ -112,13 +117,14 @@ func TestStcp_Forward_socks5(t *testing.T) {
 				require.NoError(t, err)
 				// t.Logf("socks5 proxy url: %v", proxyURL)
 
-				jumptcp := &StcpDialer{
-					Method:   method,
-					Password: password,
-					Compress: compress,
-					Forward:  Socks5{pURL.Host, ProxyAuth(pURL), nil},
+				d := &StcpDialer{
+					method,
+					password,
+					compress,
+					time.Second,
+					Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
 				}
-				conn, err := jumptcp.DialTimeout(srv.LocalAddr(), time.Second)
+				conn, err := d.Dial("tcp", srv.LocalAddr())
 				require.NoError(t, err)
 				defer conn.Close() // nolint: errcheck
 				_, err = conn.Write([]byte("ping"))
@@ -166,8 +172,13 @@ func TestSSSSTCP(t *testing.T) {
 	// client twice
 	for i := 0; i < 2; i++ {
 		func() {
-			d := StcpDialer{method, password, compress, nil}
-			cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
+			d := StcpDialer{
+				method,
+				password,
+				compress,
+				time.Second,
+				nil}
+			cli, err := d.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)
 			defer cli.Close()
 

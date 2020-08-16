@@ -675,6 +675,7 @@ func (sf *SPS) resolve(address string) string {
 func (sf *SPS) dialParent(address string) (net.Conn, error) {
 	d := ccs.Dialer{
 		Protocol: sf.cfg.ParentType,
+		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
 			Cert:         sf.cfg.cert,
 			Key:          sf.cfg.key,
@@ -686,7 +687,7 @@ func (sf *SPS) dialParent(address string) (net.Conn, error) {
 			ProxyURL:     sf.proxyURL,
 		},
 	}
-	conn, err := d.DialTimeout(address, sf.cfg.Timeout)
+	conn, err := d.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}

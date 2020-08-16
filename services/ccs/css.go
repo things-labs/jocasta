@@ -1,10 +1,13 @@
 package ccs
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
 	"time"
+
+	"golang.org/x/net/proxy"
 
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/gpool"
@@ -24,27 +27,42 @@ type Config struct {
 	KcpConfig cs.KcpConfig
 	// stcp支持压缩,tcp支持压缩,但jumper的tcp暂不支持压缩
 	Compress bool // 是否压缩
-	// 支持tcp, tls, stcp
+	// 不为空,使用相应代理, 支持tcp, tls, stcp
 	ProxyURL *url.URL //only client used
 }
 
 // Dialer Client dialer
 type Dialer struct {
 	Protocol string
+	Timeout  time.Duration
 	Config
 }
 
-// DialTimeout dial tthe remote server
-func (sf *Dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
-	var dialer cs.Dialer
-	var forward cs.Dialer
+// Dial connects to the address on the named network.
+func (sf *Dialer) Dial(network, addr string) (net.Conn, error) {
+	return sf.DialContext(context.Background(), network, addr)
+}
+
+// DialContext connects to the address on the named network using the provided context.
+
+func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	var d proxy.Dialer
+	var forward proxy.Dialer
 
 	if sf.ProxyURL != nil {
 		switch sf.ProxyURL.Scheme {
 		case "socks5":
-			forward = cs.Socks5{ProxyHost: sf.ProxyURL.Host, Auth: cs.ProxyAuth(sf.ProxyURL)}
+			forward = cs.Socks5{
+				ProxyHost: sf.ProxyURL.Host,
+				Timeout:   sf.Timeout,
+				Auth:      cs.ProxyAuth(sf.ProxyURL),
+			}
 		case "https":
-			forward = cs.HTTPS{ProxyHost: sf.ProxyURL.Host, Auth: cs.ProxyAuth(sf.ProxyURL)}
+			forward = cs.HTTPS{
+				ProxyHost: sf.ProxyURL.Host,
+				Timeout:   sf.Timeout,
+				Auth:      cs.ProxyAuth(sf.ProxyURL),
+			}
 		default:
 			return nil, fmt.Errorf("unkown scheme of %s", sf.ProxyURL.String())
 		}
@@ -52,31 +70,41 @@ func (sf *Dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, 
 
 	switch sf.Protocol {
 	case "tcp":
-		dialer = &cs.TCPDialer{
+		d = &cs.TCPDialer{
 			Compress: sf.Compress,
+			Timeout:  sf.Timeout,
 			Forward:  forward,
 		}
 	case "tls":
-		dialer = &cs.TCPTlsDialer{
+		d = &cs.TCPTlsDialer{
 			CaCert:  sf.CaCert,
 			Cert:    sf.Cert,
 			Key:     sf.Key,
 			Single:  sf.SingleTLS,
+			Timeout: sf.Timeout,
 			Forward: forward,
 		}
 	case "stcp":
-		dialer = &cs.StcpDialer{
+		d = &cs.StcpDialer{
 			Method:   sf.STCPMethod,
 			Password: sf.STCPPassword,
 			Compress: sf.Compress,
+			Timeout:  sf.Timeout,
 			Forward:  forward,
 		}
 	case "kcp":
-		dialer = &cs.KCPDialer{Config: sf.KcpConfig}
+		d = &cs.KCPDialer{Config: sf.KcpConfig}
 	default:
 		return nil, fmt.Errorf("protocol support one of <tcp|tls|stcp|kcp> but give <%s>", sf.Protocol)
 	}
-	return dialer.DialTimeout(address, timeout)
+
+	contextDial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return cs.DialContext(ctx, d, network, addr)
+	}
+	if f, ok := d.(proxy.ContextDialer); ok {
+		contextDial = f.DialContext
+	}
+	return contextDial(ctx, network, addr)
 }
 
 // Server server

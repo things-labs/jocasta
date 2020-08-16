@@ -89,16 +89,17 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 
 			// client
 			d := &TCPTlsDialer{
-				CaCert: []byte(crt),
-				Cert:   []byte(crt),
-				Key:    []byte(key),
-				Single: single,
+				CaCert:  []byte(crt),
+				Cert:    []byte(crt),
+				Key:     []byte(key),
+				Timeout: time.Second,
+				Single:  single,
 			}
 			if !single {
 				d.CaCert = nil
 			}
 
-			cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
+			cli, err := d.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)
 			defer cli.Close()
 
@@ -166,14 +167,15 @@ func TestJumper_socks5_tls(t *testing.T) {
 			require.NoError(t, err)
 			// t.Logf("socks5 proxy url: %v", proxyURL)
 
-			jumptcp := &TCPTlsDialer{
+			d := &TCPTlsDialer{
 				CaCert:  []byte(crt),
 				Cert:    []byte(crt),
 				Key:     []byte(key),
 				Single:  single,
-				Forward: Socks5{pURL.Host, ProxyAuth(pURL), nil},
+				Timeout: time.Second,
+				Forward: Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
 			}
-			conn, err := jumptcp.DialTimeout(srv.LocalAddr(), time.Second)
+			conn, err := d.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)
 			defer conn.Close() // nolint: errcheck
 			_, err = conn.Write([]byte("ping"))

@@ -515,9 +515,10 @@ func (sf *Socks) dialForTcp(ctx context.Context, request *socks5.Request) (conn 
 			dial := cs.Socks5{
 				ProxyHost: socksAddr,
 				Auth:      realAuth,
+				Timeout:   sf.cfg.Timeout,
 				Forward:   direct{sf},
 			}
-			conn, err = dial.DialTimeout(targetAddr, sf.cfg.Timeout)
+			conn, err = dial.Dial("tcp", targetAddr)
 			sf.log.Errorf("[ Socks ] dial conn fail, %v, retrying...", err)
 			return err
 		}, boff)
@@ -592,6 +593,7 @@ func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
 	case "tcp", "tls", "stcp", "kcp":
 		d := ccs.Dialer{
 			Protocol: sf.cfg.ParentType,
+			Timeout:  sf.cfg.Timeout,
 			Config: ccs.Config{
 				Cert:         sf.cfg.cert,
 				Key:          sf.cfg.key,
@@ -602,7 +604,7 @@ func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
 				Compress:     sf.cfg.ParentCompress,
 			},
 		}
-		outConn, err = d.DialTimeout(targetAddr, sf.cfg.Timeout)
+		outConn, err = d.Dial("tcp", targetAddr)
 	case "ssh":
 		t := time.NewTimer(sf.cfg.Timeout * 2)
 		defer t.Stop()

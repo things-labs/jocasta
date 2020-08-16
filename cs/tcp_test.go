@@ -36,8 +36,8 @@ func TestTCP_Forward_Direct(t *testing.T) {
 			defer srv.Close()
 
 			// client
-			d := &TCPDialer{Compress: compress}
-			cli, err := d.DialTimeout(srv.LocalAddr(), 5*time.Second)
+			d := &TCPDialer{Compress: compress, Timeout: time.Second}
+			cli, err := d.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)
 			defer cli.Close()
 
@@ -103,8 +103,12 @@ func TestTCP_Forward_socks5(t *testing.T) {
 			// t.Logf("socks5 proxy url: %v", proxyURL)
 
 			// client
-			cli := &TCPDialer{compress, Socks5{pURL.Host, ProxyAuth(pURL), nil}}
-			conn, err := cli.DialTimeout(srv.LocalAddr(), time.Second)
+			cli := &TCPDialer{
+				compress,
+				time.Second,
+				Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
+			}
+			conn, err := cli.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)
 			defer conn.Close() // nolint: errcheck
 			_, err = conn.Write([]byte("ping"))

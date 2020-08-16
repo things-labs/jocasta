@@ -1,12 +1,15 @@
 package cs
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"net"
 	"time"
+
+	"golang.org/x/net/proxy"
 )
 
 // TCPTlsDialer tcp tls dialer
@@ -15,11 +18,17 @@ type TCPTlsDialer struct {
 	Cert    []byte
 	Key     []byte
 	Single  bool
-	Forward Dialer
+	Timeout time.Duration
+	Forward proxy.Dialer
 }
 
-// DialTimeout dial the remote server
-func (sf *TCPTlsDialer) DialTimeout(address string, timeout time.Duration) (net.Conn, error) {
+// Dial connects to the address on the named network.
+func (sf *TCPTlsDialer) Dial(network, addr string) (net.Conn, error) {
+	return sf.DialContext(context.Background(), network, addr)
+}
+
+// DialContext connects to the address on the named network using the provided context.
+func (sf *TCPTlsDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 	var err error
 	var conf *tls.Config
 
@@ -31,11 +40,20 @@ func (sf *TCPTlsDialer) DialTimeout(address string, timeout time.Duration) (net.
 	if err != nil {
 		return nil, err
 	}
-	var dial Dialer = TCPDirect{}
+
+	var d proxy.Dialer = &net.Dialer{Timeout: sf.Timeout}
 	if sf.Forward != nil {
-		dial = sf.Forward
+		d = sf.Forward
 	}
-	conn, err := dial.DialTimeout(address, timeout)
+
+	contextDial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return DialContext(ctx, d, network, addr)
+	}
+	if f, ok := d.(proxy.ContextDialer); ok {
+		contextDial = f.DialContext
+	}
+
+	conn, err := contextDial(ctx, network, addr)
 	if err != nil {
 		return nil, err
 	}

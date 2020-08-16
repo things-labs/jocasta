@@ -14,41 +14,35 @@ import (
 type Socks5 struct {
 	ProxyHost string
 	Auth      *proxy.Auth
+	Timeout   time.Duration
 	Forward   proxy.Dialer
 }
 
-// DialTimeout socks5 dial
-func (sf Socks5) DialTimeout(addr string, timeout time.Duration) (net.Conn, error) {
-	var forward proxy.Dialer = directTimeout{timeout: timeout}
+// Dial socks5 dial
+func (sf Socks5) Dial(network, addr string) (net.Conn, error) {
+	var forward proxy.Dialer = &net.Dialer{Timeout: sf.Timeout}
 
 	if sf.Forward != nil {
 		forward = sf.Forward
 	}
 
-	dialSocksProxy, err := proxy.SOCKS5("tcp", sf.ProxyHost, sf.Auth, forward)
+	dialSocksProxy, err := proxy.SOCKS5(network, sf.ProxyHost, sf.Auth, forward)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to proxy, %+v", err)
 	}
-	return dialSocksProxy.Dial("tcp", addr)
-}
-
-type directTimeout struct {
-	timeout time.Duration
-}
-
-func (s directTimeout) Dial(network, addr string) (net.Conn, error) {
-	return net.DialTimeout(network, addr, s.timeout)
+	return dialSocksProxy.Dial(network, addr)
 }
 
 // HTTPS https proxy
 type HTTPS struct {
 	ProxyHost string
 	Auth      *proxy.Auth
+	Timeout   time.Duration
 }
 
-// DialTimeout https dial
-func (sf HTTPS) DialTimeout(addr string, timeout time.Duration) (net.Conn, error) {
-	conn, err := net.DialTimeout("tcp", sf.ProxyHost, timeout)
+// Dial https dial
+func (sf HTTPS) Dial(network, addr string) (net.Conn, error) {
+	conn, err := net.DialTimeout(network, sf.ProxyHost, sf.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +65,7 @@ func (sf HTTPS) DialTimeout(addr string, timeout time.Duration) (net.Conn, error
 	}
 
 	reply := make([]byte, 1024)
-	conn.SetDeadline(time.Now().Add(timeout)) // nolint: errcheck
+	conn.SetDeadline(time.Now().Add(sf.Timeout)) // nolint: errcheck
 	n, err := conn.Read(reply)
 	conn.SetDeadline(time.Time{}) // nolint: errcheck
 	if err != nil {

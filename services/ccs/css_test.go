@@ -20,8 +20,8 @@ func Test_InvalidProtocol(t *testing.T) {
 	require.Error(t, <-errChan)
 
 	// client
-	d := &Dialer{Protocol: "invalid"}
-	_, err := d.DialTimeout(":", time.Second)
+	d := &Dialer{Protocol: "invalid", Timeout: time.Second}
+	_, err := d.Dial("tcp", ":")
 	require.Error(t, err)
 }
 
@@ -54,8 +54,8 @@ func Test_TCP_Forward_Direct(t *testing.T) {
 			defer channel.Close()
 
 			// client
-			d := &Dialer{"tcp", Config{Compress: compress}}
-			cli, err := d.DialTimeout(channel.LocalAddr(), 5*time.Second)
+			d := &Dialer{"tcp", time.Second, Config{Compress: compress}}
+			cli, err := d.Dial("tcp", channel.LocalAddr())
 			require.NoError(t, err)
 			defer cli.Close()
 
@@ -125,8 +125,8 @@ func Test_TCP_Forward_socks5(t *testing.T) {
 			// t.Logf("socks5 proxy url: %v", proxyURL)
 
 			// client
-			d := &Dialer{"tcp", Config{Compress: compress, ProxyURL: pURL}}
-			conn, err := d.DialTimeout(channel.LocalAddr(), time.Second)
+			d := &Dialer{"tcp", time.Second, Config{Compress: compress, ProxyURL: pURL}}
+			conn, err := d.Dial("tcp", channel.LocalAddr())
 			require.NoError(t, err)
 			defer conn.Close() // nolint: errcheck
 			_, err = conn.Write([]byte("ping"))
@@ -170,8 +170,8 @@ func Test_Stcp_Forward_Direct(t *testing.T) {
 				defer channel.Close()
 
 				// client
-				d := &Dialer{"stcp", config}
-				cli, err := d.DialTimeout(channel.LocalAddr(), 5*time.Second)
+				d := &Dialer{"stcp", time.Second, config}
+				cli, err := d.Dial("tcp", channel.LocalAddr())
 				require.NoError(t, err)
 				defer cli.Close()
 
@@ -239,8 +239,8 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 
 				// client
 				config.ProxyURL = pURL
-				d := &Dialer{"stcp", config}
-				conn, err := d.DialTimeout(channel.LocalAddr(), time.Second)
+				d := &Dialer{"stcp", time.Second, config}
+				conn, err := d.Dial("tcp", channel.LocalAddr())
 				require.NoError(t, err)
 				defer conn.Close() // nolint: errcheck
 				_, err = conn.Write([]byte("ping"))
@@ -336,6 +336,7 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 		// client
 		d := &Dialer{
 			"tls",
+			time.Second,
 			Config{
 				CaCert:    []byte(crt),
 				Cert:      []byte(crt),
@@ -347,7 +348,7 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 			d.CaCert = nil
 		}
 
-		cli, err := d.DialTimeout(channel.LocalAddr(), 5*time.Second)
+		cli, err := d.Dial("tcp", channel.LocalAddr())
 		require.NoError(t, err)
 		defer cli.Close()
 
@@ -415,6 +416,7 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 			// client
 			d := &Dialer{
 				"tls",
+				time.Second,
 				Config{
 					CaCert:    []byte(crt),
 					Cert:      []byte(crt),
@@ -426,7 +428,7 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 			if !single {
 				d.CaCert = nil
 			}
-			conn, err := d.DialTimeout(channel.LocalAddr(), time.Second)
+			conn, err := d.Dial("tcp", channel.LocalAddr())
 			require.NoError(t, err)
 			defer conn.Close() // nolint: errcheck
 			_, err = conn.Write([]byte("ping"))
@@ -488,8 +490,8 @@ func TestKcp(t *testing.T) {
 				defer channel.Close()
 
 				// client
-				d := &Dialer{"kcp", Config{KcpConfig: config}}
-				cli, err := d.DialTimeout(channel.LocalAddr(), time.Second)
+				d := &Dialer{"kcp", time.Second, Config{KcpConfig: config}}
+				cli, err := d.Dial("tcp", channel.LocalAddr())
 				require.NoError(t, err)
 				defer cli.Close()
 

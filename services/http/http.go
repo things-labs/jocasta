@@ -576,6 +576,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 	case "tcp", "tls", "stcp", "kcp":
 		d := ccs.Dialer{
 			Protocol: sf.cfg.ParentType,
+			Timeout:  sf.cfg.Timeout,
 			Config: ccs.Config{
 				Cert:         sf.cfg.cert,
 				Key:          sf.cfg.key,
@@ -586,7 +587,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 				Compress:     sf.cfg.ParentCompress,
 				ProxyURL:     sf.proxyURL,
 			}}
-		outConn, err = d.DialTimeout(address, sf.cfg.Timeout)
+		outConn, err = d.Dial("tcp", address)
 	case "ssh":
 		t := time.NewTimer(sf.cfg.Timeout * 2)
 		defer t.Stop()

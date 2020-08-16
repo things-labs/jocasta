@@ -1,8 +1,8 @@
 package cs
 
 import (
+	"context"
 	"net"
-	"time"
 
 	"github.com/xtaci/kcp-go/v5"
 
@@ -14,9 +14,14 @@ type KCPDialer struct {
 	Config KcpConfig
 }
 
-// DialTimeout dial KCP server
-func (sf *KCPDialer) DialTimeout(address string, _ time.Duration) (net.Conn, error) {
-	conn, err := kcp.DialWithOptions(address, sf.Config.Block, sf.Config.DataShard, sf.Config.ParityShard)
+// Dial connects to the address on the named network.
+func (sf *KCPDialer) Dial(network, addr string) (net.Conn, error) {
+	return sf.DialContext(context.Background(), network, addr)
+}
+
+// DialContext connects to the address on the named network using the provided context.
+func (sf *KCPDialer) DialContext(_ context.Context, _, addr string) (net.Conn, error) {
+	conn, err := kcp.DialWithOptions(addr, sf.Config.Block, sf.Config.DataShard, sf.Config.ParityShard)
 	if err != nil {
 		return nil, err
 	}

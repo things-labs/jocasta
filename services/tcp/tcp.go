@@ -373,6 +373,7 @@ func (sf *TCP) proxyStream2UDP(inConn net.Conn) {
 func (sf *TCP) dialParent(address string) (net.Conn, error) {
 	d := ccs.Dialer{
 		Protocol: sf.cfg.ParentType,
+		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
 			Cert:         sf.cfg.cert,
 			Key:          sf.cfg.key,
@@ -383,7 +384,7 @@ func (sf *TCP) dialParent(address string) (net.Conn, error) {
 			ProxyURL:     sf.proxyURL,
 		},
 	}
-	return d.DialTimeout(address, sf.cfg.Timeout)
+	return d.Dial("tcp", address)
 }
 
 // 解析domain
