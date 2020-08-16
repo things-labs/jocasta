@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
-	"net/url"
 	"time"
 
 	"golang.org/x/net/proxy"
@@ -13,22 +12,20 @@ import (
 
 // Socks5 sock5 proxy
 type Socks5 struct {
-	ProxyURL *url.URL
+	ProxyHost string
+	Auth      *proxy.Auth
+	Forward   proxy.Dialer
 }
 
 // DialTimeout socks5 dial
 func (sf Socks5) DialTimeout(addr string, timeout time.Duration) (net.Conn, error) {
-	var auth *proxy.Auth
+	var forward proxy.Dialer = directTimeout{timeout: timeout}
 
-	if sf.ProxyURL.User != nil {
-		pwd, _ := sf.ProxyURL.User.Password()
-		auth = &proxy.Auth{
-			User:     sf.ProxyURL.User.Username(),
-			Password: pwd,
-		}
+	if sf.Forward != nil {
+		forward = sf.Forward
 	}
 
-	dialSocksProxy, err := proxy.SOCKS5("tcp", sf.ProxyURL.Host, auth, directTimeout{timeout: timeout})
+	dialSocksProxy, err := proxy.SOCKS5("tcp", sf.ProxyHost, sf.Auth, forward)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to proxy, %+v", err)
 	}
@@ -45,12 +42,13 @@ func (s directTimeout) Dial(network, addr string) (net.Conn, error) {
 
 // HTTPS https proxy
 type HTTPS struct {
-	ProxyURL *url.URL
+	ProxyHost string
+	Auth      *proxy.Auth
 }
 
 // DialTimeout https dial
 func (sf HTTPS) DialTimeout(addr string, timeout time.Duration) (net.Conn, error) {
-	conn, err := net.DialTimeout("tcp", sf.ProxyURL.Host, timeout)
+	conn, err := net.DialTimeout("tcp", sf.ProxyHost, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +58,8 @@ func (sf HTTPS) DialTimeout(addr string, timeout time.Duration) (net.Conn, error
 	pb.WriteString(fmt.Sprintf("Proxy-Host: %s\r\n", addr))
 	pb.WriteString("Proxy-Connection: Keep-Alive\r\n")
 	pb.WriteString("Connection: Keep-Alive\r\n")
-	if sf.ProxyURL.User != nil {
-		p, _ := sf.ProxyURL.User.Password()
-		u := fmt.Sprintf("%s:%s", sf.ProxyURL.User.Username(), p)
+	if sf.Auth != nil {
+		u := fmt.Sprintf("%s:%s", sf.Auth.User, sf.Auth.Password)
 		pb.WriteString(fmt.Sprintf("Proxy-Authorization: Basic %s\r\n", base64.StdEncoding.EncodeToString([]byte(u))))
 	}
 	pb.WriteString("\r\n")

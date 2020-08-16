@@ -171,7 +171,7 @@ func TestJumper_socks5_tls(t *testing.T) {
 				Cert:    []byte(crt),
 				Key:     []byte(key),
 				Single:  single,
-				Forward: Socks5{pURL},
+				Forward: Socks5{pURL.Host, ProxyAuth(pURL), nil},
 			}
 			conn, err := jumptcp.DialTimeout(srv.LocalAddr(), time.Second)
 			require.NoError(t, err)

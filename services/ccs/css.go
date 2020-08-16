@@ -42,9 +42,9 @@ func (sf *Dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, 
 	if sf.ProxyURL != nil {
 		switch sf.ProxyURL.Scheme {
 		case "socks5":
-			forward = cs.Socks5{ProxyURL: sf.ProxyURL}
+			forward = cs.Socks5{ProxyHost: sf.ProxyURL.Host, Auth: cs.ProxyAuth(sf.ProxyURL)}
 		case "https":
-			forward = cs.HTTPS{ProxyURL: sf.ProxyURL}
+			forward = cs.HTTPS{ProxyHost: sf.ProxyURL.Host, Auth: cs.ProxyAuth(sf.ProxyURL)}
 		default:
 			return nil, fmt.Errorf("unkown scheme of %s", sf.ProxyURL.String())
 		}
@@ -53,17 +53,23 @@ func (sf *Dialer) DialTimeout(address string, timeout time.Duration) (net.Conn, 
 	switch sf.Protocol {
 	case "tcp":
 		dialer = &cs.TCPDialer{
-			Compress: sf.Compress, Forward: forward,
+			Compress: sf.Compress,
+			Forward:  forward,
 		}
 	case "tls":
 		dialer = &cs.TCPTlsDialer{
-			CaCert: sf.CaCert, Cert: sf.Cert, Key: sf.Key, Single: sf.SingleTLS,
+			CaCert:  sf.CaCert,
+			Cert:    sf.Cert,
+			Key:     sf.Key,
+			Single:  sf.SingleTLS,
 			Forward: forward,
 		}
 	case "stcp":
 		dialer = &cs.StcpDialer{
-			Method: sf.STCPMethod, Password: sf.STCPPassword, Compress: sf.Compress,
-			Forward: forward,
+			Method:   sf.STCPMethod,
+			Password: sf.STCPPassword,
+			Compress: sf.Compress,
+			Forward:  forward,
 		}
 	case "kcp":
 		dialer = &cs.KCPDialer{Config: sf.KcpConfig}

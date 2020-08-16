@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/url"
 	"strings"
+
+	"golang.org/x/net/proxy"
 )
 
 // ValidProxyURL 校验proxyURL是否正确
@@ -24,4 +26,15 @@ func ParseProxyURL(proxyURL string) (*url.URL, error) {
 		return url.Parse(proxyURL)
 	}
 	return nil, errors.New("invalid proxy url")
+}
+
+func ProxyAuth(proxyURL *url.URL) (auth *proxy.Auth) {
+	if proxyURL != nil && proxyURL.User != nil {
+		pwd, _ := proxyURL.User.Password()
+		auth = &proxy.Auth{
+			User:     proxyURL.User.Username(),
+			Password: pwd,
+		}
+	}
+	return
 }

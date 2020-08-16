@@ -103,7 +103,7 @@ func TestTCP_Forward_socks5(t *testing.T) {
 			// t.Logf("socks5 proxy url: %v", proxyURL)
 
 			// client
-			cli := &TCPDialer{compress, Socks5{pURL}}
+			cli := &TCPDialer{compress, Socks5{pURL.Host, ProxyAuth(pURL), nil}}
 			conn, err := cli.DialTimeout(srv.LocalAddr(), time.Second)
 			require.NoError(t, err)
 			defer conn.Close() // nolint: errcheck

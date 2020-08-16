@@ -116,7 +116,7 @@ func TestStcp_Forward_socks5(t *testing.T) {
 					Method:   method,
 					Password: password,
 					Compress: compress,
-					Forward:  Socks5{pURL},
+					Forward:  Socks5{pURL.Host, ProxyAuth(pURL), nil},
 				}
 				conn, err := jumptcp.DialTimeout(srv.LocalAddr(), time.Second)
 				require.NoError(t, err)

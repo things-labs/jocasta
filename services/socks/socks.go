@@ -512,11 +512,12 @@ func (sf *Socks) dialForTcp(ctx context.Context, request *socks5.Request) (conn 
 				socksAddr = lbAddr
 			}
 
-			dial, err := proxy.SOCKS5("tcp", socksAddr, realAuth, direct{sf})
-			if err != nil {
-				return err
+			dial := cs.Socks5{
+				ProxyHost: socksAddr,
+				Auth:      realAuth,
+				Forward:   direct{sf},
 			}
-			conn, err = dial.Dial("tcp", targetAddr)
+			conn, err = dial.DialTimeout(targetAddr, sf.cfg.Timeout)
 			sf.log.Errorf("[ Socks ] dial conn fail, %v, retrying...", err)
 			return err
 		}, boff)
