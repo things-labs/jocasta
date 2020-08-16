@@ -28,6 +28,7 @@ func ParseProxyURL(proxyURL string) (*url.URL, error) {
 	return nil, errors.New("invalid proxy url")
 }
 
+// ProxyAuth Auth from proxyURL
 func ProxyAuth(proxyURL *url.URL) (auth *proxy.Auth) {
 	if proxyURL != nil && proxyURL.User != nil {
 		pwd, _ := proxyURL.User.Password()

@@ -8,8 +8,10 @@ import (
 	"github.com/thinkgos/jocasta/builder"
 )
 
+// Author author
 const Author = "thinkgos"
 
+// PrintVersion print version info
 func PrintVersion() {
 	mid, _ := machineid.ID()
 	fmt.Printf("Author: %s\r\n", Author)

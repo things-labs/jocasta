@@ -15,10 +15,12 @@ var GPool = GoPool{AntsPool}
 // Go submit function f to done
 func Go(f func()) { GPool.Go(f) }
 
+// GoPool go routine pool
 type GoPool struct {
 	pool *ants.Pool
 }
 
+// Go implement Pool interface
 func (sf GoPool) Go(f func()) {
 	if sf.pool != nil && sf.pool.Submit(f) != nil {
 		go func() {
@@ -32,18 +34,14 @@ func (sf GoPool) Go(f func()) {
 	}
 }
 
-func (sf GoPool) Tune(size int) {
-	sf.pool.Tune(size)
-}
+// Tune implement Pool interface
+func (sf GoPool) Tune(size int) { sf.pool.Tune(size) }
 
-func (sf GoPool) Running() int {
-	return sf.pool.Running()
-}
+// Running implement Pool interface
+func (sf GoPool) Running() int { return sf.pool.Running() }
 
-func (sf GoPool) Free() int {
-	return sf.pool.Free()
-}
+// Free implement Pool interface
+func (sf GoPool) Free() int { return sf.pool.Free() }
 
-func (sf GoPool) Cap() int {
-	return sf.pool.Cap()
-}
+// Cap implement Pool interface
+func (sf GoPool) Cap() int { return sf.pool.Cap() }

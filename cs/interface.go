@@ -32,6 +32,7 @@ func setStatus(Status chan<- error, err error) {
 	}
 }
 
+// DialContext dial context with proxy.dialer
 // WARNING: this can leak a goroutine for as long as the underlying Dialer implementation takes to timeout
 // A Conn returned from a successful Dial after the context has been cancelled will be immediately closed.
 func DialContext(ctx context.Context, d proxy.Dialer, network, address string) (net.Conn, error) {

@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestStd(t *testing.T) {
+func TestStd(_ *testing.T) {
 	l := New(log.New(ioutil.Discard, "testing", log.LstdFlags), WithEnable(true))
 	l.Debugf("")
 	l.Infof("")
@@ -17,7 +17,7 @@ func TestStd(t *testing.T) {
 	l.Fatalf("")
 }
 
-func TestDiscard(t *testing.T) {
+func TestDiscard(_ *testing.T) {
 	l := NewDiscard()
 	l.Debugf("")
 	l.Infof("")

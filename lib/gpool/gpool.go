@@ -15,6 +15,7 @@ type Pool interface {
 	Cap() int
 }
 
+// Go run on a goroutine or goroutine pool, never failed
 func Go(goPool Pool, f func()) {
 	if goPool != nil {
 		goPool.Go(f)
