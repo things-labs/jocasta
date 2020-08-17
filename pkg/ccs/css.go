@@ -19,7 +19,6 @@ type Config struct {
 	StcpConfig cs.StcpConfig
 	// 仅KCP有效
 	KcpConfig cs.KcpConfig
-
 	// 不为空,使用相应代理, 支持tcp, tls, stcp
 	ProxyURL *url.URL //only client used
 }

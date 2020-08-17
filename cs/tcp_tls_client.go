@@ -40,14 +40,14 @@ func (sf *TCPTlsDialer) DialContext(ctx context.Context, network, addr string) (
 	d := NetDialer{
 		sf.Timeout,
 		sf.Forward,
-		AdornConnsChain{adornTls(conf)},
+		AdornConnsChain{adornTLS(conf)},
 		sf.AfterChains,
 	}
 	return d.DialContext(ctx, network, addr)
 }
 
-// adornTls tls chain
-func adornTls(conf *tls.Config) func(conn net.Conn) net.Conn {
+// adornTLS tls chain
+func adornTLS(conf *tls.Config) func(conn net.Conn) net.Conn {
 	return func(conn net.Conn) net.Conn {
 		return tls.Client(conn, conf)
 	}

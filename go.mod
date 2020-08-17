@@ -13,7 +13,6 @@ require (
 	github.com/orcaman/concurrent-map v0.0.0-20190826125027-8c72a8bb44f6
 	github.com/panjf2000/ants/v2 v2.4.1
 	github.com/rs/xid v1.2.1
-	github.com/spf13/cobra v1.0.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/thinkgos/go-socks5 v0.2.2
 	github.com/thinkgos/meter v0.0.4
