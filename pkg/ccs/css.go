@@ -44,7 +44,6 @@ func (sf *Dialer) Dial(network, addr string) (net.Conn, error) {
 }
 
 // DialContext connects to the address on the named network using the provided context.
-
 func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 	var d cs.ContextDialer
 	var forward cs.Dialer

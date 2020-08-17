@@ -25,9 +25,9 @@ import (
 	"github.com/thinkgos/jocasta/lib/encrypt"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
-	"github.com/thinkgos/jocasta/services/ccs"
 )
 
 const defaultUDPIdleTime = 10 // 单位s

@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/services/ccs"
+	"github.com/thinkgos/jocasta/pkg/ccs"
 )
 
 var kcpCfg ccs.SKCPConfig

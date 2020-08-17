@@ -4,6 +4,7 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 )
 
+// SKCPConfig kcp full config
 type SKCPConfig struct {
 	// 加密的方法
 	// sm4,tea,xor,none,aes-128,aes-192,blowfish,twofish,cast5,3des,xtea,salsa20,aes

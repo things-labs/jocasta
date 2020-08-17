@@ -31,7 +31,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/services/ccs"
+	"github.com/thinkgos/jocasta/pkg/ccs"
 
 	"github.com/thinkgos/jocasta/pkg/izap"
 	"github.com/thinkgos/jocasta/services"

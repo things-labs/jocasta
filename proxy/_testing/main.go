@@ -1,11 +1,16 @@
 package main
 
 import (
-	"net/http"
+	"log"
+
+	"golang.org/x/net/proxy"
+
+	"github.com/thinkgos/jocasta/cs"
 )
 
 func main() {
-	srv := http.Server{}
-	srv.Serve()
-	srv.Close()
+	a, err := cs.ParseProxyURL("")
+	log.Printf("%v", err)
+	log.Printf("%v", a)
+	proxy.SOCKS5()
 }
