@@ -49,8 +49,9 @@ type Config struct {
 	// kcp有效
 	SKCPConfig *ccs.SKCPConfig
 	// stcp有效
-	STCPMethod   string `validate:"required"` // stcp 加密方法 default: aes-192-cfb
-	STCPPassword string // stcp 加密密钥 default: thinkgos's_jocasta
+	// stcp 加密方法 default: aes-192-cfb
+	// stcp 加密密钥 default: thinkgos's_jocasta
+	STCPConfig cs.StcpConfig
 	// 其它
 	Timeout time.Duration `validate:"required"` // 连接父级或真实服务器超时时间, default: 2s
 	// 通过代理, 支持tcp,tls,stcp下使用
@@ -60,9 +61,7 @@ type Config struct {
 	//      socks5://host:port
 	RawProxyURL string
 	// private
-	cert   []byte
-	key    []byte
-	caCert []byte
+	tcpTlsConfig cs.TCPTlsConfig
 }
 
 type connItem struct {
@@ -128,11 +127,11 @@ func (sf *TCP) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return errors.New("cert file and key file required")
 		}
-		if sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
+		if sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
 			return err
 		}
 		if sf.cfg.CaCertFile != "" {
-			if sf.cfg.caCert, err = ioutil.ReadFile(sf.cfg.CaCertFile); err != nil {
+			if sf.cfg.tcpTlsConfig.CaCert, err = ioutil.ReadFile(sf.cfg.CaCertFile); err != nil {
 				return fmt.Errorf("read ca file %+v", err)
 			}
 		}
@@ -140,7 +139,7 @@ func (sf *TCP) inspectConfig() (err error) {
 
 	// stcp 方法检查
 	if strext.Contains([]string{sf.cfg.ParentType, sf.cfg.LocalType}, "stcp") &&
-		!strext.Contains(encrypt.CipherMethods(), sf.cfg.STCPMethod) {
+		!strext.Contains(encrypt.CipherMethods(), sf.cfg.STCPConfig.Method) {
 		return fmt.Errorf("stcp cipher method support one of %s", strings.Join(encrypt.CipherMethods(), ","))
 	}
 
@@ -171,11 +170,8 @@ func (sf *TCP) Start() (err error) {
 		Protocol: sf.cfg.LocalType,
 		Addr:     sf.cfg.Local,
 		Config: ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			CaCert:       sf.cfg.caCert,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
+			TCPTlsConfig: sf.cfg.tcpTlsConfig,
+			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sf.goPool,
@@ -375,10 +371,8 @@ func (sf *TCP) dialParent(address string) (net.Conn, error) {
 		Protocol: sf.cfg.ParentType,
 		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
+			TCPTlsConfig: sf.cfg.tcpTlsConfig,
+			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:     sf.proxyURL,
 		},

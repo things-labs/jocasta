@@ -14,13 +14,9 @@ import (
 // Config config
 type Config struct {
 	// 仅tls有效
-	Cert      []byte
-	Key       []byte
-	CaCert    []byte
-	SingleTLS bool
+	TCPTlsConfig cs.TCPTlsConfig
 	// 仅stcp有效
-	STCPMethod   string
-	STCPPassword string
+	StcpConfig cs.StcpConfig
 	// 仅KCP有效
 	KcpConfig cs.KcpConfig
 
@@ -74,18 +70,14 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 		}
 	case "tls":
 		d = &cs.TCPTlsDialer{
-			CaCert:      sf.CaCert,
-			Cert:        sf.Cert,
-			Key:         sf.Key,
-			Single:      sf.SingleTLS,
+			Config:      sf.TCPTlsConfig,
 			Timeout:     sf.Timeout,
 			Forward:     forward,
 			AfterChains: sf.AfterChains,
 		}
 	case "stcp":
 		d = &cs.StcpDialer{
-			Method:      sf.STCPMethod,
-			Password:    sf.STCPPassword,
+			Config:      sf.StcpConfig,
 			Timeout:     sf.Timeout,
 			Forward:     forward,
 			AfterChains: sf.AfterChains,
@@ -93,7 +85,7 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 	case "kcp":
 		d = &cs.KCPDialer{
 			Config:      sf.KcpConfig,
-			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(!sf.KcpConfig.NoComp)},
+			AfterChains: sf.AfterChains,
 		}
 	default:
 		return nil, fmt.Errorf("protocol support one of <tcp|tls|stcp|kcp> but give <%s>", sf.Protocol)
@@ -131,10 +123,7 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 	case "tls":
 		srv = &cs.TCPTlsServer{
 			Addr:        sf.Addr,
-			CaCert:      sf.CaCert,
-			Cert:        sf.Cert,
-			Key:         sf.Key,
-			Single:      sf.SingleTLS,
+			Config:      sf.TCPTlsConfig,
 			Status:      sf.status,
 			GoPool:      sf.GoPool,
 			AfterChains: sf.AfterChains,
@@ -143,8 +132,7 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 	case "stcp":
 		srv = &cs.StcpServer{
 			Addr:        sf.Addr,
-			Method:      sf.STCPMethod,
-			Password:    sf.STCPPassword,
+			Config:      sf.StcpConfig,
 			Status:      sf.status,
 			GoPool:      sf.GoPool,
 			AfterChains: sf.AfterChains,
@@ -156,7 +144,7 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 			Config:      sf.KcpConfig,
 			Status:      sf.status,
 			GoPool:      sf.GoPool,
-			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(!sf.KcpConfig.NoComp)},
+			AfterChains: sf.AfterChains,
 			Handler:     sf.Handler,
 		}
 	default:

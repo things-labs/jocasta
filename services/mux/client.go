@@ -39,15 +39,15 @@ type ClientConfig struct {
 	// kcp有效
 	SKCPConfig ccs.SKCPConfig
 	// stcp有效
-	STCPMethod   string `validate:"required"` // default aes-192-cfb
-	STCPPassword string // default thinkgos's_goproxy
+	// stcp 加密方法 default: aes-192-cfb
+	// stcp 加密密钥 default: thinkgos's_jocasta
+	STCPConfig cs.StcpConfig
 	// 其它
 	Timeout time.Duration `validate:"required"` // default 2s 单位ms
 	// 跳板机
 	RawProxyURL string // default empty
 	// private
-	cert []byte
-	key  []byte
+	tcpTlsConfig cs.TCPTlsConfig
 }
 
 type ClientUDPConnItem struct {
@@ -102,7 +102,7 @@ func (sf *Client) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return fmt.Errorf("cert file and key file required")
 		}
-		sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
+		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
 		if err != nil {
 			return err
 		}
@@ -390,10 +390,8 @@ func (sf *Client) dialParent(address string) (net.Conn, error) {
 		Protocol: sf.cfg.ParentType,
 		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
+			TCPTlsConfig: sf.cfg.tcpTlsConfig,
+			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:     sf.proxyURL,
 		},

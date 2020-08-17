@@ -29,7 +29,6 @@ func TestKcp(t *testing.T) {
 					DataShard:    10,
 					ParityShard:  3,
 					DSCP:         0,
-					NoComp:       compress,
 					AckNodelay:   true,
 					NoDelay:      1,
 					Interval:     10,

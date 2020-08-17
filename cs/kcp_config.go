@@ -23,8 +23,6 @@ type KcpConfig struct {
 	// 或在IPv6头设置 8bit Traffic Class.
 	// 默认0
 	DSCP int
-	// 是否不压缩: true: 不压缩, false: 压缩传输(默认) 采用snappy进行压缩传输
-	NoComp bool
 	// 接收到每一个包立即进行应答,默认true
 	AckNodelay bool
 	// 工作模式参数

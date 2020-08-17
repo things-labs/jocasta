@@ -33,13 +33,13 @@ type BridgeConfig struct {
 	// kcp有效
 	SKCPConfig ccs.SKCPConfig
 	// stcp有效
-	STCPMethod   string `validate:"required"` // stcp 加密方法 default aes-192-cfb
-	STCPPassword string // stcp 加密密钥 default thinkgos's_goproxy
+	// stcp 加密方法 default: aes-192-cfb
+	// stcp 加密密钥 default: thinkgos's_jocasta
+	STCPConfig cs.StcpConfig
 	// 其它
 	Timeout time.Duration `validate:"required"` // 连接超时时间 default 2s
 	// private
-	cert []byte
-	key  []byte
+	tcpTlsConfig cs.TCPTlsConfig
 }
 
 type Bridge struct {
@@ -87,7 +87,7 @@ func (sf *Bridge) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return fmt.Errorf("cert file and key file required")
 		}
-		sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
+		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
 		if err != nil {
 			return
 		}
@@ -110,10 +110,8 @@ func (sf *Bridge) Start() (err error) {
 		Protocol: sf.cfg.LocalType,
 		Addr:     sf.cfg.Local,
 		Config: ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
+			TCPTlsConfig: sf.cfg.tcpTlsConfig,
+			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sf.gPool,

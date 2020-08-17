@@ -226,8 +226,8 @@ func (sf *SPS) ParentUDPKey() (key []byte) {
 			return []byte(v)[:24]
 		}
 	case "tls":
-		if sf.cfg.key != nil {
-			return sf.cfg.key[:24]
+		if sf.cfg.tcpTlsConfig.Key != nil {
+			return sf.cfg.tcpTlsConfig.Key[:24]
 		}
 	case "kcp":
 		v := fmt.Sprintf("%x", md5.Sum([]byte(sf.cfg.SKCPConfig.Key)))
@@ -243,7 +243,7 @@ func (sf *SPS) LocalUDPKey() (key []byte) {
 			return []byte(v)[:24]
 		}
 	case "tls":
-		return sf.cfg.key[:24]
+		return sf.cfg.tcpTlsConfig.Key[:24]
 	case "kcp":
 		v := fmt.Sprintf("%x", md5.Sum([]byte(sf.cfg.SKCPConfig.Key)))
 		return []byte(v)[:24]

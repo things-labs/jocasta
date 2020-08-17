@@ -39,8 +39,9 @@ type ServerConfig struct {
 	// kcp有效
 	SKCPConfig ccs.SKCPConfig
 	// stcp有效
-	STCPMethod   string `validate:"required"` // default aes-192-cfb
-	STCPPassword string // default thinkgos's_jocasta
+	// stcp 加密方法 default: aes-192-cfb
+	// stcp 加密密钥 default: thinkgos's_jocasta
+	STCPConfig cs.StcpConfig
 	// 其它
 	Timeout time.Duration `validate:"required"` // default 2s
 	// 跳板机
@@ -53,8 +54,7 @@ type ServerConfig struct {
 	IsUDP bool   // default false
 
 	// private
-	cert []byte
-	key  []byte
+	tcpTlsConfig cs.TCPTlsConfig
 	// 本地暴露的地址 格式:ip:port
 	local string
 	// 远端要穿透的地址 格式:ip:port
@@ -118,7 +118,7 @@ func (sf *Server) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return fmt.Errorf("cert file and key file required")
 		}
-		sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
+		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
 		if err != nil {
 			return err
 		}
@@ -305,10 +305,8 @@ func (sf *Server) dialParent() (net.Conn, error) {
 		Protocol: sf.cfg.ParentType,
 		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
+			TCPTlsConfig: sf.cfg.tcpTlsConfig,
+			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:     sf.proxyURL,
 		},

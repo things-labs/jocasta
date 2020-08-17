@@ -13,6 +13,7 @@ require (
 	github.com/orcaman/concurrent-map v0.0.0-20190826125027-8c72a8bb44f6
 	github.com/panjf2000/ants/v2 v2.4.1
 	github.com/rs/xid v1.2.1
+	github.com/spf13/cobra v1.0.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/thinkgos/go-socks5 v0.2.2
 	github.com/thinkgos/meter v0.0.4
@@ -26,9 +27,9 @@ require (
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	golang.org/x/sys v0.0.0-20200814200057-3d37ad5750ed // indirect
+	golang.org/x/sys v0.0.0-20200817085935-3ff754bf58a9 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	golang.org/x/tools v0.0.0-20200815165600-90abf76919f3
+	golang.org/x/tools v0.0.0-20200817023811-d00afeaade8f // indirect
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 )

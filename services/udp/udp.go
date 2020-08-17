@@ -42,14 +42,13 @@ type Config struct {
 	// kcp有效
 	SKCPConfig *ccs.SKCPConfig
 	// stcp有效
-	STCPMethod   string `validate:"required"` // default: aes-192-cfb
-	STCPPassword string // default: thinkgos's_jocasta
+	// stcp 加密方法 default: aes-192-cfb
+	// stcp 加密密钥 default: thinkgos's_jocasta
+	STCPConfig cs.StcpConfig
 	// 其它
 	Timeout time.Duration `validate:"required"` // 连接父级或真实服务器超时时间, default: 2s
 	// private
-	cert   []byte
-	key    []byte
-	caCert []byte
+	tcpTlsConfig cs.TCPTlsConfig
 }
 
 type connItem struct {
@@ -107,19 +106,19 @@ func (sf *UDP) inspectConfig() (err error) {
 	}
 
 	if sf.cfg.ParentType == "tls" {
-		sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
+		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
 		if err != nil {
 			return
 		}
 		if sf.cfg.CaCertFile != "" {
-			if sf.cfg.caCert, err = ioutil.ReadFile(sf.cfg.CaCertFile); err != nil {
+			if sf.cfg.tcpTlsConfig.CaCert, err = ioutil.ReadFile(sf.cfg.CaCertFile); err != nil {
 				return fmt.Errorf("read ca file %+v", err)
 			}
 		}
 	}
 
 	// stcp 方法检查
-	if sf.cfg.ParentType == "stcp" && !strext.Contains(encrypt.CipherMethods(), sf.cfg.STCPMethod) {
+	if sf.cfg.ParentType == "stcp" && !strext.Contains(encrypt.CipherMethods(), sf.cfg.STCPConfig.Method) {
 		return fmt.Errorf("stcp cipher method support one of %s", strings.Join(encrypt.CipherMethods(), ","))
 	}
 	return
@@ -326,11 +325,8 @@ func (sf *UDP) dialParent(address string) (net.Conn, error) {
 		Protocol: sf.cfg.ParentType,
 		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			CaCert:       sf.cfg.caCert,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
+			TCPTlsConfig: sf.cfg.tcpTlsConfig,
+			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 		},
 		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},

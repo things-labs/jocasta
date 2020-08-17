@@ -65,11 +65,13 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 			func() {
 				// server
 				srv := &TCPTlsServer{
-					Addr:   "127.0.0.1:0",
-					CaCert: nil,
-					Cert:   []byte(crt),
-					Key:    []byte(key),
-					Single: single,
+					Addr: "127.0.0.1:0",
+					Config: TCPTlsConfig{
+						CaCert: nil,
+						Cert:   []byte(crt),
+						Key:    []byte(key),
+						Single: single,
+					},
 					Status: make(chan error, 1),
 					AfterChains: AdornConnsChain{
 						AdornCsnappy(compress),
@@ -93,17 +95,19 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 
 				// client
 				d := &TCPTlsDialer{
-					CaCert:  []byte(crt),
-					Cert:    []byte(crt),
-					Key:     []byte(key),
+					Config: TCPTlsConfig{
+						CaCert: []byte(crt),
+						Cert:   []byte(crt),
+						Key:    []byte(key),
+						Single: single,
+					},
 					Timeout: time.Second,
-					Single:  single,
 					AfterChains: AdornConnsChain{
 						AdornCsnappy(compress),
 					},
 				}
 				if !single {
-					d.CaCert = nil
+					d.Config.CaCert = nil
 				}
 
 				cli, err := d.Dial("tcp", srv.LocalAddr())
@@ -127,11 +131,13 @@ func TestJumper_socks5_tls(t *testing.T) {
 			func() {
 				// server
 				srv := &TCPTlsServer{
-					Addr:   "127.0.0.1:0",
-					CaCert: nil,
-					Cert:   []byte(crt),
-					Key:    []byte(key),
-					Single: single,
+					Addr: "127.0.0.1:0",
+					Config: TCPTlsConfig{
+						CaCert: nil,
+						Cert:   []byte(crt),
+						Key:    []byte(key),
+						Single: single,
+					},
 					Status: make(chan error, 1),
 					AfterChains: AdornConnsChain{
 						AdornCsnappy(compress),
@@ -180,10 +186,12 @@ func TestJumper_socks5_tls(t *testing.T) {
 				// t.Logf("socks5 proxy url: %v", proxyURL)
 
 				d := &TCPTlsDialer{
-					CaCert:  []byte(crt),
-					Cert:    []byte(crt),
-					Key:     []byte(key),
-					Single:  single,
+					Config: TCPTlsConfig{
+						CaCert: []byte(crt),
+						Cert:   []byte(crt),
+						Key:    []byte(key),
+						Single: single,
+					},
 					Timeout: time.Second,
 					Forward: Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
 					AfterChains: AdornConnsChain{

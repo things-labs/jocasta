@@ -19,10 +19,12 @@ func TestSTCP_Forward_Direct(t *testing.T) {
 			func() {
 				// server
 				srv := &StcpServer{
-					Addr:     "127.0.0.1:0",
-					Method:   method,
-					Password: password,
-					Status:   make(chan error, 1),
+					Addr: "127.0.0.1:0",
+					Config: StcpConfig{
+						method,
+						password,
+					},
+					Status: make(chan error, 1),
 					AfterChains: AdornConnsChain{
 						AdornCsnappy(compress),
 					},
@@ -44,9 +46,11 @@ func TestSTCP_Forward_Direct(t *testing.T) {
 				defer srv.Close()
 
 				d := &StcpDialer{
-					Method:   method,
-					Password: password,
-					Timeout:  time.Second,
+					Config: StcpConfig{
+						method,
+						password,
+					},
+					Timeout: time.Second,
 					AfterChains: AdornConnsChain{
 						AdornCsnappy(compress),
 					},
@@ -73,10 +77,12 @@ func TestStcp_Forward_socks5(t *testing.T) {
 			func() {
 				// server
 				srv := &StcpServer{
-					Addr:     "127.0.0.1:0",
-					Method:   method,
-					Password: password,
-					Status:   make(chan error, 1),
+					Addr: "127.0.0.1:0",
+					Config: StcpConfig{
+						method,
+						password,
+					},
+					Status: make(chan error, 1),
 					AfterChains: AdornConnsChain{
 						AdornCsnappy(compress),
 					},
@@ -124,10 +130,12 @@ func TestStcp_Forward_socks5(t *testing.T) {
 				// t.Logf("socks5 proxy url: %v", proxyURL)
 
 				d := &StcpDialer{
-					Method:   method,
-					Password: password,
-					Timeout:  time.Second,
-					Forward:  Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
+					Config: StcpConfig{
+						method,
+						password,
+					},
+					Timeout: time.Second,
+					Forward: Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
 					AfterChains: AdornConnsChain{
 						AdornCsnappy(compress),
 					},
@@ -154,10 +162,12 @@ func TestSSSSTCP(t *testing.T) {
 
 	// server
 	srv := &StcpServer{
-		Addr:     "127.0.0.1:0",
-		Method:   method,
-		Password: password,
-		Status:   make(chan error, 1),
+		Addr: "127.0.0.1:0",
+		Config: StcpConfig{
+			method,
+			password,
+		},
+		Status: make(chan error, 1),
 		AfterChains: AdornConnsChain{
 			AdornCsnappy(compress),
 		},
@@ -183,9 +193,11 @@ func TestSSSSTCP(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		func() {
 			d := StcpDialer{
-				Method:   method,
-				Password: password,
-				Timeout:  time.Second,
+				Config: StcpConfig{
+					method,
+					password,
+				},
+				Timeout: time.Second,
 				AfterChains: AdornConnsChain{
 					AdornCsnappy(compress),
 				},

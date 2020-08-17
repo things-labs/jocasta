@@ -52,8 +52,8 @@ func init() {
 	flags.StringVarP(&socksCfg.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&socksCfg.CaCertFile, "ca", "", "ca cert file for tls")
 	// stcp有效
-	flags.StringVar(&socksCfg.STCPMethod, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
-	flags.StringVar(&socksCfg.STCPPassword, "stcp-password", "thinkgos's_goproxy", "password of local stcp's encrpyt/decrypt")
+	flags.StringVar(&socksCfg.STCPConfig.Method, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
+	flags.StringVar(&socksCfg.STCPConfig.Password, "stcp-password", "thinkgos's_goproxy", "password of local stcp's encrpyt/decrypt")
 	// ssh有效
 	flags.StringVarP(&socksCfg.SSHUser, "ssh-user", "u", "", "user for ssh")
 	flags.StringVarP(&socksCfg.SSHKeyFile, "ssh-key", "S", "", "private key file for ssh")

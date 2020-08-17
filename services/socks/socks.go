@@ -58,8 +58,9 @@ type Config struct {
 	// kcp有效
 	SKCPConfig ccs.SKCPConfig
 	// stcp有效
-	STCPMethod   string // stcp 加密方法 default aes-192-cfb
-	STCPPassword string // stcp 加密密钥 default thinkgos's_goproxy
+	// stcp 加密方法 default: aes-192-cfb
+	// stcp 加密密钥 default: thinkgos's_jocasta
+	STCPConfig cs.StcpConfig
 	// ssh有效
 	SSHKeyFile     string // default empty
 	SSHKeyFileSalt string // default empty
@@ -99,9 +100,8 @@ type Config struct {
 	BindListen bool     // default false
 	Debug      bool
 
-	caCert        []byte
-	cert          []byte
-	key           []byte
+	// private
+	tcpTlsConfig  cs.TCPTlsConfig
 	sshAuthMethod ssh.AuthMethod
 	rateLimit     rate.Limit
 	parentAuth    *proxy.Auth
@@ -144,12 +144,12 @@ func (sf *Socks) inspectConfig() (err error) {
 	}
 
 	if sf.cfg.LocalType == "tls" || (sf.cfg.ParentType == "tls" && len(sf.cfg.Parent) > 0) {
-		sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
+		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
 		if err != nil {
 			return err
 		}
 		if sf.cfg.CaCertFile != "" {
-			sf.cfg.caCert, err = ioutil.ReadFile(sf.cfg.CaCertFile)
+			sf.cfg.tcpTlsConfig.CaCert, err = ioutil.ReadFile(sf.cfg.CaCertFile)
 			if err != nil {
 				return fmt.Errorf("read ca file, %s", err)
 			}
@@ -360,11 +360,8 @@ func (sf *Socks) Start() (err error) {
 		Protocol: sf.cfg.LocalType,
 		Addr:     sf.cfg.Local,
 		Config: ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			CaCert:       sf.cfg.caCert,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
+			TCPTlsConfig: sf.cfg.tcpTlsConfig,
+			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sf.goPool,
@@ -595,11 +592,8 @@ func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
 			Protocol: sf.cfg.ParentType,
 			Timeout:  sf.cfg.Timeout,
 			Config: ccs.Config{
-				Cert:         sf.cfg.cert,
-				Key:          sf.cfg.key,
-				CaCert:       sf.cfg.caCert,
-				STCPMethod:   sf.cfg.STCPMethod,
-				STCPPassword: sf.cfg.STCPPassword,
+				TCPTlsConfig: sf.cfg.tcpTlsConfig,
+				StcpConfig:   sf.cfg.STCPConfig,
 				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			},
 			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},

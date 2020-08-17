@@ -22,7 +22,6 @@ func kcp(cmd *cobra.Command) {
 	persistent.IntVar(&kcpCfg.DataShard, "kcp-ds", 10, "set reed-solomon erasure coding - datashard")
 	persistent.IntVar(&kcpCfg.ParityShard, "kcp-ps", 3, "set reed-solomon erasure coding - parityshard")
 	persistent.IntVar(&kcpCfg.DSCP, "kcp-dscp", 0, "set DSCP(6bit)")
-	persistent.BoolVar(&kcpCfg.NoComp, "kcp-nocomp", false, "disable compression")
 	persistent.BoolVar(&kcpCfg.AckNodelay, "kcp-acknodelay", true, "be carefully! flush ack immediately when a packet is received")
 	persistent.IntVar(&kcpCfg.NoDelay, "kcp-nodelay", 0, "be carefully!")
 	persistent.IntVar(&kcpCfg.Interval, "kcp-interval", 50, "be carefully!")

@@ -12,14 +12,16 @@ import (
 
 // KCPServer 传输,可选snappy压缩
 type KCPServer struct {
-	Addr        string
-	Config      KcpConfig
+	Addr   string
+	Config KcpConfig
+
 	Status      chan error
 	GoPool      gpool.Pool
 	AfterChains AdornConnsChain
 	Handler     Handler
-	mu          sync.Mutex
-	ln          net.Listener
+
+	mu sync.Mutex
+	ln net.Listener
 }
 
 // ListenAndServe listen and server

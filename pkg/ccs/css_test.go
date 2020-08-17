@@ -161,7 +161,12 @@ func Test_Stcp_Forward_Direct(t *testing.T) {
 	for _, method := range encrypt.CipherMethods() {
 		for _, compress := range []bool{true, false} {
 			func() {
-				config := Config{STCPMethod: method, STCPPassword: password}
+				config := Config{
+					StcpConfig: cs.StcpConfig{
+						Method:   method,
+						Password: password,
+					},
+				}
 
 				// server
 				srv := &Server{
@@ -217,8 +222,12 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 	for _, method := range encrypt.CipherMethods() {
 		for _, compress := range []bool{true, false} {
 			func() {
-				config := Config{STCPMethod: method, STCPPassword: password}
-
+				config := Config{
+					StcpConfig: cs.StcpConfig{
+						Method:   method,
+						Password: password,
+					},
+				}
 				// server
 				srv := &Server{
 					Protocol: "stcp",
@@ -348,10 +357,12 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 				Protocol: "tls",
 				Addr:     "127.0.0.1:0",
 				Config: Config{
-					CaCert:    nil,
-					Cert:      []byte(crt),
-					Key:       []byte(key),
-					SingleTLS: single,
+					TCPTlsConfig: cs.TCPTlsConfig{
+						CaCert: nil,
+						Cert:   []byte(crt),
+						Key:    []byte(key),
+						Single: single,
+					},
 				},
 				status: make(chan error, 1),
 				AfterChains: cs.AdornConnsChain{
@@ -379,17 +390,19 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 				Protocol: "tls",
 				Timeout:  time.Second,
 				Config: Config{
-					CaCert:    []byte(crt),
-					Cert:      []byte(crt),
-					Key:       []byte(key),
-					SingleTLS: single,
+					TCPTlsConfig: cs.TCPTlsConfig{
+						CaCert: []byte(crt),
+						Cert:   []byte(crt),
+						Key:    []byte(key),
+						Single: single,
+					},
 				},
 				AfterChains: cs.AdornConnsChain{
 					cs.AdornCsnappy(compress),
 				},
 			}
 			if !single {
-				d.CaCert = nil
+				d.TCPTlsConfig.CaCert = nil
 			}
 
 			cli, err := d.Dial("tcp", channel.LocalAddr())
@@ -415,10 +428,12 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 					Protocol: "tls",
 					Addr:     "127.0.0.1:0",
 					Config: Config{
-						CaCert:    nil,
-						Cert:      []byte(crt),
-						Key:       []byte(key),
-						SingleTLS: single,
+						TCPTlsConfig: cs.TCPTlsConfig{
+							CaCert: nil,
+							Cert:   []byte(crt),
+							Key:    []byte(key),
+							Single: single,
+						},
 					},
 					status: make(chan error, 1),
 					AfterChains: cs.AdornConnsChain{
@@ -468,18 +483,20 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 					Protocol: "tls",
 					Timeout:  time.Second,
 					Config: Config{
-						CaCert:    []byte(crt),
-						Cert:      []byte(crt),
-						Key:       []byte(key),
-						SingleTLS: single,
-						ProxyURL:  pURL,
+						TCPTlsConfig: cs.TCPTlsConfig{
+							CaCert: []byte(crt),
+							Cert:   []byte(crt),
+							Key:    []byte(key),
+							Single: single,
+						},
+						ProxyURL: pURL,
 					},
 					AfterChains: cs.AdornConnsChain{
 						cs.AdornCsnappy(compress),
 					},
 				}
 				if !single {
-					d.CaCert = nil
+					d.TCPTlsConfig.CaCert = nil
 				}
 				conn, err := d.Dial("tcp", channel.LocalAddr())
 				require.NoError(t, err)
@@ -508,7 +525,6 @@ func TestKcp(t *testing.T) {
 					DataShard:    10,
 					ParityShard:  3,
 					DSCP:         0,
-					NoComp:       compress,
 					AckNodelay:   true,
 					NoDelay:      1,
 					Interval:     10,
@@ -522,10 +538,11 @@ func TestKcp(t *testing.T) {
 
 				// server
 				srv := &Server{
-					Protocol: "kcp",
-					Addr:     "127.0.0.1:0",
-					Config:   Config{KcpConfig: config},
-					status:   make(chan error, 1),
+					Protocol:    "kcp",
+					Addr:        "127.0.0.1:0",
+					Config:      Config{KcpConfig: config},
+					status:      make(chan error, 1),
+					AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(compress)},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -545,9 +562,10 @@ func TestKcp(t *testing.T) {
 
 				// client
 				d := &Dialer{
-					Protocol: "kcp",
-					Timeout:  time.Second,
-					Config:   Config{KcpConfig: config},
+					Protocol:    "kcp",
+					Timeout:     time.Second,
+					AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(compress)},
+					Config:      Config{KcpConfig: config},
 				}
 				cli, err := d.Dial("tcp", channel.LocalAddr())
 				require.NoError(t, err)

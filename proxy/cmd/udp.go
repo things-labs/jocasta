@@ -48,11 +48,12 @@ func init() {
 	flags.StringVarP(&udpCfg.CertFile, "cert", "C", "proxy.crt", "cert file for tls")
 	flags.StringVarP(&udpCfg.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&udpCfg.CaCertFile, "ca", "", "ca cert file for tls")
+
+	// stcp有效
+	flags.StringVar(&udpCfg.STCPConfig.Method, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
+	flags.StringVar(&udpCfg.STCPConfig.Password, "stcp-password", "thinkgos's_jocasta", "password of local stcp's encrpyt/decrypt")
 	// kcp 有效
 	udpCfg.SKCPConfig = &kcpCfg
-	// stcp有效
-	flags.StringVar(&udpCfg.STCPMethod, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
-	flags.StringVar(&udpCfg.STCPPassword, "stcp-password", "thinkgos's_jocasta", "password of local stcp's encrpyt/decrypt")
 	// 其它
 	flags.DurationVarP(&udpCfg.Timeout, "timeout", "e", time.Second*2, "tcp timeout duration when connect to real server or parent proxy")
 

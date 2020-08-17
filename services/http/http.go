@@ -57,8 +57,9 @@ type Config struct {
 	// kcp 有效
 	SKCPConfig ccs.SKCPConfig
 	// stcp有效
-	STCPMethod   string // stcp 加密方法 default: aes-192-cfb
-	STCPPassword string // stcp 加密密钥 default: thinkgos's_jocasta
+	// stcp 加密方法 default: aes-192-cfb
+	// stcp 加密密钥 default: thinkgos's_jocasta
+	STCPConfig cs.StcpConfig
 	// ssh有效
 	SSHKeyFile     string // ssh 私有key文件 default: empty
 	SSHKeyFileSalt string // ssh 私有key加盐 default: empty
@@ -105,9 +106,8 @@ type Config struct {
 	//      socks5://host:port
 	RawProxyURL string
 
-	cert          []byte
-	key           []byte
-	caCert        []byte
+	// private
+	tcpTlsConfig  cs.TCPTlsConfig
 	rateLimit     rate.Limit
 	sshAuthMethod ssh.AuthMethod
 }
@@ -182,11 +182,11 @@ func (sf *HTTP) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return errors.New("cert file and key file required")
 		}
-		if sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
+		if sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
 			return err
 		}
 		if sf.cfg.CaCertFile != "" {
-			if sf.cfg.caCert, err = ioutil.ReadFile(sf.cfg.CaCertFile); err != nil {
+			if sf.cfg.tcpTlsConfig.CaCert, err = ioutil.ReadFile(sf.cfg.CaCertFile); err != nil {
 				return fmt.Errorf("read ca file %+v", err)
 			}
 		}
@@ -363,12 +363,9 @@ func (sf *HTTP) Start() (err error) {
 			Protocol: sf.cfg.LocalType,
 			Addr:     addr,
 			Config: ccs.Config{
-				Cert:         sf.cfg.cert,
-				Key:          sf.cfg.key,
-				CaCert:       sf.cfg.caCert,
+				TCPTlsConfig: sf.cfg.tcpTlsConfig,
+				StcpConfig:   sf.cfg.STCPConfig,
 				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-				STCPMethod:   sf.cfg.STCPMethod,
-				STCPPassword: sf.cfg.STCPPassword,
 			},
 			GoPool:      sf.goPool,
 			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
@@ -578,12 +575,9 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 			Protocol: sf.cfg.ParentType,
 			Timeout:  sf.cfg.Timeout,
 			Config: ccs.Config{
-				Cert:         sf.cfg.cert,
-				Key:          sf.cfg.key,
-				CaCert:       sf.cfg.caCert,
+				TCPTlsConfig: sf.cfg.tcpTlsConfig,
+				StcpConfig:   sf.cfg.STCPConfig,
 				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-				STCPMethod:   sf.cfg.STCPMethod,
-				STCPPassword: sf.cfg.STCPPassword,
 				ProxyURL:     sf.proxyURL,
 			},
 			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},

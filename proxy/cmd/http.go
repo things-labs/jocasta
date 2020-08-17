@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"github.com/thinkgos/jocasta/lib/encrypt"
 	shttp "github.com/thinkgos/jocasta/services/http"
 )
 
@@ -17,7 +19,6 @@ var httpCmd = &cobra.Command{
 		if forever {
 			return
 		}
-		httpCfg.SKCPConfig = kcpCfg
 
 		srv := shttp.New(zap.S(), httpCfg)
 		err := srv.Start()
@@ -45,6 +46,12 @@ func init() {
 	flags.StringVarP(&httpCfg.CertFile, "cert", "C", "proxy.crt", "cert file for tls")
 	flags.StringVarP(&httpCfg.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&httpCfg.CaCertFile, "ca", "", "ca cert file for tls")
+
+	// stcp 有效
+	flags.StringVar(&httpCfg.STCPConfig.Method, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
+	flags.StringVar(&httpCfg.STCPConfig.Password, "stcp-password", "thinkgos's_jocasta", "password of local stcp's encrpyt/decrypt")
+	// kcp 有效
+	httpCfg.SKCPConfig = kcpCfg
 	// ssh 有效
 	flags.StringVarP(&httpCfg.SSHUser, "ssh-user", "u", "", "user for ssh")
 	flags.StringVarP(&httpCfg.SSHKeyFile, "ssh-key", "S", "", "private key file for ssh")

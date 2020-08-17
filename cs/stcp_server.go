@@ -11,9 +11,8 @@ import (
 
 // StcpServer stcp server
 type StcpServer struct {
-	Addr     string
-	Method   string
-	Password string
+	Addr   string
+	Config StcpConfig
 
 	Status      chan error
 	GoPool      gpool.Pool
@@ -26,12 +25,12 @@ type StcpServer struct {
 
 // ListenAndServe listen and serve
 func (sf *StcpServer) ListenAndServe() error {
-	if sf.Method == "" || sf.Password == "" || !encrypt.HasCipherMethod(sf.Method) {
+	if sf.Config.Method == "" || sf.Config.Password == "" || !encrypt.HasCipherMethod(sf.Config.Method) {
 		err := errors.New("invalid method or password")
 		setStatus(sf.Status, err)
 		return err
 	}
-	_, err := encrypt.NewCipher(sf.Method, sf.Password)
+	_, err := encrypt.NewCipher(sf.Config.Method, sf.Config.Password)
 	if err != nil {
 		setStatus(sf.Status, err)
 		return err
@@ -55,7 +54,7 @@ func (sf *StcpServer) ListenAndServe() error {
 			return err
 		}
 		gpool.Go(sf.GoPool, func() {
-			conn = AdornCencrypt(sf.Method, sf.Password)(conn)
+			conn = AdornCencrypt(sf.Config.Method, sf.Config.Password)(conn)
 			for _, chain := range sf.AfterChains {
 				conn = chain(conn)
 			}

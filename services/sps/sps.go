@@ -58,8 +58,9 @@ type Config struct {
 	// kcp有效
 	SKCPConfig ccs.SKCPConfig
 	// stcp有效
-	STCPMethod   string
-	STCPPassword string
+	// stcp 加密方法 default: aes-192-cfb
+	// stcp 加密密钥 default: thinkgos's_jocasta
+	STCPConfig cs.StcpConfig
 	// 其它
 	Timeout time.Duration // tcp连接到父级或真实服务器超时时间,default 2000 单位ms
 	// basic auth配置
@@ -92,10 +93,9 @@ type Config struct {
 	RawProxyURL string
 	Debug       bool
 
-	cert      []byte
-	key       []byte
-	caCert    []byte
-	rateLimit rate.Limit
+	// private
+	tcpTlsConfig cs.TCPTlsConfig
+	rateLimit    rate.Limit
 }
 type SPS struct {
 	cfg                   Config
@@ -144,13 +144,13 @@ func (sf *SPS) InspectConfig() (err error) {
 	}
 	if sf.cfg.ParentType == "tls" || sf.cfg.LocalType == "tls" {
 		if !sf.cfg.ParentTLSSingle {
-			sf.cfg.cert, sf.cfg.key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
+			sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
 			if err != nil {
 				return
 			}
 		}
 		if sf.cfg.CaCertFile != "" {
-			sf.cfg.caCert, err = ioutil.ReadFile(sf.cfg.CaCertFile)
+			sf.cfg.tcpTlsConfig.CaCert, err = ioutil.ReadFile(sf.cfg.CaCertFile)
 			if err != nil {
 				return fmt.Errorf("read ca file error,ERR:%s", err)
 			}
@@ -298,12 +298,8 @@ func (sf *SPS) Start() (err error) {
 				Protocol: sf.cfg.LocalType,
 				Addr:     addr,
 				Config: ccs.Config{
-					Cert:         sf.cfg.cert,
-					Key:          sf.cfg.key,
-					CaCert:       sf.cfg.caCert,
-					SingleTLS:    false,
-					STCPMethod:   sf.cfg.STCPMethod,
-					STCPPassword: sf.cfg.STCPPassword,
+					TCPTlsConfig: sf.cfg.tcpTlsConfig,
+					StcpConfig:   sf.cfg.STCPConfig,
 					KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 				},
 				GoPool:      sword.GPool,
@@ -677,12 +673,9 @@ func (sf *SPS) dialParent(address string) (net.Conn, error) {
 		Protocol: sf.cfg.ParentType,
 		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
-			Cert:         sf.cfg.cert,
-			Key:          sf.cfg.key,
-			CaCert:       sf.cfg.caCert,
+			TCPTlsConfig: sf.cfg.tcpTlsConfig,
+			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			STCPMethod:   sf.cfg.STCPMethod,
-			STCPPassword: sf.cfg.STCPPassword,
 			ProxyURL:     sf.proxyURL,
 		},
 		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},

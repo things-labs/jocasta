@@ -5,7 +5,8 @@ import (
 	"runtime"
 
 	"github.com/denisbrodbeck/machineid"
-	"github.com/thinkgos/jocasta/builder"
+
+	"github.com/thinkgos/jocasta/pkg/builder"
 )
 
 // Author author

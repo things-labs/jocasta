@@ -44,8 +44,8 @@ func init() {
 	flags.BoolVar(&muxBridge.Compress, "compress", false, "compress data when tcp|tls|stcp mode")
 	flags.StringVarP(&muxBridge.CertFile, "cert", "C", "proxy.crt", "cert file for tls")
 	flags.StringVarP(&muxBridge.KeyFile, "key", "K", "proxy.key", "key file for tls")
-	flags.StringVar(&muxBridge.STCPMethod, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
-	flags.StringVar(&muxBridge.STCPPassword, "stcp-password", "thinkgos's_goproxy", "password of local stcp's encrpyt/decrypt")
+	flags.StringVar(&muxBridge.STCPConfig.Method, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
+	flags.StringVar(&muxBridge.STCPConfig.Password, "stcp-password", "thinkgos's_goproxy", "password of local stcp's encrpyt/decrypt")
 	flags.DurationVarP(&muxBridge.Timeout, "timeout", "e", 2*time.Second, "tcp timeout duration when connect to real server or parent proxy")
 
 	rootCmd.AddCommand(muxBridgeCmd)

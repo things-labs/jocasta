@@ -13,10 +13,7 @@ import (
 // TCPTlsServer tcp tls server
 type TCPTlsServer struct {
 	Addr   string
-	CaCert []byte
-	Cert   []byte
-	Key    []byte
-	Single bool
+	Config TCPTlsConfig
 
 	Status      chan error
 	GoPool      gpool.Pool
@@ -74,18 +71,18 @@ func (sf *TCPTlsServer) Close() (err error) {
 }
 
 func (sf *TCPTlsServer) listen() (net.Listener, error) {
-	cert, err := tls.X509KeyPair(sf.Cert, sf.Key)
+	cert, err := tls.X509KeyPair(sf.Config.Cert, sf.Config.Key)
 	if err != nil {
 		return nil, err
 	}
 	config := &tls.Config{
 		Certificates: []tls.Certificate{cert},
 	}
-	if !sf.Single {
+	if !sf.Config.Single {
 		clientCertPool := x509.NewCertPool()
-		caBytes := sf.Cert
-		if sf.CaCert != nil {
-			caBytes = sf.CaCert
+		caBytes := sf.Config.Cert
+		if sf.Config.CaCert != nil {
+			caBytes = sf.Config.CaCert
 		}
 		ok := clientCertPool.AppendCertsFromPEM(caBytes)
 		if !ok {

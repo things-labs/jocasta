@@ -10,8 +10,7 @@ import (
 
 // StcpDialer stcp dialer
 type StcpDialer struct {
-	Method      string
-	Password    string
+	Config      StcpConfig
 	Timeout     time.Duration
 	Forward     Dialer
 	AfterChains AdornConnsChain
@@ -24,7 +23,7 @@ func (sf *StcpDialer) Dial(network, addr string) (net.Conn, error) {
 
 // DialContext connects to the address on the named network using the provided context.
 func (sf *StcpDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
-	cip, err := encrypt.NewCipher(sf.Method, sf.Password)
+	cip, err := encrypt.NewCipher(sf.Config.Method, sf.Config.Password)
 	if err != nil {
 		return nil, err
 	}

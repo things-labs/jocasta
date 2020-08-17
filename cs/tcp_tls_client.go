@@ -12,10 +12,7 @@ import (
 
 // TCPTlsDialer tcp tls dialer
 type TCPTlsDialer struct {
-	CaCert      []byte
-	Cert        []byte
-	Key         []byte
-	Single      bool
+	Config      TCPTlsConfig
 	Timeout     time.Duration
 	Forward     Dialer
 	AfterChains AdornConnsChain
@@ -31,10 +28,10 @@ func (sf *TCPTlsDialer) DialContext(ctx context.Context, network, addr string) (
 	var err error
 	var conf *tls.Config
 
-	if sf.Single {
-		conf, err = SingleTLSConfig(sf.CaCert)
+	if sf.Config.Single {
+		conf, err = SingleTLSConfig(sf.Config.CaCert)
 	} else {
-		conf, err = TLSConfig(sf.Cert, sf.Key, sf.CaCert)
+		conf, err = TLSConfig(sf.Config.Cert, sf.Config.Key, sf.Config.CaCert)
 	}
 	if err != nil {
 		return nil, err
