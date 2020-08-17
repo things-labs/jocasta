@@ -23,10 +23,12 @@ func New(conn net.Conn) *Conn {
 	}
 }
 
+// Read reads data from the connection.
 func (sf *Conn) Read(p []byte) (int, error) {
 	return sf.r.Read(p)
 }
 
+// Write writes data to the connection.
 func (sf *Conn) Write(p []byte) (int, error) {
 	n, _ := sf.w.Write(p)
 	err := sf.w.Flush()
