@@ -91,7 +91,10 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 			AfterChains: sf.AfterChains,
 		}
 	case "kcp":
-		d = &cs.KCPDialer{Config: sf.KcpConfig}
+		d = &cs.KCPDialer{
+			Config:      sf.KcpConfig,
+			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(!sf.KcpConfig.NoComp)},
+		}
 	default:
 		return nil, fmt.Errorf("protocol support one of <tcp|tls|stcp|kcp> but give <%s>", sf.Protocol)
 	}
@@ -149,11 +152,12 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 		}
 	case "kcp":
 		srv = &cs.KCPServer{
-			Addr:    sf.Addr,
-			Config:  sf.KcpConfig,
-			Status:  sf.status,
-			GoPool:  sf.GoPool,
-			Handler: sf.Handler,
+			Addr:        sf.Addr,
+			Config:      sf.KcpConfig,
+			Status:      sf.status,
+			GoPool:      sf.GoPool,
+			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(!sf.KcpConfig.NoComp)},
+			Handler:     sf.Handler,
 		}
 	default:
 		sf.status <- fmt.Errorf("not support protocol: %s", sf.Protocol)

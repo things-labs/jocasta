@@ -7,19 +7,19 @@ import (
 	"github.com/xtaci/kcp-go/v5"
 	"go.uber.org/multierr"
 
-	"github.com/thinkgos/jocasta/connection/csnappy"
 	"github.com/thinkgos/jocasta/lib/gpool"
 )
 
 // KCPServer 传输,可选snappy压缩
 type KCPServer struct {
-	Addr    string
-	Config  KcpConfig
-	Status  chan error
-	GoPool  gpool.Pool
-	Handler Handler
-	mu      sync.Mutex
-	ln      net.Listener
+	Addr        string
+	Config      KcpConfig
+	Status      chan error
+	GoPool      gpool.Pool
+	AfterChains AdornConnsChain
+	Handler     Handler
+	mu          sync.Mutex
+	ln          net.Listener
 }
 
 // ListenAndServe listen and server
@@ -57,8 +57,8 @@ func (sf *KCPServer) ListenAndServe() error {
 			conn.SetACKNoDelay(sf.Config.AckNodelay)
 
 			var c net.Conn = conn
-			if !sf.Config.NoComp {
-				c = csnappy.New(c)
+			for _, chain := range sf.AfterChains {
+				c = chain(c)
 			}
 			sf.Handler.ServerConn(c)
 		})

@@ -43,9 +43,10 @@ func TestKcp(t *testing.T) {
 
 				// server
 				srv := &KCPServer{
-					Addr:   "127.0.0.1:0",
-					Config: config,
-					Status: make(chan error, 1),
+					Addr:        "127.0.0.1:0",
+					Config:      config,
+					Status:      make(chan error, 1),
+					AfterChains: AdornConnsChain{AdornCsnappy(compress)},
 					Handler: HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -65,7 +66,10 @@ func TestKcp(t *testing.T) {
 				defer srv.Close()
 
 				// client
-				d := &KCPDialer{Config: config}
+				d := &KCPDialer{
+					Config:      config,
+					AfterChains: AdornConnsChain{AdornCsnappy(compress)},
+				}
 				cli, err := d.Dial("", srv.LocalAddr())
 				require.NoError(t, err)
 				defer cli.Close()

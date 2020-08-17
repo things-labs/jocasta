@@ -33,7 +33,6 @@ func (sf *KCPDialer) DialContext(_ context.Context, _, addr string) (net.Conn, e
 
 	var c net.Conn = conn
 
-	c = AdornCsnappy(!sf.Config.NoComp)(c)
 	for _, chain := range sf.AfterChains {
 		c = chain(c)
 	}
