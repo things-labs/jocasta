@@ -369,10 +369,10 @@ func (sf *HTTP) Start() (err error) {
 				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 				STCPMethod:   sf.cfg.STCPMethod,
 				STCPPassword: sf.cfg.STCPPassword,
-				Compress:     sf.cfg.LocalCompress,
 			},
-			GoPool:  sf.goPool,
-			Handler: cs.HandlerFunc(sf.handle),
+			GoPool:      sf.goPool,
+			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
+			Handler:     cs.HandlerFunc(sf.handle),
 		}
 		sc, errChan := srv.RunListenAndServe()
 		if err = <-errChan; err != nil {
@@ -584,9 +584,10 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 				STCPMethod:   sf.cfg.STCPMethod,
 				STCPPassword: sf.cfg.STCPPassword,
-				Compress:     sf.cfg.ParentCompress,
 				ProxyURL:     sf.proxyURL,
-			}}
+			},
+			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
+		}
 		outConn, err = d.Dial("tcp", address)
 	case "ssh":
 		t := time.NewTimer(sf.cfg.Timeout * 2)

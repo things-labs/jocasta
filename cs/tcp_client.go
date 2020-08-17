@@ -8,11 +8,9 @@ import (
 
 // TCPDialer tcp dialer
 type TCPDialer struct {
-	Compress     bool
-	Timeout      time.Duration
-	Forward      Dialer
-	BeforeChains AdornConnsChain
-	AfterChains  AdornConnsChain
+	Timeout     time.Duration
+	Forward     Dialer
+	AfterChains AdornConnsChain
 }
 
 // Dial connects to the address on the named network.
@@ -25,10 +23,7 @@ func (sf *TCPDialer) DialContext(ctx context.Context, network, addr string) (net
 	d := NetDialer{
 		sf.Timeout,
 		sf.Forward,
-		AdornConnsChain{
-			AdornCsnappy(sf.Compress),
-		},
-		sf.BeforeChains,
+		nil,
 		sf.AfterChains,
 	}
 	return d.DialContext(ctx, network, addr)

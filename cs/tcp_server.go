@@ -9,11 +9,12 @@ import (
 
 // TCPServer tcp server
 type TCPServer struct {
-	Addr     string
-	Compress bool
-	Status   chan error
-	GoPool   gpool.Pool
-	Handler  Handler
+	Addr string
+
+	Status      chan error
+	GoPool      gpool.Pool
+	AfterChains AdornConnsChain
+	Handler     Handler
 
 	mu sync.Mutex
 	ln net.Listener
@@ -38,7 +39,9 @@ func (sf *TCPServer) ListenAndServe() error {
 			return err
 		}
 		gpool.Go(sf.GoPool, func() {
-			conn = AdornCsnappy(sf.Compress)(conn)
+			for _, chain := range sf.AfterChains {
+				conn = chain(conn)
+			}
 			sf.Handler.ServerConn(conn)
 		})
 	}

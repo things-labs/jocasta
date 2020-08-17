@@ -32,10 +32,11 @@ func Test_TCP_Forward_Direct(t *testing.T) {
 			srv := &Server{
 				Protocol: "tcp",
 				Addr:     "127.0.0.1:0",
-				Config: Config{
-					Compress: compress,
+				Config:   Config{},
+				status:   make(chan error, 1),
+				AfterChains: cs.AdornConnsChain{
+					cs.AdornCsnappy(compress),
 				},
-				status: make(chan error, 1),
 				Handler: cs.HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -57,7 +58,10 @@ func Test_TCP_Forward_Direct(t *testing.T) {
 			d := &Dialer{
 				Protocol: "tcp",
 				Timeout:  time.Second,
-				Config:   Config{Compress: compress},
+				Config:   Config{},
+				AfterChains: cs.AdornConnsChain{
+					cs.AdornCsnappy(compress),
+				},
 			}
 			cli, err := d.Dial("tcp", channel.LocalAddr())
 			require.NoError(t, err)
@@ -81,10 +85,11 @@ func Test_TCP_Forward_socks5(t *testing.T) {
 			srv := &Server{
 				Protocol: "tcp",
 				Addr:     "127.0.0.1:0",
-				Config: Config{
-					Compress: compress,
+				Config:   Config{},
+				status:   make(chan error, 1),
+				AfterChains: cs.AdornConnsChain{
+					cs.AdornCsnappy(compress),
 				},
-				status: make(chan error, 1),
 				Handler: cs.HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -132,7 +137,10 @@ func Test_TCP_Forward_socks5(t *testing.T) {
 			d := &Dialer{
 				Protocol: "tcp",
 				Timeout:  time.Second,
-				Config:   Config{Compress: compress, ProxyURL: pURL},
+				Config:   Config{ProxyURL: pURL},
+				AfterChains: cs.AdornConnsChain{
+					cs.AdornCsnappy(compress),
+				},
 			}
 			conn, err := d.Dial("tcp", channel.LocalAddr())
 			require.NoError(t, err)
@@ -153,13 +161,16 @@ func Test_Stcp_Forward_Direct(t *testing.T) {
 	for _, method := range encrypt.CipherMethods() {
 		for _, compress := range []bool{true, false} {
 			func() {
-				config := Config{STCPMethod: method, STCPPassword: password, Compress: compress}
+				config := Config{STCPMethod: method, STCPPassword: password}
 
 				// server
 				srv := &Server{
 					Protocol: "stcp",
 					Addr:     "127.0.0.1:0",
 					Config:   config,
+					AfterChains: cs.AdornConnsChain{
+						cs.AdornCsnappy(compress),
+					},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 512)
 						n, err := inconn.Read(buf)
@@ -182,6 +193,9 @@ func Test_Stcp_Forward_Direct(t *testing.T) {
 					Protocol: "stcp",
 					Timeout:  time.Second,
 					Config:   config,
+					AfterChains: cs.AdornConnsChain{
+						cs.AdornCsnappy(compress),
+					},
 				}
 				cli, err := d.Dial("tcp", channel.LocalAddr())
 				require.NoError(t, err)
@@ -203,13 +217,16 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 	for _, method := range encrypt.CipherMethods() {
 		for _, compress := range []bool{true, false} {
 			func() {
-				config := Config{STCPMethod: method, STCPPassword: password, Compress: compress}
+				config := Config{STCPMethod: method, STCPPassword: password}
 
 				// server
 				srv := &Server{
 					Protocol: "stcp",
 					Addr:     "127.0.0.1:0",
 					Config:   config,
+					AfterChains: cs.AdornConnsChain{
+						cs.AdornCsnappy(compress),
+					},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -255,6 +272,9 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 					Protocol: "stcp",
 					Timeout:  time.Second,
 					Config:   config,
+					AfterChains: cs.AdornConnsChain{
+						cs.AdornCsnappy(compress),
+					},
 				}
 				conn, err := d.Dial("tcp", channel.LocalAddr())
 				require.NoError(t, err)
@@ -320,66 +340,10 @@ TL44tBTU3E0Bl+fyBSRkAXbVVTcYsxTeHsSuYm3pARTpKsw=
 -----END CERTIFICATE-----`
 
 func TestTcpTls_Forward_Direct(t *testing.T) {
-	for _, single := range []bool{true, false} {
-		// server
-		srv := &Server{
-			Protocol: "tls",
-			Addr:     "127.0.0.1:0",
-			Config: Config{
-				CaCert:    nil,
-				Cert:      []byte(crt),
-				Key:       []byte(key),
-				SingleTLS: single,
-			},
-			status: make(chan error, 1),
-			Handler: cs.HandlerFunc(func(inconn net.Conn) {
-				buf := make([]byte, 20)
-				n, err := inconn.Read(buf)
-				if !assert.NoError(t, err) {
-					return
-				}
-				assert.Equal(t, "ping", string(buf[:n]))
-				_, err = inconn.Write([]byte("pong"))
-				if !assert.NoError(t, err) {
-					return
-				}
-			}),
-		}
-		channel, errChan := srv.RunListenAndServe()
-		require.NoError(t, <-errChan)
-		defer channel.Close()
+	for _, compress := range []bool{true, false} {
 
-		// client
-		d := &Dialer{
-			Protocol: "tls",
-			Timeout:  time.Second,
-			Config: Config{
-				CaCert:    []byte(crt),
-				Cert:      []byte(crt),
-				Key:       []byte(key),
-				SingleTLS: single,
-			},
-		}
-		if !single {
-			d.CaCert = nil
-		}
-
-		cli, err := d.Dial("tcp", channel.LocalAddr())
-		require.NoError(t, err)
-		defer cli.Close()
-
-		_, err = cli.Write([]byte("ping"))
-		require.NoError(t, err)
-		b := make([]byte, 20)
-		n, err := cli.Read(b)
-		require.NoError(t, err)
-		require.Equal(t, "pong", string(b[:n]))
-	}
-}
-
-func TestTcpTls_Forward_socks5(t *testing.T) {
-	for _, single := range []bool{true, false} {
-		func() {
+		for _, single := range []bool{true, false} {
+			// server
 			srv := &Server{
 				Protocol: "tls",
 				Addr:     "127.0.0.1:0",
@@ -390,6 +354,9 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 					SingleTLS: single,
 				},
 				status: make(chan error, 1),
+				AfterChains: cs.AdornConnsChain{
+					cs.AdornCsnappy(compress),
+				},
 				Handler: cs.HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -407,28 +374,6 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 			require.NoError(t, <-errChan)
 			defer channel.Close()
 
-			// start socks5 proxy server
-			cator := &socks5.UserPassAuthenticator{Credentials: socks5.StaticCredentials{"user": "password"}}
-			proxySrv := socks5.NewServer(
-				socks5.WithAuthMethods([]socks5.Authenticator{new(socks5.NoAuthAuthenticator), cator}),
-			)
-			proxyLn, err := net.Listen("tcp", "127.0.0.1:0")
-			require.NoError(t, err)
-			defer proxyLn.Close() // nolint: errcheck
-
-			go func() {
-				proxySrv.Serve(proxyLn) // nolint: errcheck
-			}()
-
-			time.Sleep(time.Millisecond * 100)
-			// t.Logf("proxy server address: %v", proxyLn.Addr().String())
-
-			// start jumper to socks5
-			proxyURL := "socks5://" + "user:password@" + proxyLn.Addr().String()
-			pURL, err := cs.ParseProxyURL(proxyURL)
-			require.NoError(t, err)
-			// t.Logf("socks5 proxy url: %v", proxyURL)
-
 			// client
 			d := &Dialer{
 				Protocol: "tls",
@@ -438,22 +383,115 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 					Cert:      []byte(crt),
 					Key:       []byte(key),
 					SingleTLS: single,
-					ProxyURL:  pURL,
+				},
+				AfterChains: cs.AdornConnsChain{
+					cs.AdornCsnappy(compress),
 				},
 			}
 			if !single {
 				d.CaCert = nil
 			}
-			conn, err := d.Dial("tcp", channel.LocalAddr())
+
+			cli, err := d.Dial("tcp", channel.LocalAddr())
 			require.NoError(t, err)
-			defer conn.Close() // nolint: errcheck
-			_, err = conn.Write([]byte("ping"))
+			defer cli.Close()
+
+			_, err = cli.Write([]byte("ping"))
 			require.NoError(t, err)
-			b := make([]byte, 4)
-			n, err := conn.Read(b)
+			b := make([]byte, 20)
+			n, err := cli.Read(b)
 			require.NoError(t, err)
 			require.Equal(t, "pong", string(b[:n]))
-		}()
+		}
+	}
+}
+
+func TestTcpTls_Forward_socks5(t *testing.T) {
+	for _, compress := range []bool{true, false} {
+
+		for _, single := range []bool{true, false} {
+			func() {
+				srv := &Server{
+					Protocol: "tls",
+					Addr:     "127.0.0.1:0",
+					Config: Config{
+						CaCert:    nil,
+						Cert:      []byte(crt),
+						Key:       []byte(key),
+						SingleTLS: single,
+					},
+					status: make(chan error, 1),
+					AfterChains: cs.AdornConnsChain{
+						cs.AdornCsnappy(compress),
+					},
+					Handler: cs.HandlerFunc(func(inconn net.Conn) {
+						buf := make([]byte, 20)
+						n, err := inconn.Read(buf)
+						if !assert.NoError(t, err) {
+							return
+						}
+						assert.Equal(t, "ping", string(buf[:n]))
+						_, err = inconn.Write([]byte("pong"))
+						if !assert.NoError(t, err) {
+							return
+						}
+					}),
+				}
+				channel, errChan := srv.RunListenAndServe()
+				require.NoError(t, <-errChan)
+				defer channel.Close()
+
+				// start socks5 proxy server
+				cator := &socks5.UserPassAuthenticator{Credentials: socks5.StaticCredentials{"user": "password"}}
+				proxySrv := socks5.NewServer(
+					socks5.WithAuthMethods([]socks5.Authenticator{new(socks5.NoAuthAuthenticator), cator}),
+				)
+				proxyLn, err := net.Listen("tcp", "127.0.0.1:0")
+				require.NoError(t, err)
+				defer proxyLn.Close() // nolint: errcheck
+
+				go func() {
+					proxySrv.Serve(proxyLn) // nolint: errcheck
+				}()
+
+				time.Sleep(time.Millisecond * 100)
+				// t.Logf("proxy server address: %v", proxyLn.Addr().String())
+
+				// start jumper to socks5
+				proxyURL := "socks5://" + "user:password@" + proxyLn.Addr().String()
+				pURL, err := cs.ParseProxyURL(proxyURL)
+				require.NoError(t, err)
+				// t.Logf("socks5 proxy url: %v", proxyURL)
+
+				// client
+				d := &Dialer{
+					Protocol: "tls",
+					Timeout:  time.Second,
+					Config: Config{
+						CaCert:    []byte(crt),
+						Cert:      []byte(crt),
+						Key:       []byte(key),
+						SingleTLS: single,
+						ProxyURL:  pURL,
+					},
+					AfterChains: cs.AdornConnsChain{
+						cs.AdornCsnappy(compress),
+					},
+				}
+				if !single {
+					d.CaCert = nil
+				}
+				conn, err := d.Dial("tcp", channel.LocalAddr())
+				require.NoError(t, err)
+				defer conn.Close() // nolint: errcheck
+				_, err = conn.Write([]byte("ping"))
+				require.NoError(t, err)
+				b := make([]byte, 4)
+				n, err := conn.Read(b)
+				require.NoError(t, err)
+				require.Equal(t, "pong", string(b[:n]))
+			}()
+		}
 	}
 }
 

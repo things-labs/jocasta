@@ -115,10 +115,10 @@ func (sf *Bridge) Start() (err error) {
 			STCPMethod:   sf.cfg.STCPMethod,
 			STCPPassword: sf.cfg.STCPPassword,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			Compress:     sf.cfg.Compress,
 		},
-		GoPool:  sf.gPool,
-		Handler: cs.HandlerFunc(sf.handler),
+		GoPool:      sf.gPool,
+		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.Compress)},
+		Handler:     cs.HandlerFunc(sf.handler),
 	}
 	var errChan <-chan error
 	sf.channel, errChan = srv.RunListenAndServe()

@@ -1,7 +1,6 @@
 package cs
 
 import (
-	"crypto/tls"
 	"net"
 
 	"go.uber.org/atomic"
@@ -29,13 +28,6 @@ func AdornCsnappy(compress bool) func(conn net.Conn) net.Conn {
 	}
 	return func(conn net.Conn) net.Conn {
 		return conn
-	}
-}
-
-// AdornTls tls chain
-func AdornTls(conf *tls.Config) func(conn net.Conn) net.Conn {
-	return func(conn net.Conn) net.Conn {
-		return tls.Client(conn, conf)
 	}
 }
 

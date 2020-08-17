@@ -305,10 +305,10 @@ func (sf *SPS) Start() (err error) {
 					STCPMethod:   sf.cfg.STCPMethod,
 					STCPPassword: sf.cfg.STCPPassword,
 					KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-					Compress:     sf.cfg.LocalCompress,
 				},
-				GoPool:  sword.GPool,
-				Handler: cs.HandlerFunc(sf.handle),
+				GoPool:      sword.GPool,
+				AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
+				Handler:     cs.HandlerFunc(sf.handle),
 			}
 
 			sc, errChan := srv.RunListenAndServe()
@@ -683,9 +683,9 @@ func (sf *SPS) dialParent(address string) (net.Conn, error) {
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			STCPMethod:   sf.cfg.STCPMethod,
 			STCPPassword: sf.cfg.STCPPassword,
-			Compress:     sf.cfg.ParentCompress,
 			ProxyURL:     sf.proxyURL,
 		},
+		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
 	}
 	conn, err := d.Dial("tcp", address)
 	if err != nil {

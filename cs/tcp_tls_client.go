@@ -12,14 +12,13 @@ import (
 
 // TCPTlsDialer tcp tls dialer
 type TCPTlsDialer struct {
-	CaCert       []byte
-	Cert         []byte
-	Key          []byte
-	Single       bool
-	Timeout      time.Duration
-	Forward      Dialer
-	BeforeChains AdornConnsChain
-	AfterChains  AdornConnsChain
+	CaCert      []byte
+	Cert        []byte
+	Key         []byte
+	Single      bool
+	Timeout     time.Duration
+	Forward     Dialer
+	AfterChains AdornConnsChain
 }
 
 // Dial connects to the address on the named network.
@@ -44,13 +43,17 @@ func (sf *TCPTlsDialer) DialContext(ctx context.Context, network, addr string) (
 	d := NetDialer{
 		sf.Timeout,
 		sf.Forward,
-		AdornConnsChain{
-			AdornTls(conf),
-		},
-		sf.BeforeChains,
+		AdornConnsChain{adornTls(conf)},
 		sf.AfterChains,
 	}
 	return d.DialContext(ctx, network, addr)
+}
+
+// adornTls tls chain
+func adornTls(conf *tls.Config) func(conn net.Conn) net.Conn {
+	return func(conn net.Conn) net.Conn {
+		return tls.Client(conn, conf)
+	}
 }
 
 // TLSConfig tls config

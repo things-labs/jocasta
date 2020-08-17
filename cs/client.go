@@ -8,11 +8,10 @@ import (
 
 // NetDialer A Dialer is a means to establish a connection.
 type NetDialer struct {
-	Timeout      time.Duration
-	Forward      Dialer
-	Chains       AdornConnsChain
-	BeforeChains AdornConnsChain
-	AfterChains  AdornConnsChain
+	Timeout     time.Duration
+	Forward     Dialer
+	Chains      AdornConnsChain
+	AfterChains AdornConnsChain
 }
 
 // Dial connects to the address on the named network.
@@ -39,13 +38,10 @@ func (sf *NetDialer) DialContext(ctx context.Context, network, addr string) (net
 	if err != nil {
 		return nil, err
 	}
-	for _, chain := range sf.BeforeChains {
-		conn = chain(conn)
-	}
 	for _, chain := range sf.Chains {
 		conn = chain(conn)
 	}
-	for _, chain := range sf.BeforeChains {
+	for _, chain := range sf.AfterChains {
 		conn = chain(conn)
 	}
 	return conn, nil

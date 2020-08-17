@@ -395,9 +395,9 @@ func (sf *Client) dialParent(address string) (net.Conn, error) {
 			STCPMethod:   sf.cfg.STCPMethod,
 			STCPPassword: sf.cfg.STCPPassword,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			Compress:     sf.cfg.Compress,
 			ProxyURL:     sf.proxyURL,
 		},
+		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.Compress)},
 	}
 	return d.Dial("tcp", address)
 }

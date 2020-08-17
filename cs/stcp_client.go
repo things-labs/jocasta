@@ -10,13 +10,11 @@ import (
 
 // StcpDialer stcp dialer
 type StcpDialer struct {
-	Method       string
-	Password     string
-	Compress     bool
-	Timeout      time.Duration
-	Forward      Dialer
-	BeforeChains AdornConnsChain
-	AfterChains  AdornConnsChain
+	Method      string
+	Password    string
+	Timeout     time.Duration
+	Forward     Dialer
+	AfterChains AdornConnsChain
 }
 
 // Dial dial the remote server
@@ -34,10 +32,7 @@ func (sf *StcpDialer) DialContext(ctx context.Context, network, addr string) (ne
 	d := NetDialer{
 		sf.Timeout,
 		sf.Forward,
-		AdornConnsChain{
-			AdornCencryptCip(cip), AdornCsnappy(sf.Compress),
-		},
-		sf.BeforeChains,
+		AdornConnsChain{AdornCencryptCip(cip)},
 		sf.AfterChains,
 	}
 	return d.DialContext(ctx, network, addr)

@@ -9,9 +9,8 @@ import (
 
 // KCPDialer KCP client dialer
 type KCPDialer struct {
-	Config       KcpConfig
-	BeforeChains AdornConnsChain
-	AfterChains  AdornConnsChain
+	Config      KcpConfig
+	AfterChains AdornConnsChain
 }
 
 // Dial connects to the address on the named network.
@@ -34,9 +33,6 @@ func (sf *KCPDialer) DialContext(_ context.Context, _, addr string) (net.Conn, e
 
 	var c net.Conn = conn
 
-	for _, chain := range sf.AfterChains {
-		c = chain(c)
-	}
 	c = AdornCsnappy(!sf.Config.NoComp)(c)
 	for _, chain := range sf.AfterChains {
 		c = chain(c)

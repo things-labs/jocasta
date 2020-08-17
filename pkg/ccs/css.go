@@ -23,18 +23,16 @@ type Config struct {
 	STCPPassword string
 	// 仅KCP有效
 	KcpConfig cs.KcpConfig
-	// stcp支持压缩,tcp支持压缩,但jumper的tcp暂不支持压缩
-	Compress bool // 是否压缩
+
 	// 不为空,使用相应代理, 支持tcp, tls, stcp
 	ProxyURL *url.URL //only client used
 }
 
 // Dialer Client dialer
 type Dialer struct {
-	Protocol     string
-	Timeout      time.Duration
-	BeforeChains cs.AdornConnsChain
-	AfterChains  cs.AdornConnsChain
+	Protocol    string
+	Timeout     time.Duration
+	AfterChains cs.AdornConnsChain
 	Config
 }
 
@@ -70,32 +68,27 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 	switch sf.Protocol {
 	case "tcp":
 		d = &cs.TCPDialer{
-			Compress:     sf.Compress,
-			Timeout:      sf.Timeout,
-			Forward:      forward,
-			BeforeChains: sf.BeforeChains,
-			AfterChains:  sf.AfterChains,
+			Timeout:     sf.Timeout,
+			Forward:     forward,
+			AfterChains: sf.AfterChains,
 		}
 	case "tls":
 		d = &cs.TCPTlsDialer{
-			CaCert:       sf.CaCert,
-			Cert:         sf.Cert,
-			Key:          sf.Key,
-			Single:       sf.SingleTLS,
-			Timeout:      sf.Timeout,
-			Forward:      forward,
-			BeforeChains: sf.BeforeChains,
-			AfterChains:  sf.AfterChains,
+			CaCert:      sf.CaCert,
+			Cert:        sf.Cert,
+			Key:         sf.Key,
+			Single:      sf.SingleTLS,
+			Timeout:     sf.Timeout,
+			Forward:     forward,
+			AfterChains: sf.AfterChains,
 		}
 	case "stcp":
 		d = &cs.StcpDialer{
-			Method:       sf.STCPMethod,
-			Password:     sf.STCPPassword,
-			Compress:     sf.Compress,
-			Timeout:      sf.Timeout,
-			Forward:      forward,
-			BeforeChains: sf.BeforeChains,
-			AfterChains:  sf.AfterChains,
+			Method:      sf.STCPMethod,
+			Password:    sf.STCPPassword,
+			Timeout:     sf.Timeout,
+			Forward:     forward,
+			AfterChains: sf.AfterChains,
 		}
 	case "kcp":
 		d = &cs.KCPDialer{Config: sf.KcpConfig}
@@ -111,8 +104,9 @@ type Server struct {
 	Protocol string
 	Addr     string
 	Config
-	GoPool  gpool.Pool
-	Handler cs.Handler
+	GoPool      gpool.Pool
+	AfterChains cs.AdornConnsChain
+	Handler     cs.Handler
 
 	status chan error
 }
@@ -125,32 +119,33 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 	switch sf.Protocol {
 	case "tcp":
 		srv = &cs.TCPServer{
-			Addr:     sf.Addr,
-			Compress: sf.Compress,
-			Status:   sf.status,
-			GoPool:   sf.GoPool,
-			Handler:  sf.Handler,
+			Addr:        sf.Addr,
+			Status:      sf.status,
+			GoPool:      sf.GoPool,
+			AfterChains: sf.AfterChains,
+			Handler:     sf.Handler,
 		}
 	case "tls":
 		srv = &cs.TCPTlsServer{
-			Addr:    sf.Addr,
-			CaCert:  sf.CaCert,
-			Cert:    sf.Cert,
-			Key:     sf.Key,
-			Single:  sf.SingleTLS,
-			Status:  sf.status,
-			GoPool:  sf.GoPool,
-			Handler: sf.Handler,
+			Addr:        sf.Addr,
+			CaCert:      sf.CaCert,
+			Cert:        sf.Cert,
+			Key:         sf.Key,
+			Single:      sf.SingleTLS,
+			Status:      sf.status,
+			GoPool:      sf.GoPool,
+			AfterChains: sf.AfterChains,
+			Handler:     sf.Handler,
 		}
 	case "stcp":
 		srv = &cs.StcpServer{
-			Addr:     sf.Addr,
-			Method:   sf.STCPMethod,
-			Password: sf.STCPPassword,
-			Compress: sf.Compress,
-			Status:   sf.status,
-			GoPool:   sf.GoPool,
-			Handler:  sf.Handler,
+			Addr:        sf.Addr,
+			Method:      sf.STCPMethod,
+			Password:    sf.STCPPassword,
+			Status:      sf.status,
+			GoPool:      sf.GoPool,
+			AfterChains: sf.AfterChains,
+			Handler:     sf.Handler,
 		}
 	case "kcp":
 		srv = &cs.KCPServer{

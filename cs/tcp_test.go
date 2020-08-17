@@ -15,9 +15,11 @@ func TestTCP_Forward_Direct(t *testing.T) {
 		func() {
 			// server
 			srv := &TCPServer{
-				Addr:     "127.0.0.1:0",
-				Compress: compress,
-				Status:   make(chan error, 1),
+				Addr:   "127.0.0.1:0",
+				Status: make(chan error, 1),
+				AfterChains: AdornConnsChain{
+					AdornCsnappy(compress),
+				},
 				Handler: HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -36,7 +38,12 @@ func TestTCP_Forward_Direct(t *testing.T) {
 			defer srv.Close()
 
 			// client
-			d := &TCPDialer{Compress: compress, Timeout: time.Second}
+			d := &TCPDialer{
+				Timeout: time.Second,
+				AfterChains: AdornConnsChain{
+					AdornCsnappy(compress),
+				},
+			}
 			cli, err := d.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)
 			defer cli.Close()
@@ -56,9 +63,11 @@ func TestTCP_Forward_socks5(t *testing.T) {
 		func() {
 			// start server
 			srv := &TCPServer{
-				Addr:     "127.0.0.1:0",
-				Compress: compress,
-				Status:   make(chan error, 1),
+				Addr:   "127.0.0.1:0",
+				Status: make(chan error, 1),
+				AfterChains: AdornConnsChain{
+					AdornCsnappy(compress),
+				},
 				Handler: HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -104,9 +113,11 @@ func TestTCP_Forward_socks5(t *testing.T) {
 
 			// client
 			cli := &TCPDialer{
-				Compress: compress,
-				Timeout:  time.Second,
-				Forward:  Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
+				Timeout: time.Second,
+				Forward: Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
+				AfterChains: AdornConnsChain{
+					AdornCsnappy(compress),
+				},
 			}
 			conn, err := cli.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)

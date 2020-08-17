@@ -22,8 +22,10 @@ func TestSTCP_Forward_Direct(t *testing.T) {
 					Addr:     "127.0.0.1:0",
 					Method:   method,
 					Password: password,
-					Compress: compress,
 					Status:   make(chan error, 1),
+					AfterChains: AdornConnsChain{
+						AdornCsnappy(compress),
+					},
 					Handler: HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -44,8 +46,10 @@ func TestSTCP_Forward_Direct(t *testing.T) {
 				d := &StcpDialer{
 					Method:   method,
 					Password: password,
-					Compress: compress,
 					Timeout:  time.Second,
+					AfterChains: AdornConnsChain{
+						AdornCsnappy(compress),
+					},
 				}
 				cli, err := d.Dial("tcp", srv.LocalAddr())
 				require.NoError(t, err)
@@ -72,8 +76,10 @@ func TestStcp_Forward_socks5(t *testing.T) {
 					Addr:     "127.0.0.1:0",
 					Method:   method,
 					Password: password,
-					Compress: compress,
 					Status:   make(chan error, 1),
+					AfterChains: AdornConnsChain{
+						AdornCsnappy(compress),
+					},
 					Handler: HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -120,9 +126,11 @@ func TestStcp_Forward_socks5(t *testing.T) {
 				d := &StcpDialer{
 					Method:   method,
 					Password: password,
-					Compress: compress,
 					Timeout:  time.Second,
 					Forward:  Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
+					AfterChains: AdornConnsChain{
+						AdornCsnappy(compress),
+					},
 				}
 				conn, err := d.Dial("tcp", srv.LocalAddr())
 				require.NoError(t, err)
@@ -149,8 +157,10 @@ func TestSSSSTCP(t *testing.T) {
 		Addr:     "127.0.0.1:0",
 		Method:   method,
 		Password: password,
-		Compress: compress,
 		Status:   make(chan error, 1),
+		AfterChains: AdornConnsChain{
+			AdornCsnappy(compress),
+		},
 		Handler: HandlerFunc(func(inconn net.Conn) {
 			buf := make([]byte, 512)
 			n, err := inconn.Read(buf)
@@ -175,8 +185,10 @@ func TestSSSSTCP(t *testing.T) {
 			d := StcpDialer{
 				Method:   method,
 				Password: password,
-				Compress: compress,
 				Timeout:  time.Second,
+				AfterChains: AdornConnsChain{
+					AdornCsnappy(compress),
+				},
 			}
 			cli, err := d.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)

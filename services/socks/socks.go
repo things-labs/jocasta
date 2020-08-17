@@ -366,10 +366,10 @@ func (sf *Socks) Start() (err error) {
 			STCPMethod:   sf.cfg.STCPMethod,
 			STCPPassword: sf.cfg.STCPPassword,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			Compress:     sf.cfg.LocalCompress,
 		},
-		GoPool:  sf.goPool,
-		Handler: cs.HandlerFunc(sf.handle),
+		GoPool:      sf.goPool,
+		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
+		Handler:     cs.HandlerFunc(sf.handle),
 	}
 
 	var errChan <-chan error
@@ -601,8 +601,8 @@ func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
 				STCPMethod:   sf.cfg.STCPMethod,
 				STCPPassword: sf.cfg.STCPPassword,
 				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-				Compress:     sf.cfg.ParentCompress,
 			},
+			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
 		}
 		outConn, err = d.Dial("tcp", targetAddr)
 	case "ssh":

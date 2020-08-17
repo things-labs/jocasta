@@ -12,14 +12,16 @@ import (
 
 // TCPTlsServer tcp tls server
 type TCPTlsServer struct {
-	Addr    string
-	CaCert  []byte
-	Cert    []byte
-	Key     []byte
-	Single  bool
-	Status  chan error
-	GoPool  gpool.Pool
-	Handler Handler
+	Addr   string
+	CaCert []byte
+	Cert   []byte
+	Key    []byte
+	Single bool
+
+	Status      chan error
+	GoPool      gpool.Pool
+	AfterChains AdornConnsChain
+	Handler     Handler
 
 	mu sync.Mutex
 	ln net.Listener
@@ -42,7 +44,12 @@ func (sf *TCPTlsServer) ListenAndServe() error {
 		if err != nil {
 			return err
 		}
-		gpool.Go(sf.GoPool, func() { sf.Handler.ServerConn(conn) })
+		gpool.Go(sf.GoPool, func() {
+			for _, chain := range sf.AfterChains {
+				conn = chain(conn)
+			}
+			sf.Handler.ServerConn(conn)
+		})
 	}
 }
 
@@ -66,12 +73,10 @@ func (sf *TCPTlsServer) Close() (err error) {
 	return
 }
 
-func (sf *TCPTlsServer) listen() (ln net.Listener, err error) {
-	var cert tls.Certificate
-
-	cert, err = tls.X509KeyPair(sf.Cert, sf.Key)
+func (sf *TCPTlsServer) listen() (net.Listener, error) {
+	cert, err := tls.X509KeyPair(sf.Cert, sf.Key)
 	if err != nil {
-		return
+		return nil, err
 	}
 	config := &tls.Config{
 		Certificates: []tls.Certificate{cert},
@@ -84,8 +89,7 @@ func (sf *TCPTlsServer) listen() (ln net.Listener, err error) {
 		}
 		ok := clientCertPool.AppendCertsFromPEM(caBytes)
 		if !ok {
-			err = errors.New("parse root certificate")
-			return
+			return nil, errors.New("parse root certificate")
 		}
 		config.ClientCAs = clientCertPool
 		config.ClientAuth = tls.RequireAndVerifyClientCert

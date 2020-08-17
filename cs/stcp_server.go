@@ -14,10 +14,11 @@ type StcpServer struct {
 	Addr     string
 	Method   string
 	Password string
-	Compress bool
-	Status   chan error
-	GoPool   gpool.Pool
-	Handler  Handler
+
+	Status      chan error
+	GoPool      gpool.Pool
+	AfterChains AdornConnsChain
+	Handler     Handler
 
 	mu sync.Mutex
 	ln net.Listener
@@ -55,7 +56,9 @@ func (sf *StcpServer) ListenAndServe() error {
 		}
 		gpool.Go(sf.GoPool, func() {
 			conn = AdornCencrypt(sf.Method, sf.Password)(conn)
-			conn = AdornCsnappy(sf.Compress)(conn)
+			for _, chain := range sf.AfterChains {
+				conn = chain(conn)
+			}
 			sf.Handler.ServerConn(conn)
 		})
 	}

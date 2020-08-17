@@ -332,8 +332,8 @@ func (sf *UDP) dialParent(address string) (net.Conn, error) {
 			STCPMethod:   sf.cfg.STCPMethod,
 			STCPPassword: sf.cfg.STCPPassword,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			Compress:     sf.cfg.ParentCompress,
 		},
+		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
 	}
 	return d.Dial("tcp", address)
 }

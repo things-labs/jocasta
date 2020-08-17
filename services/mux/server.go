@@ -173,11 +173,11 @@ func (sf *Server) Start() (err error) {
 		sf.cfg.remote = "tcp:" + sf.cfg.remote
 
 		sf.channel = &cs.TCPServer{
-			Addr:     sf.cfg.local,
-			Compress: false,
-			Status:   status,
-			GoPool:   sword.GPool,
-			Handler:  cs.HandlerFunc(sf.handleTCP),
+			Addr:        sf.cfg.local,
+			Status:      status,
+			GoPool:      sword.GPool,
+			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(false)},
+			Handler:     cs.HandlerFunc(sf.handleTCP),
 		}
 	}
 	sf.gPool.Go(func() { _ = sf.channel.ListenAndServe() })
@@ -310,9 +310,9 @@ func (sf *Server) dialParent() (net.Conn, error) {
 			STCPMethod:   sf.cfg.STCPMethod,
 			STCPPassword: sf.cfg.STCPPassword,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			Compress:     sf.cfg.Compress,
 			ProxyURL:     sf.proxyURL,
 		},
+		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.Compress)},
 	}
 	return d.Dial("tcp", sf.cfg.Parent)
 }
