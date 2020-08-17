@@ -65,7 +65,7 @@ func TestKcp(t *testing.T) {
 				defer srv.Close()
 
 				// client
-				d := &KCPDialer{config}
+				d := &KCPDialer{Config: config}
 				cli, err := d.Dial("", srv.LocalAddr())
 				require.NoError(t, err)
 				defer cli.Close()

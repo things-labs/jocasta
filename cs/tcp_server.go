@@ -4,7 +4,6 @@ import (
 	"net"
 	"sync"
 
-	"github.com/thinkgos/jocasta/connection/csnappy"
 	"github.com/thinkgos/jocasta/lib/gpool"
 )
 
@@ -39,9 +38,7 @@ func (sf *TCPServer) ListenAndServe() error {
 			return err
 		}
 		gpool.Go(sf.GoPool, func() {
-			if sf.Compress {
-				conn = csnappy.New(conn)
-			}
+			conn = AdornCsnappy(sf.Compress)(conn)
 			sf.Handler.ServerConn(conn)
 		})
 	}

@@ -5,13 +5,13 @@ import (
 	"net"
 
 	"github.com/xtaci/kcp-go/v5"
-
-	"github.com/thinkgos/jocasta/connection/csnappy"
 )
 
 // KCPDialer KCP client dialer
 type KCPDialer struct {
-	Config KcpConfig
+	Config       KcpConfig
+	BeforeChains AdornConnsChain
+	AfterChains  AdornConnsChain
 }
 
 // Dial connects to the address on the named network.
@@ -32,8 +32,14 @@ func (sf *KCPDialer) DialContext(_ context.Context, _, addr string) (net.Conn, e
 	conn.SetWindowSize(sf.Config.SndWnd, sf.Config.RcvWnd)
 	conn.SetACKNoDelay(sf.Config.AckNodelay)
 
-	if sf.Config.NoComp {
-		return conn, nil
+	var c net.Conn = conn
+
+	for _, chain := range sf.AfterChains {
+		c = chain(c)
 	}
-	return csnappy.New(conn), nil
+	c = AdornCsnappy(!sf.Config.NoComp)(c)
+	for _, chain := range sf.AfterChains {
+		c = chain(c)
+	}
+	return c, nil
 }

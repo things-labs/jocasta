@@ -5,8 +5,6 @@ import (
 	"net"
 	"sync"
 
-	"github.com/thinkgos/jocasta/connection/cencrypt"
-	"github.com/thinkgos/jocasta/connection/csnappy"
 	"github.com/thinkgos/jocasta/lib/encrypt"
 	"github.com/thinkgos/jocasta/lib/gpool"
 )
@@ -56,12 +54,9 @@ func (sf *StcpServer) ListenAndServe() error {
 			return err
 		}
 		gpool.Go(sf.GoPool, func() {
-			if sf.Compress {
-				conn = csnappy.New(conn)
-			}
-			// 这里应永远不出错,加密
-			cip, _ := encrypt.NewCipher(sf.Method, sf.Password)
-			sf.Handler.ServerConn(cencrypt.New(conn, cip))
+			conn = AdornCencrypt(sf.Method, sf.Password)(conn)
+			conn = AdornCsnappy(sf.Compress)(conn)
+			sf.Handler.ServerConn(conn)
 		})
 	}
 }

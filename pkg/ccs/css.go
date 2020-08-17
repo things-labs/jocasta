@@ -31,10 +31,10 @@ type Config struct {
 
 // Dialer Client dialer
 type Dialer struct {
-	Protocol    string
-	Timeout     time.Duration
-	PreChains   cs.AdornConnsChain
-	AfterChains cs.AdornConnsChain
+	Protocol     string
+	Timeout      time.Duration
+	BeforeChains cs.AdornConnsChain
+	AfterChains  cs.AdornConnsChain
 	Config
 }
 
@@ -70,32 +70,32 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 	switch sf.Protocol {
 	case "tcp":
 		d = &cs.TCPDialer{
-			Compress:    sf.Compress,
-			Timeout:     sf.Timeout,
-			Forward:     forward,
-			PreChains:   sf.PreChains,
-			AfterChains: sf.AfterChains,
+			Compress:     sf.Compress,
+			Timeout:      sf.Timeout,
+			Forward:      forward,
+			BeforeChains: sf.BeforeChains,
+			AfterChains:  sf.AfterChains,
 		}
 	case "tls":
 		d = &cs.TCPTlsDialer{
-			CaCert:      sf.CaCert,
-			Cert:        sf.Cert,
-			Key:         sf.Key,
-			Single:      sf.SingleTLS,
-			Timeout:     sf.Timeout,
-			Forward:     forward,
-			PreChains:   sf.PreChains,
-			AfterChains: sf.AfterChains,
+			CaCert:       sf.CaCert,
+			Cert:         sf.Cert,
+			Key:          sf.Key,
+			Single:       sf.SingleTLS,
+			Timeout:      sf.Timeout,
+			Forward:      forward,
+			BeforeChains: sf.BeforeChains,
+			AfterChains:  sf.AfterChains,
 		}
 	case "stcp":
 		d = &cs.StcpDialer{
-			Method:      sf.STCPMethod,
-			Password:    sf.STCPPassword,
-			Compress:    sf.Compress,
-			Timeout:     sf.Timeout,
-			Forward:     forward,
-			PreChains:   sf.PreChains,
-			AfterChains: sf.AfterChains,
+			Method:       sf.STCPMethod,
+			Password:     sf.STCPPassword,
+			Compress:     sf.Compress,
+			Timeout:      sf.Timeout,
+			Forward:      forward,
+			BeforeChains: sf.BeforeChains,
+			AfterChains:  sf.AfterChains,
 		}
 	case "kcp":
 		d = &cs.KCPDialer{Config: sf.KcpConfig}
