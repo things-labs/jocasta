@@ -94,7 +94,7 @@ type Config struct {
 	Debug       bool
 
 	// private
-	tcpTlsConfig cs.TCPTlsConfig
+	tcpTlsConfig cs.TLSConfig
 	rateLimit    rate.Limit
 }
 type SPS struct {

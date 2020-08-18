@@ -7,8 +7,8 @@ import (
 	"errors"
 )
 
-// TCPTlsConfig tcp tls config
-type TCPTlsConfig struct {
+// TLSConfig tcp tls config
+type TLSConfig struct {
 	CaCert []byte
 	Cert   []byte
 	Key    []byte
@@ -16,7 +16,7 @@ type TCPTlsConfig struct {
 }
 
 // ClientConfig client tls config
-func (sf *TCPTlsConfig) ClientConfig() (*tls.Config, error) {
+func (sf *TLSConfig) ClientConfig() (*tls.Config, error) {
 	if sf.Single {
 		return singleTLSConfig(sf.CaCert)
 	}
@@ -24,7 +24,7 @@ func (sf *TCPTlsConfig) ClientConfig() (*tls.Config, error) {
 }
 
 // ServerConfig server tls config
-func (sf *TCPTlsConfig) ServerConfig() (*tls.Config, error) {
+func (sf *TLSConfig) ServerConfig() (*tls.Config, error) {
 	cert, err := tls.X509KeyPair(sf.Cert, sf.Key)
 	if err != nil {
 		return nil, err

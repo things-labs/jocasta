@@ -47,7 +47,7 @@ type ClientConfig struct {
 	// 跳板机
 	RawProxyURL string // default empty
 	// private
-	tcpTlsConfig cs.TCPTlsConfig
+	tcpTlsConfig cs.TLSConfig
 }
 
 type ClientUDPConnItem struct {

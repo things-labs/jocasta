@@ -11,7 +11,7 @@ import (
 // TCPServer tcp server
 type TCPServer struct {
 	Addr   string
-	Config *tls.Config
+	Config *tls.Config // if not nil it will use tls
 
 	Status      chan error
 	GoPool      gpool.Pool

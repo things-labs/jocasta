@@ -39,7 +39,7 @@ type BridgeConfig struct {
 	// 其它
 	Timeout time.Duration `validate:"required"` // 连接超时时间 default 2s
 	// private
-	tcpTlsConfig cs.TCPTlsConfig
+	tcpTlsConfig cs.TLSConfig
 }
 
 type Bridge struct {

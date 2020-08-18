@@ -108,7 +108,7 @@ type Config struct {
 	RawProxyURL string
 
 	// private
-	tcpTlsConfig  cs.TCPTlsConfig
+	tcpTlsConfig  cs.TLSConfig
 	rateLimit     rate.Limit
 	sshAuthMethod ssh.AuthMethod
 }

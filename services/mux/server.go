@@ -54,7 +54,7 @@ type ServerConfig struct {
 	IsUDP bool   // default false
 
 	// private
-	tcpTlsConfig cs.TCPTlsConfig
+	tcpTlsConfig cs.TLSConfig
 	// 本地暴露的地址 格式:ip:port
 	local string
 	// 远端要穿透的地址 格式:ip:port

@@ -61,7 +61,7 @@ type Config struct {
 	//      socks5://host:port
 	RawProxyURL string
 	// private
-	tcpTlsConfig cs.TCPTlsConfig
+	tcpTlsConfig cs.TLSConfig
 }
 
 type connItem struct {

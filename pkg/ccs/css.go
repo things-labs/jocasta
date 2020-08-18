@@ -14,7 +14,7 @@ import (
 // Config config
 type Config struct {
 	// 仅tls有效
-	TCPTlsConfig cs.TCPTlsConfig
+	TCPTlsConfig cs.TLSConfig
 	// 仅stcp有效
 	StcpConfig cs.StcpConfig
 	// 仅KCP有效

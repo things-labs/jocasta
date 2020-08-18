@@ -48,7 +48,7 @@ type Config struct {
 	// 其它
 	Timeout time.Duration `validate:"required"` // 连接父级或真实服务器超时时间, default: 2s
 	// private
-	tcpTlsConfig cs.TCPTlsConfig
+	tcpTlsConfig cs.TLSConfig
 }
 
 type connItem struct {

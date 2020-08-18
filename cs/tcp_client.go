@@ -9,7 +9,7 @@ import (
 
 // TCPDialer tcp dialer
 type TCPDialer struct {
-	Config      *tls.Config
+	Config      *tls.Config // if not nil it will use tls
 	Timeout     time.Duration
 	Forward     Dialer
 	AfterChains AdornConnsChain

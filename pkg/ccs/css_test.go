@@ -357,7 +357,7 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 				Protocol: "tls",
 				Addr:     "127.0.0.1:0",
 				Config: Config{
-					TCPTlsConfig: cs.TCPTlsConfig{
+					TCPTlsConfig: cs.TLSConfig{
 						CaCert: nil,
 						Cert:   []byte(crt),
 						Key:    []byte(key),
@@ -390,7 +390,7 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 				Protocol: "tls",
 				Timeout:  time.Second,
 				Config: Config{
-					TCPTlsConfig: cs.TCPTlsConfig{
+					TCPTlsConfig: cs.TLSConfig{
 						CaCert: []byte(crt),
 						Cert:   []byte(crt),
 						Key:    []byte(key),
@@ -428,7 +428,7 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 					Protocol: "tls",
 					Addr:     "127.0.0.1:0",
 					Config: Config{
-						TCPTlsConfig: cs.TCPTlsConfig{
+						TCPTlsConfig: cs.TLSConfig{
 							CaCert: nil,
 							Cert:   []byte(crt),
 							Key:    []byte(key),
@@ -483,7 +483,7 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 					Protocol: "tls",
 					Timeout:  time.Second,
 					Config: Config{
-						TCPTlsConfig: cs.TCPTlsConfig{
+						TCPTlsConfig: cs.TLSConfig{
 							CaCert: []byte(crt),
 							Cert:   []byte(crt),
 							Key:    []byte(key),

@@ -101,7 +101,7 @@ type Config struct {
 	Debug      bool
 
 	// private
-	tcpTlsConfig  cs.TCPTlsConfig
+	tcpTlsConfig  cs.TLSConfig
 	sshAuthMethod ssh.AuthMethod
 	rateLimit     rate.Limit
 	parentAuth    *proxy.Auth
