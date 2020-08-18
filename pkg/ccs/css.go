@@ -68,8 +68,12 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 			AfterChains: sf.AfterChains,
 		}
 	case "tls":
-		d = &cs.TCPTlsDialer{
-			Config:      sf.TCPTlsConfig,
+		tlsConfig, err := sf.TCPTlsConfig.ClientConfig()
+		if err != nil {
+			return nil, err
+		}
+		d = &cs.TCPDialer{
+			Config:      tlsConfig,
 			Timeout:     sf.Timeout,
 			Forward:     forward,
 			AfterChains: sf.AfterChains,
@@ -120,9 +124,14 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 			Handler:     sf.Handler,
 		}
 	case "tls":
-		srv = &cs.TCPTlsServer{
+		tlsConfig, err := sf.TCPTlsConfig.ServerConfig()
+		if err != nil {
+			sf.status <- err
+			return nil, sf.status
+		}
+		srv = &cs.TCPServer{
 			Addr:        sf.Addr,
-			Config:      sf.TCPTlsConfig,
+			Config:      tlsConfig,
 			Status:      sf.status,
 			GoPool:      sf.GoPool,
 			AfterChains: sf.AfterChains,

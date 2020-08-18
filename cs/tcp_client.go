@@ -2,12 +2,14 @@ package cs
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"time"
 )
 
 // TCPDialer tcp dialer
 type TCPDialer struct {
+	Config      *tls.Config
 	Timeout     time.Duration
 	Forward     Dialer
 	AfterChains AdornConnsChain
@@ -26,5 +28,15 @@ func (sf *TCPDialer) DialContext(ctx context.Context, network, addr string) (net
 		nil,
 		sf.AfterChains,
 	}
+	if sf.Config != nil {
+		d.Chains = AdornConnsChain{adornTLS(sf.Config)}
+	}
 	return d.DialContext(ctx, network, addr)
+}
+
+// adornTLS tls chain
+func adornTLS(conf *tls.Config) func(conn net.Conn) net.Conn {
+	return func(conn net.Conn) net.Conn {
+		return tls.Client(conn, conf)
+	}
 }

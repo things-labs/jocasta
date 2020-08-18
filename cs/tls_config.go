@@ -1,60 +1,55 @@
 package cs
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"net"
-	"time"
 )
 
-// TCPTlsDialer tcp tls dialer
-type TCPTlsDialer struct {
-	Config      TCPTlsConfig
-	Timeout     time.Duration
-	Forward     Dialer
-	AfterChains AdornConnsChain
+// TCPTlsConfig tcp tls config
+type TCPTlsConfig struct {
+	CaCert []byte
+	Cert   []byte
+	Key    []byte
+	Single bool
 }
 
-// Dial connects to the address on the named network.
-func (sf *TCPTlsDialer) Dial(network, addr string) (net.Conn, error) {
-	return sf.DialContext(context.Background(), network, addr)
-}
-
-// DialContext connects to the address on the named network using the provided context.
-func (sf *TCPTlsDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
-	var err error
-	var conf *tls.Config
-
-	if sf.Config.Single {
-		conf, err = SingleTLSConfig(sf.Config.CaCert)
-	} else {
-		conf, err = TLSConfig(sf.Config.Cert, sf.Config.Key, sf.Config.CaCert)
+// ClientConfig client tls config
+func (sf *TCPTlsConfig) ClientConfig() (*tls.Config, error) {
+	if sf.Single {
+		return singleTLSConfig(sf.CaCert)
 	}
+	return tlsConfig(sf.Cert, sf.Key, sf.CaCert)
+}
+
+// ServerConfig server tls config
+func (sf *TCPTlsConfig) ServerConfig() (*tls.Config, error) {
+	cert, err := tls.X509KeyPair(sf.Cert, sf.Key)
 	if err != nil {
 		return nil, err
 	}
-
-	d := NetDialer{
-		sf.Timeout,
-		sf.Forward,
-		AdornConnsChain{adornTLS(conf)},
-		sf.AfterChains,
+	config := &tls.Config{
+		Certificates: []tls.Certificate{cert},
 	}
-	return d.DialContext(ctx, network, addr)
+	if !sf.Single {
+		clientCertPool := x509.NewCertPool()
+		caBytes := sf.Cert
+		if sf.CaCert != nil {
+			caBytes = sf.CaCert
+		}
+		ok := clientCertPool.AppendCertsFromPEM(caBytes)
+		if !ok {
+			return nil, errors.New("parse root certificate")
+		}
+		config.ClientCAs = clientCertPool
+		config.ClientAuth = tls.RequireAndVerifyClientCert
+	}
+	return config, nil
 }
 
-// adornTLS tls chain
-func adornTLS(conf *tls.Config) func(conn net.Conn) net.Conn {
-	return func(conn net.Conn) net.Conn {
-		return tls.Client(conn, conf)
-	}
-}
-
-// TLSConfig tls config
-func TLSConfig(cert, key, caCert []byte) (*tls.Config, error) {
+// tlsConfig tls config
+func tlsConfig(cert, key, caCert []byte) (*tls.Config, error) {
 	certificate, err := tls.X509KeyPair(cert, key)
 	if err != nil {
 		return nil, err
@@ -98,8 +93,8 @@ func TLSConfig(cert, key, caCert []byte) (*tls.Config, error) {
 	}, nil
 }
 
-// SingleTLSConfig single tls config
-func SingleTLSConfig(caCertBytes []byte) (*tls.Config, error) {
+// singleTLSConfig single tls config
+func singleTLSConfig(caCertBytes []byte) (*tls.Config, error) {
 	if len(caCertBytes) == 0 {
 		return nil, errors.New("invalid root certificate")
 	}

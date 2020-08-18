@@ -1,6 +1,7 @@
 package cs
 
 import (
+	"crypto/tls"
 	"net"
 	"sync"
 
@@ -9,7 +10,8 @@ import (
 
 // TCPServer tcp server
 type TCPServer struct {
-	Addr string
+	Addr   string
+	Config *tls.Config
 
 	Status      chan error
 	GoPool      gpool.Pool
@@ -23,6 +25,10 @@ type TCPServer struct {
 // ListenAndServe listen and serve
 func (sf *TCPServer) ListenAndServe() error {
 	ln, err := net.Listen("tcp", sf.Addr)
+	if sf.Config != nil {
+		ln = tls.NewListener(ln, sf.Config)
+	}
+
 	if err != nil {
 		setStatus(sf.Status, err)
 		return err
