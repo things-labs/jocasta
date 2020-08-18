@@ -1,6 +1,7 @@
 package cs
 
 import (
+	"context"
 	"net"
 	"testing"
 	"time"
@@ -11,6 +12,32 @@ import (
 
 	"github.com/thinkgos/jocasta/lib/encrypt"
 )
+
+func TestStcp_improve_coverage(t *testing.T) {
+	t.Run("client invalid method", func(t *testing.T) {
+		d := StcpDialer{
+			Config: StcpConfig{
+				Method:   "invalid",
+				Password: "",
+			},
+		}
+		_, err := d.DialContext(context.Background(), "tcp", "127.0.0.1:8080")
+		require.Error(t, err)
+	})
+
+	t.Run("server empty method or empty password ", func(t *testing.T) {
+		d := StcpServer{
+			Addr: "127.0.0.1:0",
+			Config: StcpConfig{
+				Method:   "",
+				Password: "",
+			},
+			Status: make(chan error, 1),
+		}
+		err := d.ListenAndServe()
+		require.Error(t, err)
+	})
+}
 
 func TestSTCP_Forward_Direct(t *testing.T) {
 	password := "pass_word"
