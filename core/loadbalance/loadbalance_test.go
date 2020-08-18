@@ -18,19 +18,23 @@ func (testSelector) Select(UpstreamPool, string) *Upstream {
 	return nil
 }
 
-func TestRegisterSelector(t *testing.T) {
-	assert.Panics(t, func() { RegisterSelector("", nil) })
-	assert.Panics(t, func() { RegisterSelector("", func() Selector { return nil }) })
-	assert.Panics(t, func() { RegisterSelector("roundrobin", func() Selector { return new(RoundRobin) }) })
-	assert.NotPanics(t, func() { RegisterSelector("testSelector", func() Selector { return new(testSelector) }) })
-}
+func TestSelector(t *testing.T) {
+	t.Run("RegisterSelector", func(t *testing.T) {
+		assert.Panics(t, func() { RegisterSelector("", nil) })
+		assert.Panics(t, func() { RegisterSelector("", func() Selector { return nil }) })
+		assert.Panics(t, func() { RegisterSelector("roundrobin", func() Selector { return new(RoundRobin) }) })
+		assert.NotPanics(t, func() { RegisterSelector("testSelector", func() Selector { return new(testSelector) }) })
+	})
+	t.Run("getNewSelectorFunction", func(t *testing.T) {
+		assert.True(t, HasSupportMethod("hash"))
+		assert.NotNil(t, getNewSelectorFunction("hash"))
 
-func Test_getNewSelectorFunction(t *testing.T) {
-	assert.True(t, HasSupportMethod("hash"))
-	assert.NotNil(t, getNewSelectorFunction("hash"))
-
-	assert.False(t, HasSupportMethod("invalid"))
-	assert.NotNil(t, getNewSelectorFunction("invalid"))
+		assert.False(t, HasSupportMethod("invalid"))
+		assert.NotNil(t, getNewSelectorFunction("invalid"))
+	})
+	t.Run("Methods", func(t *testing.T) {
+		Methods()
+	})
 }
 
 func TestBalanced(t *testing.T) {

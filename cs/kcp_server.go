@@ -11,6 +11,7 @@ import (
 )
 
 // KCPServer 传输,可选snappy压缩
+// TODO: BUG 当对端关闭时,连接并未关闭,UDP无状态连接的原因
 type KCPServer struct {
 	Addr   string
 	Config KcpConfig

@@ -3,14 +3,17 @@ package extnet
 import (
 	"bytes"
 	"net"
-	"strconv"
 	"strings"
+
+	"github.com/thinkgos/jocasta/internal/bytesconv"
 )
 
+// IsErrClosed is error closed
 func IsErrClosed(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "use of closed network connection")
 }
 
+// IsErrTimeout is net error timeout
 func IsErrTimeout(err error) bool {
 	if err == nil {
 		return false
@@ -19,62 +22,65 @@ func IsErrTimeout(err error) bool {
 	return ok && e.Timeout()
 }
 
+// IsErrRefused is error connection refused
 func IsErrRefused(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "connection refused")
 }
 
+// IsErrDeadline is error i/o deadline reached
 func IsErrDeadline(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "i/o deadline reached")
 }
 
+// IsErrSocketNotConnected is error socket is not connected
 func IsErrSocketNotConnected(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "socket is not connected")
 }
 
-// IsDomain 是否是域名
-func IsDomain(address string) bool {
-	return net.ParseIP(address) == nil
+// IsDomain 是否是域名,只检查host或ip,不可带port,否则会误判
+func IsDomain(host string) bool {
+	return net.ParseIP(host) == nil
 }
 
-/*
-net.LookupIP may cause  deadlock in windows
-https://github.com/golang/go/issues/24178
-*/
-func IsInternalIP(address string) bool {
-	var outIPs []net.IP
+// IsIntranet is intranet network,if host is domain,it will looks up host using the local resolver.
+// net.LookupIP may cause deadlock in windows
+// see https://github.com/golang/go/issues/24178
+// 局域网IP段:
+// 		A类: 10.0.0.0~10.255.255.255
+// 		B类: 172.16.0.0~172.31.255.255
+// 		C类: 192.168.0.0~192.168.255.255
+func IsIntranet(host string) bool {
+	var ips []net.IP
 	var err error
 
-	if IsDomain(address) {
-		if outIPs, err = net.LookupIP(address); err != nil {
-			return false
-		}
-	} else {
-		outIPs = []net.IP{net.ParseIP(address)}
+	if _ip := net.ParseIP(host); _ip != nil { // is ip
+		ips = []net.IP{_ip}
+	} else if ips, err = net.LookupIP(host); err != nil { // is domain
+		return false
 	}
 
-	for _, ip := range outIPs {
-		if ip.IsLoopback() {
+	for _, ip := range ips {
+		if ip4 := ip.To4(); ip4 != nil &&
+			(ip4[0] == 127 || // ipv4 loopback
+				ip4[0] == 10 || // A类
+				(ip4[0] == 172 && (ip4[1] >= 16) && (ip4[1] <= 31)) || // B类
+				(ip4[0] == 192 && ip4[1] == 168)) || // C类
+			ip.Equal(net.IPv6loopback) { // ipv6 loopback
 			return true
-		}
-		if ip.To4().Mask(net.IPv4Mask(255, 0, 0, 0)).String() == "10.0.0.0" {
-			return true
-		}
-		if ip.To4().Mask(net.IPv4Mask(255, 255, 0, 0)).String() == "192.168.0.0" {
-			return true
-		}
-		if ip.To4().Mask(net.IPv4Mask(255, 0, 0, 0)).String() == "172.0.0.0" {
-			i, _ := strconv.Atoi(strings.Split(ip.To4().String(), ".")[1])
-			return i >= 16 && i <= 31
 		}
 	}
 	return false
 }
 
+var httpMethod = []string{
+	"GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH",
+	"get", "head", "post", "put", "delete", "connect", "options", "trace", "patch",
+}
+
 // IsHTTP 是否是http请求
 func IsHTTP(head []byte) bool {
-	keys := []string{"GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"}
-	for _, key := range keys {
-		if bytes.HasPrefix(head, []byte(key)) || bytes.HasPrefix(head, []byte(strings.ToLower(key))) {
+	for _, method := range httpMethod {
+		if len(head) >= len(method) && bytesconv.Bytes2Str(head[:len(method)]) == method {
 			return true
 		}
 	}

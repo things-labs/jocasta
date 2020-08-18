@@ -636,7 +636,7 @@ func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
 func (sf *Socks) dialDirect(address string, localAddr string) (conn net.Conn, err error) {
 	if sf.cfg.BindListen {
 		localIP, _, _ := net.SplitHostPort(localAddr)
-		if !extnet.IsInternalIP(localIP) {
+		if !extnet.IsIntranet(localIP) {
 			local, _ := net.ResolveTCPAddr("tcp", localIP+":0")
 			d := net.Dialer{
 				Timeout:   sf.cfg.Timeout,
@@ -673,7 +673,7 @@ func (sf *Socks) proxyAuth(auth proxy.Auth, fromSS bool) *proxy.Auth {
 func (sf *Socks) isUseProxy(addr string) bool {
 	if len(sf.cfg.Parent) > 0 {
 		host, _, _ := net.SplitHostPort(addr)
-		if extnet.IsDomain(host) && sf.cfg.Always || !extnet.IsInternalIP(host) {
+		if extnet.IsDomain(host) && sf.cfg.Always || !extnet.IsIntranet(host) {
 			if sf.cfg.Always {
 				return true
 			}

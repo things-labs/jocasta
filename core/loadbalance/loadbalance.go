@@ -59,6 +59,17 @@ func HasSupportMethod(method string) bool {
 	return ok
 }
 
+// Methods get a copy support method
+func Methods() []string {
+	selectorMux.Lock()
+	defer selectorMux.Unlock()
+	method := make([]string, 0, len(selectors))
+	for k := range selectors {
+		method = append(method, k)
+	}
+	return method
+}
+
 // Balanced load balance
 type Balanced struct {
 	method   string

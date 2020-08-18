@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"github.com/thinkgos/jocasta/core/loadbalance"
 	"github.com/thinkgos/jocasta/lib/encrypt"
 	shttp "github.com/thinkgos/jocasta/services/http"
 )
@@ -78,7 +80,7 @@ func init() {
 	// 代理模式
 	flags.StringVar(&httpCfg.Intelligent, "intelligent", "intelligent", "settting intelligent HTTP, SOCKS5 proxy mode, can be <intelligent|direct|parent>")
 	// 负载均衡
-	flags.StringVar(&httpCfg.LoadBalanceMethod, "lb-method", "roundrobin", "load balance method when use multiple parent,can be <roundrobin|leastconn|leasttime|hash|weight>")
+	flags.StringVar(&httpCfg.LoadBalanceMethod, "lb-method", "roundrobin", fmt.Sprintf("load balance method when use multiple parent,can be one of <%s>", strings.Join(loadbalance.Methods(), ", ")))
 	flags.DurationVar(&httpCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp timeout duration of connecting to parent")
 	flags.DurationVar(&httpCfg.LoadBalanceRetryTime, "lb-retrytime", time.Second, "sleep time duration after checking")
 	flags.BoolVar(&httpCfg.LoadBalanceHashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")

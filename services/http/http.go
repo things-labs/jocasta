@@ -33,6 +33,7 @@ import (
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/jocasta/lib/ternary"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/httpc"
 	"github.com/thinkgos/jocasta/pkg/sword"
@@ -72,7 +73,7 @@ type Config struct {
 	ProxyFile   string        // 代理域文件名 default: blocked
 	DirectFile  string        // 直连域文件名 default: direct
 	HTTPTimeout time.Duration // http连接主机超时时间 default: 3s
-	Interval    time.Duration // 检查域名间隔 default 10s
+	Interval    time.Duration // 检查域名间隔 default: 10s
 	// basic auth 配置
 	AuthFile       string        // 授权文件,一行一条(格式user:passwrod), default empty
 	Auth           []string      // 授权用户密码对, default empty
@@ -89,7 +90,7 @@ type Config struct {
 	//      intelligent blocked和direct都没有,智能判断
 	Intelligent string
 	// 负载均衡
-	LoadBalanceMethod     string        // 负载均衡方法, roundrobin|leastconn|leasttime|hash|weight default: roundrobin
+	LoadBalanceMethod     string        // 负载均衡方法, random|roundrobin|leastconn|hash|addrhash|leasttime|weight default: roundrobin
 	LoadBalanceTimeout    time.Duration // 负载均衡dial超时时间 default 500ms
 	LoadBalanceRetryTime  time.Duration // 负载均衡重试时间间隔 default 1000ms
 	LoadBalanceHashTarget bool          // hash方法时,选择hash的目标, default: false
@@ -150,7 +151,10 @@ func (sf *HTTP) inspectConfig() (err error) {
 			return fmt.Errorf("parent type required for %s", sf.cfg.Parent)
 		}
 		if !strext.Contains([]string{"tcp", "tls", "stcp", "kcp", "ssh"}, sf.cfg.ParentType) {
-			return fmt.Errorf("parent type suport <tcp|tls|kcp|ssh>")
+			return fmt.Errorf("parent type suport <tcp|tls|stcp|kcp|ssh>")
+		}
+		if !strext.Contains(loadbalance.Methods(), sf.cfg.LoadBalanceMethod) {
+			return fmt.Errorf("load balance method should be oneof <%s>", strings.Join(loadbalance.Methods(), ", "))
 		}
 
 		// ssh 证书
@@ -239,7 +243,7 @@ func (sf *HTTP) InitService() (err error) {
 		}
 	}
 
-	// init lb TODO: 未认真检查
+	// init lb
 	if len(sf.cfg.Parent) > 0 {
 		sf.filters = filter.New(sf.cfg.Intelligent,
 			filter.WithTimeout(sf.cfg.HTTPTimeout),
@@ -486,11 +490,8 @@ func (sf *HTTP) handle(inConn net.Conn) {
 			return
 		}
 	}
-	method := "DIRECT"
-	if useProxy {
-		method = "PROXY"
-	}
-	sf.log.Infof("< %s > use %s", targetDomainAddr, method)
+
+	sf.log.Infof("< %s > use %s", targetDomainAddr, ternary.IfString(useProxy, "PROXY", "DIRECT"))
 
 	if sf.cfg.rateLimit > 0 {
 		targetConn = ciol.New(targetConn, ciol.WithReadLimiter(sf.cfg.rateLimit))
@@ -617,7 +618,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 func (sf *HTTP) dialDirect(address string, localAddr string) (net.Conn, error) {
 	if sf.cfg.BindListen {
 		localIP, _, _ := net.SplitHostPort(localAddr)
-		if !extnet.IsInternalIP(localIP) {
+		if !extnet.IsIntranet(localIP) {
 			local, _ := net.ResolveTCPAddr("tcp", localIP+":0")
 			d := net.Dialer{
 				Timeout:   sf.cfg.Timeout,
@@ -640,16 +641,17 @@ func (sf *HTTP) dialSSH(lAddr string) (*ssh.Client, error) {
 	})
 }
 
-func (sf *HTTP) isUseProxy(address string) bool {
+func (sf *HTTP) isUseProxy(addr string) bool {
 	if len(sf.cfg.Parent) > 0 {
-		host, _, _ := net.SplitHostPort(address)
-		if extnet.IsDomain(host) && sf.cfg.Always || !extnet.IsInternalIP(host) {
-			if sf.cfg.Always {
-				return true
-			}
-			useProxy, isInMap, _, _ := sf.filters.IsProxy(address)
-			if !isInMap {
-				sf.filters.Add(address, sf.resolve(address))
+		host, _, _ := net.SplitHostPort(addr)
+		if extnet.IsDomain(host) && sf.cfg.Always {
+			return true
+		}
+
+		if !extnet.IsIntranet(host) {
+			useProxy, inMap, _, _ := sf.filters.IsProxy(addr)
+			if !inMap {
+				sf.filters.Add(addr, sf.resolve(addr))
 			}
 			return useProxy
 		}
