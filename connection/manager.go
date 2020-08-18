@@ -17,7 +17,7 @@ type Manager struct {
 }
 
 // New a manager
-// gcInterval: 回收间隔
+// gcInterval: 回收间隔, <=0将不启动
 // gcIterCb: 回收回调函数, 当间隔到后,检查所有的key,value,返回true将删除对应的key
 func New(gcInterval time.Duration, gcIterCb func(key string, value interface{}, now time.Time) bool) *Manager {
 	return &Manager{
@@ -27,9 +27,9 @@ func New(gcInterval time.Duration, gcIterCb func(key string, value interface{}, 
 	}
 }
 
-// RunWatch watch conn interval
-func (sf *Manager) RunWatch(ctx context.Context) {
-	if sf.interval <= 0 {
+// Watch watch conn interval,should run in a goroutine
+func (sf *Manager) Watch(ctx context.Context) {
+	if sf.interval <= 0 || sf.gcIterCb == nil {
 		return
 	}
 	var now time.Time

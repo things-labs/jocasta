@@ -133,7 +133,7 @@ func (sf *Client) Start() (err error) {
 	}
 
 	sf.gPool.Go(func() {
-		sf.udpConns.RunWatch(sf.ctx)
+		sf.udpConns.Watch(sf.ctx)
 	})
 
 	sf.gPool.Go(func() {

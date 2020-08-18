@@ -185,7 +185,7 @@ func (sf *TCP) Start() (err error) {
 	sf.channel = channel
 
 	if sf.cfg.ParentType == "udp" {
-		sf.goPool.Go(func() { sf.userConns.RunWatch(sf.ctx) })
+		sf.goPool.Go(func() { sf.userConns.Watch(sf.ctx) })
 	}
 
 	sf.log.Infof("[ TCP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)

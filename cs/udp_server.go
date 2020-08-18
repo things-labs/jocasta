@@ -2,7 +2,6 @@ package cs
 
 import (
 	"net"
-	"strconv"
 
 	"github.com/thinkgos/jocasta/lib/gpool"
 )
@@ -25,18 +24,24 @@ type UDPServer struct {
 
 // ListenAndServe listen and server
 func (sf *UDPServer) ListenAndServe() error {
-	h, p, err := net.SplitHostPort(sf.Addr)
-	if err != nil {
-		setStatus(sf.Status, err)
-		return err
-	}
-	port, err := strconv.Atoi(p)
+	// h, p, err := net.SplitHostPort(sf.Addr)
+	// if err != nil {
+	// 	setStatus(sf.Status, err)
+	// 	return err
+	// }
+	// port, err := strconv.Atoi(p)
+	// if err != nil {
+	// 	setStatus(sf.Status, err)
+	// 	return err
+	// }
+	//
+	// addr := &net.UDPAddr{IP: net.ParseIP(h), Port: port}
+	addr, err := net.ResolveUDPAddr("udp", sf.Addr)
 	if err != nil {
 		setStatus(sf.Status, err)
 		return err
 	}
 
-	addr := &net.UDPAddr{IP: net.ParseIP(h), Port: port}
 	sf.UDPConn, err = net.ListenUDP("udp", addr)
 	if err != nil {
 		setStatus(sf.Status, err)

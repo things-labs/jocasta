@@ -190,7 +190,7 @@ func (sf *Server) Start() (err error) {
 
 	if sf.cfg.IsUDP {
 		sf.gPool.Go(func() {
-			sf.udpConns.RunWatch(sf.ctx)
+			sf.udpConns.Watch(sf.ctx)
 		})
 	}
 	sf.log.Infof("use %s parent %s", sf.cfg.ParentType, sf.cfg.Parent)

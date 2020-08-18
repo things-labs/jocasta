@@ -123,7 +123,7 @@ func (sf *Bridge) Start() (err error) {
 	if err = <-errChan; err != nil {
 		return
 	}
-	sf.gPool.Go(func() { sf.clientConns.RunWatch(sf.ctx) })
+	sf.gPool.Go(func() { sf.clientConns.Watch(sf.ctx) })
 	sf.log.Infof("[ Bridge ] use bridge %s on %s", sf.cfg.LocalType, sf.channel.LocalAddr())
 	return
 }

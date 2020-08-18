@@ -147,7 +147,7 @@ func (sf *UDP) Start() (err error) {
 	}
 	sf.channel = channel
 
-	sf.gPool.Go(func() { sf.conns.RunWatch(sf.ctx) })
+	sf.gPool.Go(func() { sf.conns.Watch(sf.ctx) })
 	sf.log.Infof("[ UDP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)
 	sf.log.Infof("[ UDP ] use proxy udp on %s", sf.channel.LocalAddr())
 	return
