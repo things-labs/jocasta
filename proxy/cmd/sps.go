@@ -38,18 +38,20 @@ func init() {
 	flags.StringVarP(&spsCfg.ParentKey, "parent-key", "Z", "", "the password for auto encrypt/decrypt parent connection data")
 	flags.StringVarP(&spsCfg.ParentAuth, "parent-auth", "A", "", "parent socks auth username and password, such as: -A user1:pass1")
 	flags.BoolVar(&spsCfg.ParentTLSSingle, "parent-tls-single", false, "conntect to parent insecure skip verify")
-
 	// local
 	flags.StringVarP(&spsCfg.LocalType, "local-type", "t", "tcp", "local protocol type <tcp|tls|stcp|kcp>")
 	flags.StringVarP(&spsCfg.Local, "local", "p", ":28080", "local ip:port to listen,multiple address use comma split,such as: 0.0.0.0:80,0.0.0.0:443")
 	flags.BoolVarP(&spsCfg.LocalCompress, "local-compress", "m", false, "auto compress/decompress data on local connection")
 	flags.StringVarP(&spsCfg.LocalKey, "local-key", "z", "", "the password for auto encrypt/decrypt local connection data")
-	// tls有效
+
+	// tls
 	flags.StringVarP(&spsCfg.CertFile, "cert", "C", "proxy.crt", "cert file for tls")
 	flags.StringVarP(&spsCfg.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&spsCfg.CaCertFile, "ca", "", "ca cert file for tls")
-	// stcp有效
+	// stcp
 	spsCfg.STCPConfig = stcpCfg
+	// kcp
+	spsCfg.SKCPConfig = kcpCfg
 	// 其它
 	flags.DurationVar(&spsCfg.Timeout, "timeout", 5*time.Second, "tcp timeout duration when connect to real server or parent proxy")
 	// basic auth 配置

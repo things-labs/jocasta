@@ -41,14 +41,13 @@ func init() {
 	flags.BoolVarP(&udpCfg.ParentCompress, "parent-compress", "M", false, "auto compress/decompress data on parent connection")
 	// local
 	flags.StringVarP(&udpCfg.Local, "local", "p", ":22800", "local ip:port to listen")
-	// tls有效
+	// tls
 	flags.StringVarP(&udpCfg.CertFile, "cert", "C", "proxy.crt", "cert file for tls")
 	flags.StringVarP(&udpCfg.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&udpCfg.CaCertFile, "ca", "", "ca cert file for tls")
-
-	// stcp有效
+	// stcp
 	udpCfg.STCPConfig = stcpCfg
-	// kcp 有效
+	// kcp
 	udpCfg.SKCPConfig = &kcpCfg
 	// 其它
 	flags.DurationVarP(&udpCfg.Timeout, "timeout", "e", time.Second*2, "tcp timeout duration when connect to real server or parent proxy")

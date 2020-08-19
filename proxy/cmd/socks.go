@@ -44,13 +44,13 @@ func init() {
 	flags.StringVarP(&socksCfg.Local, "local", "p", ":28080", "local ip:port to listen,multiple address use comma split,such as: 0.0.0.0:80,0.0.0.0:443")
 	flags.BoolVarP(&socksCfg.LocalCompress, "local-compress", "m", false, "auto compress/decompress data on local connection")
 	flags.StringVarP(&socksCfg.LocalKey, "local-key", "z", "", "the password for auto encrypt/decrypt local connection data")
-	// tls有效
+	// tls
 	flags.StringVarP(&socksCfg.CertFile, "cert", "C", "proxy.crt", "cert file for tls")
 	flags.StringVarP(&socksCfg.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&socksCfg.CaCertFile, "ca", "", "ca cert file for tls")
-	// stcp有效
+	// stcp
 	socksCfg.STCPConfig = stcpCfg
-	// ssh有效
+	// ssh
 	flags.StringVarP(&socksCfg.SSHUser, "ssh-user", "u", "", "user for ssh")
 	flags.StringVarP(&socksCfg.SSHKeyFile, "ssh-key", "S", "", "private key file for ssh")
 	flags.StringVarP(&socksCfg.SSHKeyFileSalt, "ssh-keysalt", "s", "", "salt of ssh private key")

@@ -43,13 +43,13 @@ func init() {
 	flags.StringVarP(&tcpCfg.LocalType, "local-type", "t", "tcp", "local protocol type <tcp|tls|stcp|kcp>")
 	flags.StringVarP(&tcpCfg.Local, "local", "p", ":22800", "local ip:port to listen")
 	flags.BoolVarP(&tcpCfg.LocalCompress, "local-compress", "m", false, "auto compress/decompress data on local connection")
-	// tls有效
+	// tls
 	flags.StringVarP(&tcpCfg.CertFile, "cert", "C", "proxy.crt", "cert file for tls")
 	flags.StringVarP(&tcpCfg.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&tcpCfg.CaCertFile, "ca", "", "ca cert file for tls")
-	// stcp 有效
+	// stcp
 	tcpCfg.STCPConfig = stcpCfg
-	// kcp 有效
+	// kcp
 	tcpCfg.SKCPConfig = kcpCfg
 	// 其它
 	flags.DurationVarP(&tcpCfg.Timeout, "timeout", "e", time.Second*2, "tcp timeout duration when connect to real server or parent proxy")
