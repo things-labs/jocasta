@@ -14,3 +14,5 @@
 
 ### network Protocol 
 - Server Name Indication([SNI](https://tools.ietf.org/html/rfc6066))
+- SSL ([SSL](https://tools.ietf.org/html/rfc6101))
+- TLS ([TLS](https://tools.ietf.org/html/rfc6066))
