@@ -144,7 +144,7 @@ func (sf *Socks) inspectConfig() (err error) {
 	}
 
 	if sf.cfg.LocalType == "tls" || (sf.cfg.ParentType == "tls" && len(sf.cfg.Parent) > 0) {
-		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
+		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Load(sf.cfg.CertFile, sf.cfg.KeyFile)
 		if err != nil {
 			return err
 		}

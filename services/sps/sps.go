@@ -144,7 +144,7 @@ func (sf *SPS) InspectConfig() (err error) {
 	}
 	if sf.cfg.ParentType == "tls" || sf.cfg.LocalType == "tls" {
 		if !sf.cfg.ParentTLSSingle {
-			sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
+			sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Load(sf.cfg.CertFile, sf.cfg.KeyFile)
 			if err != nil {
 				return
 			}

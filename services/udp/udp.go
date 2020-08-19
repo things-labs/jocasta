@@ -106,7 +106,7 @@ func (sf *UDP) inspectConfig() (err error) {
 	}
 
 	if sf.cfg.ParentType == "tls" {
-		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
+		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Load(sf.cfg.CertFile, sf.cfg.KeyFile)
 		if err != nil {
 			return
 		}

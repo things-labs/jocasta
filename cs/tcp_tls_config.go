@@ -25,24 +25,22 @@ func (sf *TLSConfig) ClientConfig() (*tls.Config, error) {
 
 // ServerConfig server tls config
 func (sf *TLSConfig) ServerConfig() (*tls.Config, error) {
-	cert, err := tls.X509KeyPair(sf.Cert, sf.Key)
+	certificate, err := tls.X509KeyPair(sf.Cert, sf.Key)
 	if err != nil {
 		return nil, err
 	}
-	config := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-	}
+	config := &tls.Config{Certificates: []tls.Certificate{certificate}}
 	if !sf.Single {
-		clientCertPool := x509.NewCertPool()
+		certPool := x509.NewCertPool()
 		caBytes := sf.Cert
 		if sf.CaCert != nil {
 			caBytes = sf.CaCert
 		}
-		ok := clientCertPool.AppendCertsFromPEM(caBytes)
+		ok := certPool.AppendCertsFromPEM(caBytes)
 		if !ok {
 			return nil, errors.New("parse root certificate")
 		}
-		config.ClientCAs = clientCertPool
+		config.ClientCAs = certPool
 		config.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 	return config, nil
@@ -54,12 +52,12 @@ func tlsConfig(cert, key, caCert []byte) (*tls.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	serverCertPool := x509.NewCertPool()
+	certPool := x509.NewCertPool()
 	caBytes := cert
 	if caCert != nil {
 		caBytes = caCert
 	}
-	ok := serverCertPool.AppendCertsFromPEM(caBytes)
+	ok := certPool.AppendCertsFromPEM(caBytes)
 	if !ok {
 		return nil, errors.New("failed to parse root certificate")
 	}
@@ -73,14 +71,12 @@ func tlsConfig(cert, key, caCert []byte) (*tls.Config, error) {
 	}
 
 	return &tls.Config{
-		RootCAs:            serverCertPool,
+		RootCAs:            certPool,
 		Certificates:       []tls.Certificate{certificate},
 		InsecureSkipVerify: true,
 		ServerName:         x509Cert.Subject.CommonName,
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-			opts := x509.VerifyOptions{
-				Roots: serverCertPool,
-			}
+			opts := x509.VerifyOptions{Roots: certPool}
 			for _, rawCert := range rawCerts {
 				cert, _ := x509.ParseCertificate(rawCert)
 				_, err := cert.Verify(opts)

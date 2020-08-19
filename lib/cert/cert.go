@@ -171,8 +171,8 @@ func ParseCrt(b []byte) (*x509.Certificate, error) {
 	return x509.ParseCertificate(caBlock.Bytes)
 }
 
-// ParseCrtFile 解析根证书文件
-func ParseCrtFile(filename string) (*x509.Certificate, error) {
+// LoadCrtFile 解析根证书文件
+func LoadCrtFile(filename string) (*x509.Certificate, error) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -186,8 +186,8 @@ func ParseKey(b []byte) (*rsa.PrivateKey, error) {
 	return x509.ParsePKCS1PrivateKey(keyBlock.Bytes)
 }
 
-// ParseKeyFile 解析私钥文件
-func ParseKeyFile(filename string) (*rsa.PrivateKey, error) {
+// LoadKeyFile 解析私钥文件
+func LoadKeyFile(filename string) (*rsa.PrivateKey, error) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -207,16 +207,16 @@ func ParseCrtAndKey(crt, key []byte) (ca *x509.Certificate, privateKey *rsa.Priv
 
 // ParseCrtAndKeyFile 解析根证书文件和私钥文件
 func ParseCrtAndKeyFile(crtFilename, keyFilename string) (ca *x509.Certificate, key *rsa.PrivateKey, err error) {
-	ca, err = ParseCrtFile(crtFilename)
+	ca, err = LoadCrtFile(crtFilename)
 	if err != nil {
 		return
 	}
-	key, err = ParseKeyFile(keyFilename)
+	key, err = LoadKeyFile(keyFilename)
 	return
 }
 
-// ReadCrtAndKeyFile 读取根证书文件和私钥文件
-func ReadCrtAndKeyFile(crtFilename, keyFilename string) (crt []byte, key []byte, err error) {
+// LoadCrtAndKeyFile 读取根证书文件和私钥文件
+func LoadCrtAndKeyFile(crtFilename, keyFilename string) (crt []byte, key []byte, err error) {
 	crt, err = ioutil.ReadFile(crtFilename)
 	if err != nil {
 		return
@@ -225,10 +225,10 @@ func ReadCrtAndKeyFile(crtFilename, keyFilename string) (crt []byte, key []byte,
 	return
 }
 
-// Parse 解析tls
+// Load 加载tls cert key
 // 如果cert是"base64://"前缀,直接解析后面的字符串,否则认为这是个cert文件名
 // 如果key是"base64://"前缀,直接解析后面的字符串,否则认为这是个key文件名
-func Parse(cert, key string) (certBytes, keyBytes []byte, err error) {
+func Load(cert, key string) (certBytes, keyBytes []byte, err error) {
 	if strings.HasPrefix(cert, base64Prefix) {
 		certBytes, err = base64.StdEncoding.DecodeString(cert[len(base64Prefix):])
 	} else {

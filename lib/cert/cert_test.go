@@ -34,15 +34,15 @@ func TestGenerateCA(t *testing.T) {
 	require.NoError(t, err)
 
 	// invalid ca file
-	_, _, err = ReadCrtAndKeyFile("invalid.crt", "ca.key")
+	_, _, err = LoadCrtAndKeyFile("invalid.crt", "ca.key")
 	require.Error(t, err)
 
 	// invalid key file
-	_, _, err = ReadCrtAndKeyFile("ca.crt", "invalid.key")
+	_, _, err = LoadCrtAndKeyFile("ca.crt", "invalid.key")
 	require.Error(t, err)
 
 	// ca key file
-	caBytes, keyBytes, err := ReadCrtAndKeyFile("ca.crt", "ca.key")
+	caBytes, keyBytes, err := LoadCrtAndKeyFile("ca.crt", "ca.key")
 	require.NoError(t, err)
 
 	ca, key, err = ParseCrtAndKey(caBytes, keyBytes)
@@ -53,7 +53,7 @@ func TestGenerateCA(t *testing.T) {
 	require.NoError(t, err)
 
 	// file
-	caBytes, keyBytes, err = Parse("ca.crt", "ca.key")
+	caBytes, keyBytes, err = Load("ca.crt", "ca.key")
 	require.NoError(t, err)
 
 	_, _, err = ParseCrtAndKey(caBytes, keyBytes)
@@ -63,7 +63,7 @@ func TestGenerateCA(t *testing.T) {
 	// base64 string
 	caStr := base64Prefix + base64.StdEncoding.EncodeToString(caBytes)
 	keyStr := base64Prefix + base64.StdEncoding.EncodeToString(keyBytes)
-	caBytes, keyBytes, err = Parse(caStr, keyStr)
+	caBytes, keyBytes, err = Load(caStr, keyStr)
 	require.NoError(t, err)
 
 	ca, key, err = ParseCrtAndKey(caBytes, keyBytes)
@@ -71,7 +71,7 @@ func TestGenerateCA(t *testing.T) {
 	require.Equal(t, "CN", ca.Subject.Country[0])
 
 	// invalid base64 string
-	_, _, err = Parse(base64Prefix+"invalidbase64", base64Prefix+"invalidbase64")
+	_, _, err = Load(base64Prefix+"invalidbase64", base64Prefix+"invalidbase64")
 	require.Error(t, err)
 
 	err = key.Validate()

@@ -118,7 +118,7 @@ func (sf *Server) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return fmt.Errorf("cert file and key file required")
 		}
-		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Parse(sf.cfg.CertFile, sf.cfg.KeyFile)
+		sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Load(sf.cfg.CertFile, sf.cfg.KeyFile)
 		if err != nil {
 			return err
 		}
