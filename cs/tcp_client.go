@@ -29,7 +29,7 @@ func (sf *TCPDialer) DialContext(ctx context.Context, network, addr string) (net
 		sf.AfterChains,
 	}
 	if sf.Config != nil {
-		d.Chains = AdornConnsChain{adornTLS(sf.Config)}
+		d.Chains = AdornConnsChain{adornTLS(sf.Config.Clone())}
 	}
 	return d.DialContext(ctx, network, addr)
 }

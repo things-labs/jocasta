@@ -8,10 +8,10 @@ import (
 
 // NetDialer A Dialer is a means to establish a connection.
 type NetDialer struct {
-	Timeout     time.Duration
-	Forward     Dialer
-	Chains      AdornConnsChain
-	AfterChains AdornConnsChain
+	Timeout     time.Duration   // timeout for dial
+	Forward     Dialer          // if set it will use forward.
+	Chains      AdornConnsChain // chains base
+	AfterChains AdornConnsChain // chains after base
 }
 
 // Dial connects to the address on the named network.

@@ -16,7 +16,8 @@ import (
 type AdornConn func(conn net.Conn) net.Conn
 
 // AdornConnsChain defines a adornConn array.
-// NOTE: 在conn read或write调用过程是在链上从后往前执行的,(类似栈,先进后执行,后进先执行) 所以统计类的应放在链头,也就是BeforeChains
+// NOTE: 在conn read或write调用过程是在链上从后往前执行的,(类似栈,先进后执行,后进先执行),
+//  所以统计类的应放在链头,也就是AfterChains的第一个,最靠近出口
 type AdornConnsChain []AdornConn
 
 // AdornCsnappy snappy chain

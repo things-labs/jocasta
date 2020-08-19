@@ -28,7 +28,7 @@ func (sf Socks5) Dial(network, addr string) (net.Conn, error) {
 
 	dialSocksProxy, err := proxy.SOCKS5(network, sf.ProxyHost, sf.Auth, forward)
 	if err != nil {
-		return nil, fmt.Errorf("connecting to proxy, %+v", err)
+		return nil, err
 	}
 	return dialSocksProxy.Dial(network, addr)
 }

@@ -26,7 +26,7 @@ type TCPServer struct {
 func (sf *TCPServer) ListenAndServe() error {
 	ln, err := net.Listen("tcp", sf.Addr)
 	if sf.Config != nil {
-		ln = tls.NewListener(ln, sf.Config)
+		ln = tls.NewListener(ln, sf.Config.Clone())
 	}
 
 	if err != nil {
