@@ -48,7 +48,6 @@ func init() {
 	// 其它
 	flags.DurationVarP(&muxServer.Timeout, "timeout", "i", time.Second*2, "tcp timeout duration when connect to real server or parent proxy")
 	// 路由
-	flags.BoolVar(&muxServer.IsUDP, "udp", false, "proxy on udp mux server mode")
 	flags.StringVarP(&muxServer.Route, "route", "r", "", "local route to client's network, such as: PROTOCOL://LOCAL_IP:LOCAL_PORT@[CLIENT_KEY]CLIENT_LOCAL_HOST:CLIENT_LOCAL_PORT")
 	// proxy
 	flags.StringVar(&muxServer.RawProxyURL, "proxy", "", "https or socks5 proxies used when connecting to parent, only worked of -T is tls or tcp, format is https://username:password@host:port https://host:port or socks5://username:password@host:port socks5://host:port")

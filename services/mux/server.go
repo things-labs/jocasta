@@ -19,6 +19,7 @@ import (
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
+	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/lib/outil"
 	"github.com/thinkgos/jocasta/pkg/ccs"
@@ -51,14 +52,15 @@ type ServerConfig struct {
 	// protocol://localIP:localPort@[clientKey]clientLocalHost:ClientLocalPort
 	// default empty
 	Route string `validate:"required"`
-	IsUDP bool   // default false
+	isUDP bool   // default false
 
 	// private
 	tcpTlsConfig cs.TLSConfig
 	// 本地暴露的地址 格式:ip:port
 	local string
 	// 远端要穿透的地址 格式:ip:port
-	remote string
+	remote_host string
+	remote_port uint16
 }
 
 type UDPConnItem struct {
@@ -136,15 +138,15 @@ func (sf *Server) inspectConfig() (err error) {
 	// parse routes
 	// protocol://localIP:localPort@[clientKey]clientLocalHost:ClientLocalPort
 	if strings.HasPrefix(sf.cfg.Route, "udp://") {
-		sf.cfg.IsUDP = true
+		sf.cfg.isUDP = true
 	}
 	info := strings.TrimPrefix(strings.TrimPrefix(sf.cfg.Route, "udp://"), "tcp://")
 	_routeInfo := strings.Split(info, "@")
 	if len(_routeInfo) != 2 || _routeInfo[0] == "" || _routeInfo[1] == "" {
 		return errors.New("invalid route format,must be like protocol://localIP:localPort@[clientKey]clientLocalHost:ClientLocalPort")
 	}
-	sf.cfg.local, sf.cfg.remote = _routeInfo[0], _routeInfo[1]
-
+	sf.cfg.local = _routeInfo[0]
+	sf.cfg.remote_host, sf.cfg.remote_port, err = extnet.SplitHostPort(_routeInfo[1])
 	return
 }
 
@@ -160,9 +162,7 @@ func (sf *Server) Start() (err error) {
 	}
 
 	status := make(chan error, 1)
-	if sf.cfg.IsUDP {
-		sf.cfg.remote = "udp:" + sf.cfg.remote
-
+	if sf.cfg.isUDP {
 		sf.channel = &cs.UDPServer{
 			Addr:    sf.cfg.local,
 			Status:  status,
@@ -170,8 +170,6 @@ func (sf *Server) Start() (err error) {
 			Handler: sf.handleUDP,
 		}
 	} else {
-		sf.cfg.remote = "tcp:" + sf.cfg.remote
-
 		sf.channel = &cs.TCPServer{
 			Addr:        sf.cfg.local,
 			Status:      status,
@@ -188,7 +186,7 @@ func (sf *Server) Start() (err error) {
 
 	time.Sleep(time.Millisecond * 100)
 
-	if sf.cfg.IsUDP {
+	if sf.cfg.isUDP {
 		sf.gPool.Go(func() {
 			sf.udpConns.Watch(sf.ctx)
 		})
@@ -218,7 +216,27 @@ func (sf *Server) dialThroughRemote() (outConn net.Conn, sessId string, err erro
 	}
 	sessId = outil.UniqueID()
 
-	err = through.WriteStrings(outConn, sf.cfg.Timeout, sf.id, sessId, sf.cfg.remote)
+	proto := ddt.Network_TCP
+	if sf.cfg.isUDP {
+		proto = ddt.Network_UDP
+	}
+	request := through.HandshakeRequest{
+		Version: through.Version,
+		Hand: ddt.HandshakeRequest{
+			NodeId:    sf.id,
+			SessionId: sessId,
+			Protocol:  proto,
+			Host:      sf.cfg.remote_host,
+			Port:      uint32(sf.cfg.remote_port),
+		},
+	}
+	var b []byte
+	b, err = request.Bytes()
+	if err != nil {
+		outConn.Close()
+		return
+	}
+	_, err = outConn.Write(b)
 	if err != nil {
 		outConn.Close()
 	}
@@ -241,7 +259,7 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 		var data []byte
 		msg := through.NegotiateRequest{
 			Types:   through.TypesServer,
-			Version: 1,
+			Version: through.Version,
 			Nego: ddt.NegotiateRequest{
 				SecretKey: sf.cfg.SecretKey,
 				Id:        sf.id,

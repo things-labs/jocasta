@@ -3,6 +3,7 @@ package extnet
 import (
 	"bytes"
 	"net"
+	"strconv"
 	"strings"
 
 	"github.com/thinkgos/jocasta/internal/bytesconv"
@@ -35,6 +36,18 @@ func IsErrDeadline(err error) bool {
 // IsErrSocketNotConnected is error socket is not connected
 func IsErrSocketNotConnected(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "socket is not connected")
+}
+
+func SplitHostPort(addr string) (string, uint16, error) {
+	host, p, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", 0, err
+	}
+	port, err := strconv.ParseUint(p, 10, 16)
+	if err != nil {
+		return "", 0, err
+	}
+	return host, uint16(port), nil
 }
 
 // IsDomain 是否是域名,只检查host或ip,不可带port,否则会误判

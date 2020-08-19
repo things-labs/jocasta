@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/url"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -157,7 +158,7 @@ func (sf *Client) Start() (err error) {
 			// through message
 			msg := through.NegotiateRequest{
 				Types:   through.TypesClient,
-				Version: 1,
+				Version: through.Version,
 				Nego: ddt.NegotiateRequest{
 					SecretKey: sf.cfg.SecretKey,
 					Id:        "reserved",
@@ -205,19 +206,17 @@ func (sf *Client) Start() (err error) {
 					return err
 				}
 				sf.gPool.Go(func() {
-					var serverNodeId, serverSessId, clientLocalAddr string
-
-					err = through.ReadStrings(stream, sf.cfg.Timeout, &serverNodeId, &serverSessId, &clientLocalAddr)
+					hand, err := through.ParseHandshakeRequest(stream)
 					if err != nil {
 						sf.log.Errorf("[ Client ] read stream signal %s", err)
 						return
 					}
-					sf.log.Debugf("[ Client ] sid< %s >@%s stream on %s", serverSessId, serverNodeId, clientLocalAddr)
-					protocol, localAddr := clientLocalAddr[:3], clientLocalAddr[4:]
-					if protocol == "udp" {
-						sf.proxyUDP(stream, localAddr, serverSessId)
+					localAddr := net.JoinHostPort(hand.Hand.Host, strconv.FormatUint(uint64(hand.Hand.Port), 10))
+					sf.log.Debugf("[ Client ] sid< %s >@%s stream on %s@%s", hand.Hand.SessionId, hand.Hand.NodeId, hand.Hand.Protocol, localAddr)
+					if hand.Hand.Protocol == ddt.Network_UDP {
+						sf.proxyUDP(stream, localAddr, hand.Hand.SessionId)
 					} else {
-						sf.proxyTCP(stream, localAddr, serverSessId)
+						sf.proxyTCP(stream, localAddr, hand.Hand.SessionId)
 					}
 				})
 			}

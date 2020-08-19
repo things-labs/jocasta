@@ -12,11 +12,11 @@ message NegotiateRequest {
   string id = 3;
 }
 
-message Request {
+message HandshakeRequest {
   string node_id = 1;
-  string Session_id = 2;
+  string session_id = 2;
   Network protocol = 3;
-  string remote_address = 4;
-  uint32 remote_port = 5;
+  string host = 4;
+  uint32 port = 5;
 }
 
