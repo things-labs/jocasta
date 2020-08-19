@@ -1,59 +1,56 @@
-// Package captain 定义了透传,各底层协议转换(数据报->数据流,数据流->数据报的转换)
+// Package through 定义了透传,各底层协议转换(数据报->数据流,数据流->数据报的转换)
 package through
 
 import (
 	"io"
 
-	"google.golang.org/protobuf/proto"
-
 	"github.com/thinkgos/jocasta/core/captain"
-	"github.com/thinkgos/jocasta/pkg/through/ddt"
 )
 
-// TVersion 透传协议版本
-const TVersion = 1
+// Version 透传协议版本
+const Version = 1
 
 // 透传节点类型
 const (
-	TTypesUnknown = iota
-	TTypesClient
-	TTypesServer
+	TypesUnknown = iota
+	TypesClient
+	TypesServer
 )
 
 const (
-	TRepSuccess            = iota // 成功
-	TRepFailure                   // 失败
-	TRepServerFailure             // 服务器问题
-	TRepNetworkUnreachable        // 网络不可达
-	TRepTTypesNotSupport          // 类型不支持
-	TRepConnectionRefused         // 连接拒绝
+	RepSuccess            = iota // 成功
+	TRepFailure                  // 失败
+	RepServerFailure             // 服务器问题
+	RepNetworkUnreachable        // 网络不可达
+	RepTTypesNotSupport          // 类型不支持
+	RepConnectionRefused         // 连接拒绝
 )
 
-// ThroughRequest through protocol request
+// Request through protocol request
 // handshake request/response is formed as follows:
 // +---------+-------+------------+----------+
 // |  TYPES  |  VER  |  DATA_LEN  |   DATA   |
 // +---------+-------+------------+----------+
 // |    1    |   1   |    1 - 3   | Variable |
 // +---------+-------+------------+----------+
-// TTYPES 底三位为节点类型,
-// VER 版本
-// DATA_LEN see data length defined
-// 数据
-type ThroughRequest struct {
+// TTYPES 低三位为节点类型,其它保留为0
+// VER 版本, 透传版本
+// DATA_LEN see package captain data length defined
+// DATA 数据
+type Request struct {
 	Types   byte
 	Version byte
 	Data    []byte
 }
 
-// ParseRawThroughRequest parse to ThroughRequest
-func ParseRawThroughRequest(r io.Reader) (msg ThroughRequest, err error) {
-	// read message type,version
+// ParseRequest parse to Request
+func ParseRequest(r io.Reader) (req Request, err error) {
+	// read request type and version
 	tmp := []byte{0, 0}
 	if _, err = io.ReadFull(r, tmp); err != nil {
 		return
 	}
-	msg.Types, msg.Version = tmp[0]&0x07, tmp[1]
+	req.Types, req.Version = tmp[0]&0x07, tmp[1]
 
 	// read remain data len
 	var length int
@@ -67,60 +64,39 @@ func ParseRawThroughRequest(r io.Reader) (msg ThroughRequest, err error) {
 	if _, err = io.ReadFull(r, data); err != nil {
 		return
 	}
-	msg.Data = data
+	req.Data = data
 	return
 }
 
-func (sf ThroughRequest) Bytes() ([]byte, error) {
+// Bytes request to bytes
+func (sf Request) Bytes() ([]byte, error) {
+	return sf.value(true)
+}
+
+// Header returns s slice of datagram header except data
+func (sf Request) Header() ([]byte, error) {
+	return sf.value(false)
+}
+
+func (sf Request) value(hasData bool) (bs []byte, err error) {
 	ds, n, err := captain.DataLen(len(sf.Data))
 	if err != nil {
 		return nil, err
 	}
-	bs := make([]byte, 0, n+len(sf.Data))
+	if hasData {
+		bs = make([]byte, 0, 2+n+len(sf.Data))
+	} else {
+		bs = make([]byte, 0, 2+n)
+	}
 	bs = append(bs, sf.Types&0x07, sf.Version)
 	bs = append(bs, ds[:n]...)
-	bs = append(bs, sf.Data...)
+	if hasData {
+		bs = append(bs, sf.Data...)
+	}
 	return bs, nil
 }
 
-type ThroughNegotiateRequest struct {
-	Types   byte
-	Version byte
-	Nego    ddt.NegotiateRequest
-}
-
-func ParseThroughNegotiateRequest(r io.Reader) (*ThroughNegotiateRequest, error) {
-	tr, err := ParseRawThroughRequest(r)
-	if err != nil {
-		return nil, err
-	}
-
-	tnr := &ThroughNegotiateRequest{
-		Types:   tr.Types,
-		Version: tr.Version,
-	}
-
-	err = proto.Unmarshal(tr.Data, &tnr.Nego)
-	if err != nil {
-		return nil, err
-	}
-	return tnr, nil
-}
-
-func (sf *ThroughNegotiateRequest) Bytes() ([]byte, error) {
-	data, err := proto.Marshal(&sf.Nego)
-	if err != nil {
-		return nil, err
-	}
-	tr := ThroughRequest{
-		Types:   sf.Types,
-		Version: sf.Version,
-		Data:    data,
-	}
-	return tr.Bytes()
-}
-
-// ThroughRequest through protocol reply
+// Reply through protocol reply
 // handshake request/response is formed as follows:
 // +---------+-------+
 // |  STATUS |  VER  |
@@ -129,18 +105,18 @@ func (sf *ThroughNegotiateRequest) Bytes() ([]byte, error) {
 // +---------+-------+
 // STATUS 状态
 // VER 版本
-type ThroughReply struct {
+type Reply struct {
 	Status  byte
 	Version byte
 }
 
-// ParseRawThroughReply parse to ThroughReply
-func ParseRawThroughReply(r io.Reader) (tr ThroughReply, err error) {
-	// read message type,version
+// ParseReply parse to Reply
+func ParseReply(r io.Reader) (reply Reply, err error) {
+	// read type and version
 	tmp := []byte{0, 0}
 	if _, err = io.ReadFull(r, tmp); err != nil {
 		return
 	}
-	tr.Status, tr.Version = tmp[0], tmp[1]
+	reply.Status, reply.Version = tmp[0], tmp[1]
 	return
 }

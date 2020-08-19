@@ -239,8 +239,8 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 
 		// through message
 		var data []byte
-		msg := through.ThroughNegotiateRequest{
-			Types:   through.TTypesServer,
+		msg := through.NegotiateRequest{
+			Types:   through.TypesServer,
 			Version: 1,
 			Nego: ddt.NegotiateRequest{
 				SecretKey: sf.cfg.SecretKey,
@@ -256,13 +256,13 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 			_ = pConn.Close()
 			return
 		}
-		var tr through.ThroughReply
-		tr, err = through.ParseRawThroughReply(pConn)
+		var tr through.Reply
+		tr, err = through.ParseReply(pConn)
 		if err != nil {
 			_ = pConn.Close()
 			return
 		}
-		if tr.Status != through.TRepSuccess {
+		if tr.Status != through.RepSuccess {
 			err = errors.New("bridge response error")
 			return
 		}

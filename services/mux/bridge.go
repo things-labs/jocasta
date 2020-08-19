@@ -145,7 +145,7 @@ func (sf *Bridge) Stop() {
 }
 
 func (sf *Bridge) handler(inConn net.Conn) {
-	Negos, err := through.ParseThroughNegotiateRequest(inConn)
+	Negos, err := through.ParseNegotiateRequest(inConn)
 	if err != nil {
 		inConn.Close()
 		sf.log.Errorf("[ Bridge ] read ddt packet, %s", err)
@@ -154,12 +154,12 @@ func (sf *Bridge) handler(inConn net.Conn) {
 
 	sf.log.Debugf("[ Bridge ] node connected: type< %d >,sk< %s >,id< %s >", Negos.Types, Negos.Nego.SecretKey, Negos.Nego.Id)
 	switch Negos.Types {
-	case through.TTypesServer:
+	case through.TypesServer:
 		defer inConn.Close()
 
 		session, err := smux.Server(inConn, nil)
 		if err != nil {
-			inConn.Write([]byte{through.TRepServerFailure, through.TVersion}) // nolint: errcheck
+			inConn.Write([]byte{through.RepServerFailure, through.Version}) // nolint: errcheck
 			sf.log.Errorf("[ Bridge ] node server session, %+v", err)
 			return
 		}
@@ -172,7 +172,7 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			return newValue
 		})
 
-		inConn.Write([]byte{through.TRepSuccess, through.TVersion}) // nolint: errcheck
+		inConn.Write([]byte{through.RepSuccess, through.Version}) // nolint: errcheck
 
 		sf.log.Infof("[ Bridge ] server %s connected -- sk< %s >", Negos.Nego.Id, Negos.Nego.SecretKey)
 		defer func() {
@@ -191,7 +191,7 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			})
 		}
 
-	case through.TTypesClient:
+	case through.TypesClient:
 		session, err := smux.Client(inConn, nil)
 		if err != nil {
 			_ = inConn.Close()
@@ -205,10 +205,10 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			}
 			return newValue
 		})
-		inConn.Write([]byte{through.TRepSuccess, through.TVersion}) // nolint: errcheck
+		inConn.Write([]byte{through.RepSuccess, through.Version}) // nolint: errcheck
 		sf.log.Infof("[ Bridge ] client connected -- sk< %s >", Negos.Nego.SecretKey)
 	default:
-		inConn.Write([]byte{through.TRepTTypesNotSupport, through.TVersion}) // nolint: errcheck
+		inConn.Write([]byte{through.RepTTypesNotSupport, through.Version}) // nolint: errcheck
 		sf.log.Errorf("[ Bridge ] node type unknown < %d >", Negos.Types)
 	}
 }

@@ -1,3 +1,4 @@
+// Package captain 定义了各底层协议转换(数据报->数据流,数据流->数据报的转换)
 package captain
 
 import "errors"

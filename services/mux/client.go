@@ -155,8 +155,8 @@ func (sf *Client) Start() (err error) {
 			defer pConn.Close()
 
 			// through message
-			msg := through.ThroughNegotiateRequest{
-				Types:   through.TTypesClient,
+			msg := through.NegotiateRequest{
+				Types:   through.TypesClient,
 				Version: 1,
 				Nego: ddt.NegotiateRequest{
 					SecretKey: sf.cfg.SecretKey,
@@ -173,11 +173,11 @@ func (sf *Client) Start() (err error) {
 				return err
 			}
 
-			tr, err := through.ParseRawThroughReply(pConn)
+			tr, err := through.ParseReply(pConn)
 			if err != nil {
 				return err
 			}
-			if tr.Status != through.TRepSuccess {
+			if tr.Status != through.RepSuccess {
 				err = errors.New("bridge response error")
 				sf.log.Errorf("[ Client ] bridge response %d, retrying...", tr.Status)
 				return err
