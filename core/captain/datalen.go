@@ -6,7 +6,7 @@ import (
 )
 
 // Data len
-// 第8位表示还有值,最长长度字节只能到三字节. 理论上Data可达2097121(2M)
+// 第8位表示后续还有值,最长长度字节只能到三字节. 理论上Data可达2097121(2M)
 // +-Digits-+----------FROM------------+-----------TO---------------+
 // |    1   | 0 (0x00)                 | 127 (0x7f)                 |
 // +--------+--------------------------+----------------------------+
@@ -15,7 +15,7 @@ import (
 // |    3   | 16384 (0x80, 0x80, 0x01) | 2097151 (0xFF, 0xFF, 0x7F) |
 // +---------+-------------------------+----------------------------+
 
-// DataLen convert data length to bytes return array,bytes count
+// DataLen convert data length to bytes return array and bytes count
 func DataLen(length int) (ds [3]byte, n int, err error) {
 	if length < 0 || length > 2097151 {
 		return ds, n, errors.New("invalid data length")

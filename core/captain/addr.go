@@ -36,11 +36,11 @@ func (sf AddrSpec) Address() string {
 	return fmt.Sprintf("%s:%d", sf.IP, sf.Port)
 }
 
-// ParseAddrSpec parse address to the AddrSpec address
-func ParseAddrSpec(address string) (as AddrSpec, err error) {
+// ParseAddrSpec parse addr(host:port) to the AddrSpec address
+func ParseAddrSpec(addr string) (as AddrSpec, err error) {
 	var host, port string
 
-	host, port, err = net.SplitHostPort(address)
+	host, port, err = net.SplitHostPort(addr)
 	if err != nil {
 		return
 	}

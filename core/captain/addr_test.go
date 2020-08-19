@@ -32,18 +32,15 @@ func TestAddrSpecAddr(t *testing.T) {
 }
 
 func TestParseAddrSpec(t *testing.T) {
-	type args struct {
-		address string
-	}
 	tests := []struct {
 		name    string
-		args    args
+		addr    string
 		wantA   AddrSpec
 		wantErr bool
 	}{
 		{
 			"IPv4",
-			args{"127.0.0.1:8080"},
+			"127.0.0.1:8080",
 			AddrSpec{
 				IP:       net.IPv4(127, 0, 0, 1),
 				Port:     8080,
@@ -53,7 +50,7 @@ func TestParseAddrSpec(t *testing.T) {
 		},
 		{
 			"IPv6",
-			args{"[::1]:8080"},
+			"[::1]:8080",
 			AddrSpec{
 				IP:       net.IPv6loopback,
 				Port:     8080,
@@ -63,7 +60,7 @@ func TestParseAddrSpec(t *testing.T) {
 		},
 		{
 			"FQDN",
-			args{"localhost:8080"},
+			"localhost:8080",
 			AddrSpec{
 				FQDN:     "localhost",
 				Port:     8080,
@@ -73,20 +70,20 @@ func TestParseAddrSpec(t *testing.T) {
 		},
 		{
 			"invalid address,miss port",
-			args{"localhost"},
+			"localhost",
 			AddrSpec{},
 			true,
 		},
 		{
 			"invalid port",
-			args{"localhost:abc"},
+			"localhost:abc",
 			AddrSpec{},
 			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotA, err := ParseAddrSpec(tt.args.address)
+			gotA, err := ParseAddrSpec(tt.addr)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseAddrSpec() error = %v, wantErr %v", err, tt.wantErr)
 				return

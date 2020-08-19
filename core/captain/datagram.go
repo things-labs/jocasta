@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math"
 	"net"
+
+	"github.com/thinkgos/jocasta/internal/bytesconv"
 )
 
 // Datagram udp datagram
@@ -24,16 +26,17 @@ type Datagram struct {
 	Data []byte
 }
 
-func NewDatagram(destAddr string, data []byte) (p Datagram, err error) {
-	p.Addr, err = ParseAddrSpec(destAddr)
+// NewDatagram new datagram with dest address and data
+func NewDatagram(destAddr string, data []byte) (da Datagram, err error) {
+	da.Addr, err = ParseAddrSpec(destAddr)
 	if err != nil {
 		return
 	}
-	if p.Addr.AddrType == ATYPDomain && len(p.Addr.FQDN) > math.MaxUint8 {
+	if da.Addr.AddrType == ATYPDomain && len(da.Addr.FQDN) > math.MaxUint8 {
 		err = errors.New("destination host name too long")
 		return
 	}
-	p.Reserved, p.Data = 0, data
+	da.Reserved, da.Data = 0, data
 	return
 }
 
@@ -101,7 +104,7 @@ func (sf *Datagram) values(hasData bool) (bs []byte) {
 		addr = sf.Addr.IP.To16()
 	case ATYPDomain:
 		length += 1 + len(sf.Addr.FQDN)
-		addr = []byte(sf.Addr.FQDN)
+		addr = bytesconv.Str2Bytes(sf.Addr.FQDN)
 	default:
 		panic(fmt.Sprintf("invalid address type: %d", sf.Addr.AddrType))
 	}

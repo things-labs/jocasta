@@ -2,9 +2,13 @@ package captain
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net"
+
+	"github.com/thinkgos/jocasta/internal/bytesconv"
 )
 
 // StreamDatagram udp datagram transfer in stream
@@ -23,9 +27,24 @@ type StreamDatagram struct {
 	Data []byte
 }
 
+// NewStreamDatagram new stream datagram with dest address and data
+func NewStreamDatagram(destAddr string, data []byte) (da StreamDatagram, err error) {
+	da.Addr, err = ParseAddrSpec(destAddr)
+	if err != nil {
+		return
+	}
+	if da.Addr.AddrType == ATYPDomain && len(da.Addr.FQDN) > math.MaxUint8 {
+		err = errors.New("destination host name too long")
+		return
+	}
+	da.Reserved, da.Data = 0, data
+	return
+}
+
+// ParseStreamDatagram parse datagram from stream
 func ParseStreamDatagram(r io.Reader) (da Datagram, err error) {
 	tmp := []byte{0, 0}
-	// ignore RSV and get Address  type
+	// ignore RSV and get Address type
 	if _, err = io.ReadFull(r, tmp); err != nil {
 		return
 	}
@@ -65,6 +84,7 @@ func ParseStreamDatagram(r io.Reader) (da Datagram, err error) {
 		return
 	}
 
+	// data len
 	var length int
 	length, err = ParseDataLen(r)
 	if err != nil {
@@ -101,7 +121,7 @@ func (sf *StreamDatagram) values(hasData bool) ([]byte, error) {
 		addr = sf.Addr.IP.To16()
 	case ATYPDomain:
 		length += 1 + len(sf.Addr.FQDN)
-		addr = []byte(sf.Addr.FQDN)
+		addr = bytesconv.Str2Bytes(sf.Addr.FQDN)
 	default:
 		return nil, fmt.Errorf("invalid address type: %d", sf.Addr.AddrType)
 	}
