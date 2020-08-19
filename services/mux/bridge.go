@@ -14,12 +14,12 @@ import (
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
-	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/sword"
+	"github.com/thinkgos/jocasta/pkg/through"
 	"github.com/thinkgos/jocasta/services"
 )
 
@@ -145,7 +145,7 @@ func (sf *Bridge) Stop() {
 }
 
 func (sf *Bridge) handler(inConn net.Conn) {
-	Negos, err := captain.ParseThroughNegotiateRequest(inConn)
+	Negos, err := through.ParseThroughNegotiateRequest(inConn)
 	if err != nil {
 		inConn.Close()
 		sf.log.Errorf("[ Bridge ] read ddt packet, %s", err)
@@ -154,12 +154,12 @@ func (sf *Bridge) handler(inConn net.Conn) {
 
 	sf.log.Debugf("[ Bridge ] node connected: type< %d >,sk< %s >,id< %s >", Negos.Types, Negos.Nego.SecretKey, Negos.Nego.Id)
 	switch Negos.Types {
-	case captain.TTypesServer:
+	case through.TTypesServer:
 		defer inConn.Close()
 
 		session, err := smux.Server(inConn, nil)
 		if err != nil {
-			inConn.Write([]byte{captain.TRepServerFailure, captain.TVersion}) // nolint: errcheck
+			inConn.Write([]byte{through.TRepServerFailure, through.TVersion}) // nolint: errcheck
 			sf.log.Errorf("[ Bridge ] node server session, %+v", err)
 			return
 		}
@@ -172,7 +172,7 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			return newValue
 		})
 
-		inConn.Write([]byte{captain.TRepSuccess, captain.TVersion}) // nolint: errcheck
+		inConn.Write([]byte{through.TRepSuccess, through.TVersion}) // nolint: errcheck
 
 		sf.log.Infof("[ Bridge ] server %s connected -- sk< %s >", Negos.Nego.Id, Negos.Nego.SecretKey)
 		defer func() {
@@ -191,7 +191,7 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			})
 		}
 
-	case captain.TTypesClient:
+	case through.TTypesClient:
 		session, err := smux.Client(inConn, nil)
 		if err != nil {
 			_ = inConn.Close()
@@ -205,10 +205,10 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			}
 			return newValue
 		})
-		inConn.Write([]byte{captain.TRepSuccess, captain.TVersion}) // nolint: errcheck
+		inConn.Write([]byte{through.TRepSuccess, through.TVersion}) // nolint: errcheck
 		sf.log.Infof("[ Bridge ] client connected -- sk< %s >", Negos.Nego.SecretKey)
 	default:
-		inConn.Write([]byte{captain.TRepTTypesNotSupport, captain.TVersion}) // nolint: errcheck
+		inConn.Write([]byte{through.TRepTTypesNotSupport, through.TVersion}) // nolint: errcheck
 		sf.log.Errorf("[ Bridge ] node type unknown < %d >", Negos.Types)
 	}
 }

@@ -15,14 +15,14 @@ import (
 
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"
-	"github.com/thinkgos/jocasta/core/captain/ddt"
-	"github.com/thinkgos/jocasta/core/through"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/sword"
+	"github.com/thinkgos/jocasta/pkg/through"
+	"github.com/thinkgos/jocasta/pkg/through/ddt"
 	"github.com/thinkgos/jocasta/services"
 )
 
@@ -155,8 +155,8 @@ func (sf *Client) Start() (err error) {
 			defer pConn.Close()
 
 			// through message
-			msg := captain.ThroughNegotiateRequest{
-				Types:   captain.TTypesClient,
+			msg := through.ThroughNegotiateRequest{
+				Types:   through.TTypesClient,
 				Version: 1,
 				Nego: ddt.NegotiateRequest{
 					SecretKey: sf.cfg.SecretKey,
@@ -173,11 +173,11 @@ func (sf *Client) Start() (err error) {
 				return err
 			}
 
-			tr, err := captain.ParseRawThroughReply(pConn)
+			tr, err := through.ParseRawThroughReply(pConn)
 			if err != nil {
 				return err
 			}
-			if tr.Status != captain.TRepSuccess {
+			if tr.Status != through.TRepSuccess {
 				err = errors.New("bridge response error")
 				sf.log.Errorf("[ Client ] bridge response %d, retrying...", tr.Status)
 				return err

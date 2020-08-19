@@ -1,12 +1,13 @@
 // Package captain 定义了透传,各底层协议转换(数据报->数据流,数据流->数据报的转换)
-package captain
+package through
 
 import (
 	"io"
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/thinkgos/jocasta/core/captain/ddt"
+	"github.com/thinkgos/jocasta/core/captain"
+	"github.com/thinkgos/jocasta/pkg/through/ddt"
 )
 
 // TVersion 透传协议版本
@@ -56,7 +57,7 @@ func ParseRawThroughRequest(r io.Reader) (msg ThroughRequest, err error) {
 
 	// read remain data len
 	var length int
-	length, err = ParseDataLen(r)
+	length, err = captain.ParseDataLen(r)
 	if err != nil {
 		return
 	}
@@ -71,7 +72,7 @@ func ParseRawThroughRequest(r io.Reader) (msg ThroughRequest, err error) {
 }
 
 func (sf ThroughRequest) Bytes() ([]byte, error) {
-	ds, n, err := DataLen(len(sf.Data))
+	ds, n, err := captain.DataLen(len(sf.Data))
 	if err != nil {
 		return nil, err
 	}
