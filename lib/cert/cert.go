@@ -225,22 +225,32 @@ func LoadCrtAndKeyFile(crtFilename, keyFilename string) (crt []byte, key []byte,
 	return
 }
 
-// Load 加载tls cert key
-// 如果cert是"base64://"前缀,直接解析后面的字符串,否则认为这是个cert文件名
-// 如果key是"base64://"前缀,直接解析后面的字符串,否则认为这是个key文件名
-func Load(cert, key string) (certBytes, keyBytes []byte, err error) {
-	if strings.HasPrefix(cert, base64Prefix) {
-		certBytes, err = base64.StdEncoding.DecodeString(cert[len(base64Prefix):])
-	} else {
-		certBytes, err = ioutil.ReadFile(cert)
-	}
+// LoadPair 加载tls cert key
+// 如果cert有"base64://"前缀,直接解析后面的字符串,否则认为这是个cert文件名
+// 如果key有"base64://"前缀,直接解析后面的字符串,否则认为这是个key文件名
+func LoadPair(cert, key string) (certBytes, keyBytes []byte, err error) {
+	certBytes, err = LoadCrt(cert)
 	if err != nil {
 		return
 	}
-	if strings.HasPrefix(key, base64Prefix) {
-		keyBytes, err = base64.StdEncoding.DecodeString(key[len(base64Prefix):])
-	} else {
-		keyBytes, err = ioutil.ReadFile(key)
-	}
+	keyBytes, err = LoadKey(key)
 	return
+}
+
+// LoadCrt 加载tls cert
+// 如果cert有"base64://"前缀,直接解析后面的字符串,否则认为这是个cert文件名
+func LoadCrt(cert string) ([]byte, error) {
+	if strings.HasPrefix(cert, base64Prefix) {
+		return base64.StdEncoding.DecodeString(cert[len(base64Prefix):])
+	}
+	return ioutil.ReadFile(cert)
+}
+
+// LoadKey 加载tls key
+// 如果key有"base64://"前缀,直接解析后面的字符串,否则认为这是个key文件名
+func LoadKey(key string) ([]byte, error) {
+	if strings.HasPrefix(key, base64Prefix) {
+		return base64.StdEncoding.DecodeString(key[len(base64Prefix):])
+	}
+	return ioutil.ReadFile(key)
 }

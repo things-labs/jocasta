@@ -2,13 +2,10 @@ package cmd
 
 import (
 	"log"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-
-	"github.com/thinkgos/jocasta/lib/encrypt"
 
 	"github.com/thinkgos/jocasta/pkg/sword"
 	sudp "github.com/thinkgos/jocasta/services/udp"
@@ -50,8 +47,7 @@ func init() {
 	flags.StringVar(&udpCfg.CaCertFile, "ca", "", "ca cert file for tls")
 
 	// stcp有效
-	flags.StringVar(&udpCfg.STCPConfig.Method, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
-	flags.StringVar(&udpCfg.STCPConfig.Password, "stcp-password", "thinkgos's_jocasta", "password of local stcp's encrpyt/decrypt")
+	udpCfg.STCPConfig = stcpCfg
 	// kcp 有效
 	udpCfg.SKCPConfig = &kcpCfg
 	// 其它

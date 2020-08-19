@@ -83,7 +83,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&daemon, "daemon", false, "run in background")
 	rootCmd.PersistentFlags().BoolVar(&forever, "forever", false, "run in forever, fail and retry")
 	rootCmd.PersistentFlags().StringVar(&logfile, "log", "", "log file path")
-	kcp(rootCmd)
+	global(rootCmd)
 	rootCmd.PersistentPreRun = preRun
 	rootCmd.PersistentPostRun = postRun
 }

@@ -2,13 +2,11 @@ package cmd
 
 import (
 	"log"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	"github.com/thinkgos/jocasta/lib/encrypt"
 	"github.com/thinkgos/jocasta/pkg/sword"
 
 	stcp "github.com/thinkgos/jocasta/services/tcp"
@@ -50,13 +48,12 @@ func init() {
 	flags.StringVarP(&tcpCfg.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&tcpCfg.CaCertFile, "ca", "", "ca cert file for tls")
 	// stcp 有效
-	flags.StringVar(&tcpCfg.STCPConfig.Method, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
-	flags.StringVar(&tcpCfg.STCPConfig.Password, "stcp-password", "thinkgos's_jocasta", "password of local stcp's encrpyt/decrypt")
+	tcpCfg.STCPConfig = stcpCfg
 	// kcp 有效
-	tcpCfg.SKCPConfig = &kcpCfg
+	tcpCfg.SKCPConfig = kcpCfg
 	// 其它
 	flags.DurationVarP(&tcpCfg.Timeout, "timeout", "e", time.Second*2, "tcp timeout duration when connect to real server or parent proxy")
-	// 跳板机
+	// 代理
 	flags.StringVar(&tcpCfg.RawProxyURL, "proxy", "", "https or socks5 proxies used when connecting to parent, only worked of -T is tls or tcp, format is https://username:password@host:port https://host:port or socks5://username:password@host:port socks5://host:port")
 
 	rootCmd.AddCommand(tcpCmd)

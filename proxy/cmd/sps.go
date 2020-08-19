@@ -2,13 +2,10 @@ package cmd
 
 import (
 	"log"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-
-	"github.com/thinkgos/jocasta/lib/encrypt"
 
 	ssps "github.com/thinkgos/jocasta/services/sps"
 )
@@ -52,8 +49,7 @@ func init() {
 	flags.StringVarP(&spsCfg.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&spsCfg.CaCertFile, "ca", "", "ca cert file for tls")
 	// stcp有效
-	flags.StringVar(&spsCfg.STCPConfig.Method, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
-	flags.StringVar(&spsCfg.STCPConfig.Password, "stcp-password", "thinkgos's_goproxy", "password of local stcp's encrpyt/decrypt")
+	spsCfg.STCPConfig = stcpCfg
 	// 其它
 	flags.DurationVar(&spsCfg.Timeout, "timeout", 5*time.Second, "tcp timeout duration when connect to real server or parent proxy")
 	// basic auth 配置

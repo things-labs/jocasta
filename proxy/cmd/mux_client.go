@@ -2,13 +2,10 @@ package cmd
 
 import (
 	"log"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-
-	"github.com/thinkgos/jocasta/lib/encrypt"
 
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services/mux"
@@ -45,8 +42,7 @@ func init() {
 	flags.StringVarP(&muxClient.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&muxClient.SecretKey, "sk", "default", "key same with server")
 	flags.BoolVar(&muxClient.Compress, "compress", false, "compress data when tcp|tls|stcp mode")
-	flags.StringVar(&muxClient.STCPConfig.Method, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
-	flags.StringVar(&muxClient.STCPConfig.Password, "stcp-password", "thinkgos's_goproxy", "password of local stcp's encrpyt/decrypt")
+	muxClient.STCPConfig = stcpCfg
 	flags.DurationVarP(&muxClient.Timeout, "timeout", "i", time.Second*2, "tcp timeout duration when connect to real server or parent proxy")
 	flags.StringVar(&muxClient.RawProxyURL, "proxy", "", "https or socks5 proxies used when connecting to parent, only worked of -T is tls or tcp, format is https://username:password@host:port https://host:port or socks5://username:password@host:port socks5://host:port")
 

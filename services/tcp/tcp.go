@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"runtime/debug"
@@ -47,7 +46,7 @@ type Config struct {
 	KeyFile    string // key文件 default: proxy.key
 	CaCertFile string // ca文件 default: empty
 	// kcp有效
-	SKCPConfig *ccs.SKCPConfig
+	SKCPConfig ccs.SKCPConfig
 	// stcp有效
 	// stcp 加密方法 default: aes-192-cfb
 	// stcp 加密密钥 default: thinkgos's_jocasta
@@ -127,11 +126,11 @@ func (sf *TCP) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return errors.New("cert file and key file required")
 		}
-		if sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Load(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
+		if sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
 			return err
 		}
 		if sf.cfg.CaCertFile != "" {
-			if sf.cfg.tcpTlsConfig.CaCert, err = ioutil.ReadFile(sf.cfg.CaCertFile); err != nil {
+			if sf.cfg.tcpTlsConfig.CaCert, err = cert.LoadCrt(sf.cfg.CaCertFile); err != nil {
 				return fmt.Errorf("read ca file %+v", err)
 			}
 		}
@@ -144,9 +143,6 @@ func (sf *TCP) inspectConfig() (err error) {
 	}
 
 	if sf.cfg.RawProxyURL != "" {
-		if !strext.Contains([]string{"tcp", "tls"}, sf.cfg.ParentType) {
-			return fmt.Errorf("proxyURL only support one of parent type <tcp|tls> but give %s", sf.cfg.ParentType)
-		}
 		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.RawProxyURL); err != nil {
 			return fmt.Errorf("new proxyURL, %+v", err)
 		}

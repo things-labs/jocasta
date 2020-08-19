@@ -28,16 +28,16 @@ type KcpConfig struct {
 	// 工作模式参数
 	// 是否启用nodelay模式 0: 不启用 1:启用
 	// 协议内部毫秒,比如10ms或者20ms
-	// 快速重传模式,0关闭,可以设置为2(2次ack跨越将会直接重传)
-	// 是否关闭流控制,0: 不关闭 1: 关闭
+	// 快速重传模式, 0关闭,可以设置为2(2次ack跨越将会直接重传)
+	// 是否关闭流控制, 0: 不关闭 1: 关闭
 	// 例
-	// 普通模式: 0,40,0,0
+	// 普通模式: 0,40,2,1 (default)
 	// 极速模式: 1,10,2,1
 	NoDelay, Interval, Resend, NoCongestion int
 
 	SockBuf   int            // 读写缓存器, 默认 4194304 4M
-	Block     kcp.BlockCrypt // block encryption
 	KeepAlive int            // TODO: 未用 默认10
+	Block     kcp.BlockCrypt // block encryption
 }
 
 type blockCryptInfo struct {

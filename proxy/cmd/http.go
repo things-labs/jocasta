@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/thinkgos/jocasta/core/loadbalance"
-	"github.com/thinkgos/jocasta/lib/encrypt"
 	shttp "github.com/thinkgos/jocasta/services/http"
 )
 
@@ -48,10 +47,8 @@ func init() {
 	flags.StringVarP(&httpCfg.CertFile, "cert", "C", "proxy.crt", "cert file for tls")
 	flags.StringVarP(&httpCfg.KeyFile, "key", "K", "proxy.key", "key file for tls")
 	flags.StringVar(&httpCfg.CaCertFile, "ca", "", "ca cert file for tls")
-
 	// stcp 有效
-	flags.StringVar(&httpCfg.STCPConfig.Method, "stcp-method", "aes-192-cfb", "method of local stcp's encrpyt/decrypt, these below are supported :\n"+strings.Join(encrypt.CipherMethods(), ","))
-	flags.StringVar(&httpCfg.STCPConfig.Password, "stcp-password", "thinkgos's_jocasta", "password of local stcp's encrpyt/decrypt")
+	httpCfg.STCPConfig = stcpCfg
 	// kcp 有效
 	httpCfg.SKCPConfig = kcpCfg
 	// ssh 有效

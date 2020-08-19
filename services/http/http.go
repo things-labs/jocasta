@@ -186,7 +186,7 @@ func (sf *HTTP) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return errors.New("cert file and key file required")
 		}
-		if sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.Load(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
+		if sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
 			return err
 		}
 		if sf.cfg.CaCertFile != "" {
