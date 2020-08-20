@@ -1,4 +1,4 @@
-// Package gpool 提供一个协程池接口
+// Package gopool 提供一个协程池接口
 package gopool
 
 // Pool 协程池接口

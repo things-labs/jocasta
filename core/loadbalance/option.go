@@ -39,6 +39,7 @@ func WithGPool(pool gopool.Pool) Option {
 	}
 }
 
+// WithInterval 活性探测间隔
 func WithInterval(interval time.Duration) Option {
 	return func(g *Balanced) {
 		g.interval = interval
