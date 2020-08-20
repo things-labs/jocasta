@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/snappy"
 	"github.com/stretchr/testify/require"
 
 	"github.com/thinkgos/jocasta/internal/mock"
@@ -31,7 +32,7 @@ hello worldhello worldhello worldhello worldhello worldhello worldhello world`,
 	require.NoError(t, err)
 	require.Equal(t, len(data), n)
 
-	t.Log(time.Now().Sub(start).String(), buf.Len())
+	t.Log(time.Since(start).String(), buf.Len())
 
 	// read
 	rd := make([]byte, len(data))
@@ -41,4 +42,20 @@ hello worldhello worldhello worldhello worldhello worldhello worldhello world`,
 
 	// same
 	require.Equal(t, rd[:n], data)
+}
+
+func BenchmarkSnappy(b *testing.B) {
+	var testData = []byte(`hello worldhello worldhello worldhello worldhello worldhello worldhello world
+hello worldhello worldhello worldhello worldhello worldhello worldhello world
+hello worldhello worldhello worldhello worldhello worldhello worldhello world
+hello worldhello worldhello worldhello worldhello worldhello worldhello world
+hello worldhello worldhello worldhello worldhello worldhello worldhello world
+hello worldhello worldhello worldhello worldhello worldhello worldhello world
+hello worldhello worldhello worldhello worldhello worldhello worldhello world`,
+	)
+
+	dst := make([]byte, len(testData))
+	for i := 0; i < b.N; i++ {
+		snappy.Encode(dst, testData)
+	}
 }

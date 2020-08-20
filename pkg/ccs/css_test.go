@@ -10,6 +10,7 @@ import (
 	"github.com/thinkgos/go-socks5"
 
 	"github.com/thinkgos/jocasta/cs"
+	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
@@ -299,58 +300,14 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 	}
 }
 
-var key = `-----BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEAwZquZqQbc6TaZyaa0UV5XRqDe7FY6BNhk7FxFMvwPyQ0jSj9
-T3dfmBNkLEbdKwOEk3frMG5o0zl5ZbXj+B+24KQ5v0PBVjLHyJpzd8bpkq3W/eAh
-WIKihY7Xsxr2sES7j9WTt+6KIXbMEx2IIKDaONcVCXH51hIhp1qqZwBtVIykdUn3
-LwzDibGqp4RKABDy9CxY3x8alPPYbT0aBf4f60U7YPlI1/k7QPkXg+DLlog+utsn
-eovCe33VFT5IOszKVxPUFGqzxqbvNMgUFc5eron2SCHKUjaryve0jdUY1jniNupb
-B4902aw+hRGero6FsfZkBsNiV2SUgeG/+5oR1QIDAQABAoIBAQCx2ZLUn3TIa2xm
-zcPy8stmh/C5NFXj+8nrj1m+LQpqNqw/8KOi2JpsbYPcWMzbssObZNIdD5AkWev3
-T3w4d4ncG4Eg/vEgak21Lo1cPtJa+G9DkR2Q3ZDG+E2WLvLnQny6yQyGLw+dZjBa
-bwqaTqmpBYxBvP4xdT6NKnDXZkEJJQBG8mO5bRM6oZZpp9LidtodlU4daoxIzvbf
-lEPUZkuKOsLkeOiM2icXuU9SSZEExOs/ig5tgLEHdHmVhnpvAQr75ukO/ImZOyw1
-Ne7AbC6XkiRJpoh2Oe63o04fORBI/O5HeJNvJXPtuxoar7WIVbZMqqhkurjqtz5l
-cjKp/zsBAoGBAOvytWUCApxSRoGifKjeCpjpMAfbXpFDIF7iR7zUNx3Zy7vfTTm4
-FzSbaT87YZpJ8GqssYimmQKRAI33fQUM0bDxiKSZkakSerWELTgAThr8BN1e6hfc
-ONhVkDKAVlBYc3ksXN1FrmfKSi/YnBAwEtWKKeYNN75svKwN1RsS4TsRAoGBANIO
-vSSJqphCKio/XFBqj2Ozu5UFe/MVVC6XT38SvoVbdAiRJqeIgoErn7N+qo0RpjNj
-TaMDk6R6564/0sgdR8iZxQ/9Cy5ujWQF8jedk4XLc6WXi9BXmoHlAfmLyhD9wujc
-ZUUefQsBZ+i4J1CmVovu/DbhZYzue3EzkP1NnEKFAoGASI8ZDXjyyJPcrt0DLQMr
-ix6a8K+bg1x7RfKcUQuJ75octyfSnd9o83qfgRyHxWTblFKLPhTNlSZ2XzIutjDd
-A2cjuEqpqq7OIagGJ+SgIFhEPreDkdbdfFnDwGQLJyYsTKVB4aIeIjjpW5FnXOsL
-v7N/cwm5jMvvsZGHaY4CyaECgYAlUwMew+txJIiTezCvBVA3Og+Buji9B7QulypD
-/ROnZImooAoLSMFPrG2zGjW53UH37ZQ0/AS2/DPAjYypjDJeHZyba64Z8QDknf3d
-Df3Rj0YcTWJFgdtta0C/k6wy+rQwZkEEWBeF5hkNi/NIbFYChVOBeOlvckyy36PK
-roiudQKBgQDma8xa1OhcbhXQGL+UVY30BKihabjAN2OAN4Ukx+9kKgzoGQPPSTFa
-in10BwKpf9b95yqqViF6VKb+NSOBe2Kdyxx5PWnGKkGNSdGoan+urh7m4NJSbkAi
-rFVx8YeFEzQM36IsGYUwKWVoB9EhN5ig+q0Ac4MndnhNDs1ktq8hrg==
------END RSA PRIVATE KEY-----`
-
-var crt = `-----BEGIN CERTIFICATE-----
-MIIDTzCCAjegAwIBAgIBATANBgkqhkiG9w0BAQsFADBJMQswCQYDVQQGEwJaTTES
-MBAGA1UEChMJdjJ1YjFqLmNnMRIwEAYDVQQLEwl2MnViMWouY2cxEjAQBgNVBAMT
-CXYydWIxai5jZzAeFw0yMDAzMzExMzQ1MDdaFw0zMDAzMjkxNDQ1MDdaMEkxCzAJ
-BgNVBAYTAlpNMRIwEAYDVQQKEwl2MnViMWouY2cxEjAQBgNVBAsTCXYydWIxai5j
-ZzESMBAGA1UEAxMJdjJ1YjFqLmNnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-CgKCAQEAwZquZqQbc6TaZyaa0UV5XRqDe7FY6BNhk7FxFMvwPyQ0jSj9T3dfmBNk
-LEbdKwOEk3frMG5o0zl5ZbXj+B+24KQ5v0PBVjLHyJpzd8bpkq3W/eAhWIKihY7X
-sxr2sES7j9WTt+6KIXbMEx2IIKDaONcVCXH51hIhp1qqZwBtVIykdUn3LwzDibGq
-p4RKABDy9CxY3x8alPPYbT0aBf4f60U7YPlI1/k7QPkXg+DLlog+utsneovCe33V
-FT5IOszKVxPUFGqzxqbvNMgUFc5eron2SCHKUjaryve0jdUY1jniNupbB4902aw+
-hRGero6FsfZkBsNiV2SUgeG/+5oR1QIDAQABo0IwQDAOBgNVHQ8BAf8EBAMCAqQw
-HQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA8GA1UdEwEB/wQFMAMBAf8w
-DQYJKoZIhvcNAQELBQADggEBAHl5zBhdfN2oxUsxjlmfaOLfRIDa6wEAyeWqasr0
-BW1ZP+ehhpvQMxG9xXjTlbBHnj34W7fTkzvrj9xc4mU61tMugifbIWnzXIPWrVeu
-xTQivw6iVmYckUBhoI6WiHuYv+NOi2h72uWLmv0JDfG1NFddFBccOIzQd4iTO+zi
-ufrg3IrbJx+7EnA87vXGdZVItgz92HoQF3HPfeXzzSFMjNmxEJKNP1IU7VmlPSUv
-0F9sF0wukMiOGUQ0tXeYv3ArHqEfwtF5H9OH5RCuspFFMx6qPyAc1Ccjs73GLJ8I
-TL44tBTU3E0Bl+fyBSRkAXbVVTcYsxTeHsSuYm3pARTpKsw=
------END CERTIFICATE-----`
+var base64Key = `base64://LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBd1pxdVpxUWJjNlRhWnlhYTBVVjVYUnFEZTdGWTZCTmhrN0Z4Rk12d1B5UTBqU2o5ClQzZGZtQk5rTEViZEt3T0VrM2ZyTUc1bzB6bDVaYlhqK0IrMjRLUTV2MFBCVmpMSHlKcHpkOGJwa3EzVy9lQWgKV0lLaWhZN1hzeHIyc0VTN2o5V1R0KzZLSVhiTUV4MklJS0RhT05jVkNYSDUxaElocDFxcVp3QnRWSXlrZFVuMwpMd3pEaWJHcXA0UktBQkR5OUN4WTN4OGFsUFBZYlQwYUJmNGY2MFU3WVBsSTEvazdRUGtYZytETGxvZyt1dHNuCmVvdkNlMzNWRlQ1SU9zektWeFBVRkdxenhxYnZOTWdVRmM1ZXJvbjJTQ0hLVWphcnl2ZTBqZFVZMWpuaU51cGIKQjQ5MDJhdytoUkdlcm82RnNmWmtCc05pVjJTVWdlRy8rNW9SMVFJREFRQUJBb0lCQVFDeDJaTFVuM1RJYTJ4bQp6Y1B5OHN0bWgvQzVORlhqKzhucmoxbStMUXBxTnF3LzhLT2kySnBzYllQY1dNemJzc09iWk5JZEQ1QWtXZXYzClQzdzRkNG5jRzRFZy92RWdhazIxTG8xY1B0SmErRzlEa1IyUTNaREcrRTJXTHZMblFueTZ5UXlHTHcrZFpqQmEKYndxYVRxbXBCWXhCdlA0eGRUNk5LbkRYWmtFSkpRQkc4bU81YlJNNm9aWnBwOUxpZHRvZGxVNGRhb3hJenZiZgpsRVBVWmt1S09zTGtlT2lNMmljWHVVOVNTWkVFeE9zL2lnNXRnTEVIZEhtVmhucHZBUXI3NXVrTy9JbVpPeXcxCk5lN0FiQzZYa2lSSnBvaDJPZTYzbzA0Zk9SQkkvTzVIZUpOdkpYUHR1eG9hcjdXSVZiWk1xcWhrdXJqcXR6NWwKY2pLcC96c0JBb0dCQU92eXRXVUNBcHhTUm9HaWZLamVDcGpwTUFmYlhwRkRJRjdpUjd6VU54M1p5N3ZmVFRtNApGelNiYVQ4N1lacEo4R3Fzc1lpbW1RS1JBSTMzZlFVTTBiRHhpS1Naa2FrU2VyV0VMVGdBVGhyOEJOMWU2aGZjCk9OaFZrREtBVmxCWWMza3NYTjFGcm1mS1NpL1luQkF3RXRXS0tlWU5ONzVzdkt3TjFSc1M0VHNSQW9HQkFOSU8KdlNTSnFwaENLaW8vWEZCcWoyT3p1NVVGZS9NVlZDNlhUMzhTdm9WYmRBaVJKcWVJZ29Fcm43TitxbzBScGpOagpUYU1EazZSNjU2NC8wc2dkUjhpWnhRLzlDeTV1aldRRjhqZWRrNFhMYzZXWGk5Qlhtb0hsQWZtTHloRDl3dWpjClpVVWVmUXNCWitpNEoxQ21Wb3Z1L0RiaFpZenVlM0V6a1AxTm5FS0ZBb0dBU0k4WkRYanl5SlBjcnQwRExRTXIKaXg2YThLK2JnMXg3UmZLY1VRdUo3NW9jdHlmU25kOW84M3FmZ1J5SHhXVGJsRktMUGhUTmxTWjJYekl1dGpEZApBMmNqdUVxcHFxN09JYWdHSitTZ0lGaEVQcmVEa2RiZGZGbkR3R1FMSnlZc1RLVkI0YUllSWpqcFc1Rm5YT3NMCnY3Ti9jd201ak12dnNaR0hhWTRDeWFFQ2dZQWxVd01ldyt0eEpJaVRlekN2QlZBM09nK0J1amk5QjdRdWx5cEQKL1JPblpJbW9vQW9MU01GUHJHMnpHalc1M1VIMzdaUTAvQVMyL0RQQWpZeXBqREplSFp5YmE2NFo4UURrbmYzZApEZjNSajBZY1RXSkZnZHR0YTBDL2s2d3krclF3WmtFRVdCZUY1aGtOaS9OSWJGWUNoVk9CZU9sdmNreXkzNlBLCnJvaXVkUUtCZ1FEbWE4eGExT2hjYmhYUUdMK1VWWTMwQktpaGFiakFOMk9BTjRVa3grOWtLZ3pvR1FQUFNURmEKaW4xMEJ3S3BmOWI5NXlxcVZpRjZWS2IrTlNPQmUyS2R5eHg1UFduR0trR05TZEdvYW4rdXJoN200TkpTYmtBaQpyRlZ4OFllRkV6UU0zNklzR1lVd0tXVm9COUVoTjVpZytxMEFjNE1uZG5oTkRzMWt0cThocmc9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ==`
+var base64Crt = `base64://LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURUekNDQWplZ0F3SUJBZ0lCQVRBTkJna3Foa2lHOXcwQkFRc0ZBREJKTVFzd0NRWURWUVFHRXdKYVRURVMKTUJBR0ExVUVDaE1KZGpKMVlqRnFMbU5uTVJJd0VBWURWUVFMRXdsMk1uVmlNV291WTJjeEVqQVFCZ05WQkFNVApDWFl5ZFdJeGFpNWpaekFlRncweU1EQXpNekV4TXpRMU1EZGFGdzB6TURBek1qa3hORFExTURkYU1Fa3hDekFKCkJnTlZCQVlUQWxwTk1SSXdFQVlEVlFRS0V3bDJNblZpTVdvdVkyY3hFakFRQmdOVkJBc1RDWFl5ZFdJeGFpNWoKWnpFU01CQUdBMVVFQXhNSmRqSjFZakZxTG1Obk1JSUJJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBUThBTUlJQgpDZ0tDQVFFQXdacXVacVFiYzZUYVp5YWEwVVY1WFJxRGU3Rlk2Qk5oazdGeEZNdndQeVEwalNqOVQzZGZtQk5rCkxFYmRLd09FazNmck1HNW8wemw1WmJYaitCKzI0S1E1djBQQlZqTEh5SnB6ZDhicGtxM1cvZUFoV0lLaWhZN1gKc3hyMnNFUzdqOVdUdCs2S0lYYk1FeDJJSUtEYU9OY1ZDWEg1MWhJaHAxcXFad0J0Vkl5a2RVbjNMd3pEaWJHcQpwNFJLQUJEeTlDeFkzeDhhbFBQWWJUMGFCZjRmNjBVN1lQbEkxL2s3UVBrWGcrRExsb2crdXRzbmVvdkNlMzNWCkZUNUlPc3pLVnhQVUZHcXp4cWJ2Tk1nVUZjNWVyb24yU0NIS1VqYXJ5dmUwamRVWTFqbmlOdXBiQjQ5MDJhdysKaFJHZXJvNkZzZlprQnNOaVYyU1VnZUcvKzVvUjFRSURBUUFCbzBJd1FEQU9CZ05WSFE4QkFmOEVCQU1DQXFRdwpIUVlEVlIwbEJCWXdGQVlJS3dZQkJRVUhBd0VHQ0NzR0FRVUZCd01DTUE4R0ExVWRFd0VCL3dRRk1BTUJBZjh3CkRRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFIbDV6QmhkZk4yb3hVc3hqbG1mYU9MZlJJRGE2d0VBeWVXcWFzcjAKQlcxWlArZWhocHZRTXhHOXhYalRsYkJIbmozNFc3ZlRrenZyajl4YzRtVTYxdE11Z2lmYklXbnpYSVBXclZldQp4VFFpdnc2aVZtWWNrVUJob0k2V2lIdVl2K05PaTJoNzJ1V0xtdjBKRGZHMU5GZGRGQmNjT0l6UWQ0aVRPK3ppCnVmcmczSXJiSngrN0VuQTg3dlhHZFpWSXRnejkySG9RRjNIUGZlWHp6U0ZNak5teEVKS05QMUlVN1ZtbFBTVXYKMEY5c0Ywd3VrTWlPR1VRMHRYZVl2M0FySHFFZnd0RjVIOU9INVJDdXNwRkZNeDZxUHlBYzFDY2pzNzNHTEo4SQpUTDQ0dEJUVTNFMEJsK2Z5QlNSa0FYYlZWVGNZc3hUZUhzU3VZbTNwQVJUcEtzdz0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQ==`
 
 func TestTcpTls_Forward_Direct(t *testing.T) {
-	for _, compress := range []bool{true, false} {
+	crt, key, err := cert.LoadPair(base64Crt, base64Key)
+	require.NoError(t, err)
 
+	for _, compress := range []bool{true, false} {
 		for _, single := range []bool{true, false} {
 			// server
 			srv := &Server{
@@ -359,8 +316,8 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 				Config: Config{
 					TCPTlsConfig: cs.TLSConfig{
 						CaCert: nil,
-						Cert:   []byte(crt),
-						Key:    []byte(key),
+						Cert:   crt,
+						Key:    key,
 						Single: single,
 					},
 				},
@@ -391,9 +348,9 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 				Timeout:  time.Second,
 				Config: Config{
 					TCPTlsConfig: cs.TLSConfig{
-						CaCert: []byte(crt),
-						Cert:   []byte(crt),
-						Key:    []byte(key),
+						CaCert: crt,
+						Cert:   crt,
+						Key:    key,
 						Single: single,
 					},
 				},
@@ -420,8 +377,10 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 }
 
 func TestTcpTls_Forward_socks5(t *testing.T) {
-	for _, compress := range []bool{true, false} {
+	crt, key, err := cert.LoadPair(base64Crt, base64Key)
+	require.NoError(t, err)
 
+	for _, compress := range []bool{true, false} {
 		for _, single := range []bool{true, false} {
 			func() {
 				srv := &Server{
@@ -430,8 +389,8 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 					Config: Config{
 						TCPTlsConfig: cs.TLSConfig{
 							CaCert: nil,
-							Cert:   []byte(crt),
-							Key:    []byte(key),
+							Cert:   crt,
+							Key:    key,
 							Single: single,
 						},
 					},
@@ -484,9 +443,9 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 					Timeout:  time.Second,
 					Config: Config{
 						TCPTlsConfig: cs.TLSConfig{
-							CaCert: []byte(crt),
-							Cert:   []byte(crt),
-							Key:    []byte(key),
+							CaCert: crt,
+							Cert:   crt,
+							Key:    key,
 							Single: single,
 						},
 						ProxyURL: pURL,
