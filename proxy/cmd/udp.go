@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	"github.com/thinkgos/jocasta/pkg/sword"
 	sudp "github.com/thinkgos/jocasta/services/udp"
 )
 
@@ -22,9 +21,7 @@ var udpCmd = &cobra.Command{
 		}
 
 		log.Println(udpCfg.SKCPConfig)
-		srv := sudp.New(udpCfg,
-			sudp.WithGPool(sword.GPool),
-			sudp.WithLogger(zap.S()))
+		srv := sudp.New(udpCfg, sudp.WithLogger(zap.S()))
 		err := srv.Start()
 		if err != nil {
 			log.Fatalf("run service [%s],%s", cmd.Name(), err)

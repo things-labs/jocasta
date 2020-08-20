@@ -1,5 +1,5 @@
 // Package gpool 提供一个协程池接口
-package gpool
+package gopool
 
 // Pool 协程池接口
 type Pool interface {

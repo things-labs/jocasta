@@ -118,7 +118,6 @@ type Socks struct {
 	sshClient             atomic.Value
 	userConns             cmap.ConcurrentMap
 	udpRelatedPacketConns cmap.ConcurrentMap
-	goPool                sword.GoPool
 	cancel                context.CancelFunc
 	ctx                   context.Context
 	log                   logger.Logger
@@ -133,7 +132,6 @@ func New(log logger.Logger, cfg Config) *Socks {
 		cfg:                   cfg,
 		userConns:             cmap.New(),
 		udpRelatedPacketConns: cmap.New(),
-		goPool:                sword.GPool,
 		log:                   log,
 	}
 }
@@ -239,7 +237,7 @@ func (sf *Socks) initService() (err error) {
 		sf.filters = filter.New(sf.cfg.Intelligent,
 			filter.WithTimeout(sf.cfg.Timeout),
 			filter.WithLivenessPeriod(sf.cfg.Interval),
-			filter.WithGPool(sword.GPool),
+			filter.WithGPool(sword.GoPool),
 			filter.WithLogger(sf.log))
 		var count int
 		count, err = sf.filters.LoadProxyFile(sf.cfg.ProxyFile)
@@ -281,7 +279,7 @@ func (sf *Socks) initService() (err error) {
 			loadbalance.WithDNSServer(sf.domainResolver),
 			loadbalance.WithLogger(sf.log),
 			loadbalance.WithEnableDebug(sf.cfg.Debug),
-			loadbalance.WithGPool(sf.goPool),
+			loadbalance.WithGPool(sword.GoPool),
 		)
 	}
 	// init ssh connect
@@ -291,7 +289,7 @@ func (sf *Socks) initService() (err error) {
 			return fmt.Errorf("dial ssh fail, %s", err)
 		}
 		sf.sshClient.Store(sshClient)
-		sf.goPool.Go(func() {
+		sword.Go(func() {
 			sf.log.Debugf("[ Socks ] ssh keepalive started")
 			t := time.NewTicker(time.Second * 10)
 			defer func() {
@@ -364,7 +362,7 @@ func (sf *Socks) Start() (err error) {
 			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 		},
-		GoPool:      sf.goPool,
+		GoPool:      sword.GoPool,
 		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
 		Handler:     cs.HandlerFunc(sf.handle),
 	}
@@ -469,8 +467,8 @@ func (sf *Socks) proxyTCP(ctx context.Context, writer io.Writer, request *socks5
 	// start proxying
 	eCh1 := make(chan error, 1)
 	eCh2 := make(chan error, 1)
-	sf.goPool.Go(func() { eCh1 <- sf.socks5Srv.Proxy(targetConn, request.Reader) })
-	sf.goPool.Go(func() { eCh2 <- sf.socks5Srv.Proxy(writer, targetConn) })
+	sword.Go(func() { eCh1 <- sf.socks5Srv.Proxy(targetConn, request.Reader) })
+	sword.Go(func() { eCh2 <- sf.socks5Srv.Proxy(writer, targetConn) })
 	// Wait
 	select {
 	case err = <-eCh1:

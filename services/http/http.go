@@ -126,7 +126,6 @@ type HTTP struct {
 	ctx             context.Context
 	log             logger.Logger
 	proxyURL        *url.URL
-	goPool          sword.GoPool
 }
 
 var _ services.Service = (*HTTP)(nil)
@@ -137,7 +136,6 @@ func New(log logger.Logger, cfg Config) *HTTP {
 		channels:  make([]cs.Server, 0),
 		userConns: cmap.New(),
 		log:       log,
-		goPool:    sword.GPool,
 	}
 }
 
@@ -248,7 +246,7 @@ func (sf *HTTP) InitService() (err error) {
 		sf.filters = filter.New(sf.cfg.Intelligent,
 			filter.WithTimeout(sf.cfg.HTTPTimeout),
 			filter.WithLivenessPeriod(sf.cfg.Interval),
-			filter.WithGPool(sword.GPool), filter.WithLogger(sf.log),
+			filter.WithGPool(sword.GoPool), filter.WithLogger(sf.log),
 		)
 		var count int
 		count, err = sf.filters.LoadProxyFile(sf.cfg.ProxyFile)
@@ -290,7 +288,7 @@ func (sf *HTTP) InitService() (err error) {
 			loadbalance.WithDNSServer(sf.domainResolver),
 			loadbalance.WithLogger(sf.log),
 			loadbalance.WithEnableDebug(sf.cfg.Debug),
-			loadbalance.WithGPool(sf.goPool),
+			loadbalance.WithGPool(sword.GoPool),
 		)
 	}
 
@@ -300,7 +298,7 @@ func (sf *HTTP) InitService() (err error) {
 			return fmt.Errorf("dial ssh fail, %s", err)
 		}
 		sf.sshClient.Store(sshClient)
-		sf.goPool.Go(func() {
+		sword.Go(func() {
 			t := time.NewTicker(time.Second * 10)
 			sf.log.Debugf("ssh keepalive started")
 			defer func() {
@@ -371,7 +369,7 @@ func (sf *HTTP) Start() (err error) {
 				StcpConfig:   sf.cfg.STCPConfig,
 				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			},
-			GoPool:      sf.goPool,
+			GoPool:      sword.GoPool,
 			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
 			Handler:     cs.HandlerFunc(sf.handle),
 		}
@@ -593,7 +591,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 		err = backoff.Retry(func() (er error) {
 			sshClient := sf.sshClient.Load().(*ssh.Client)
 			wait := make(chan struct{}, 1)
-			sf.goPool.Go(func() {
+			sword.Go(func() {
 				outConn, er = sshClient.Dial("tcp", address)
 				wait <- struct{}{}
 			})

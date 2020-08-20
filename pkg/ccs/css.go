@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gopool"
 )
 
 // Config config
@@ -102,7 +102,7 @@ type Server struct {
 	Protocol string
 	Addr     string
 	Config
-	GoPool      gpool.Pool
+	GoPool      gopool.Pool
 	AfterChains cs.AdornConnsChain
 	Handler     cs.Handler
 
@@ -160,7 +160,7 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 		return nil, sf.status
 	}
 
-	gpool.Go(sf.GoPool, func() { _ = srv.ListenAndServe() })
+	gopool.Go(sf.GoPool, func() { _ = srv.ListenAndServe() })
 
 	return srv, sf.status
 }

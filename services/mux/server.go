@@ -79,7 +79,6 @@ type Server struct {
 	udpConns *connection.Manager // 本地udp地址 -> 远端连接 映射
 	mu       sync.Mutex
 	proxyURL *url.URL
-	gPool    sword.GoPool
 	cancel   context.CancelFunc
 	ctx      context.Context
 	log      logger.Logger
@@ -166,19 +165,19 @@ func (sf *Server) Start() (err error) {
 		sf.channel = &cs.UDPServer{
 			Addr:    sf.cfg.local,
 			Status:  status,
-			GoPool:  sword.GPool,
+			GoPool:  sword.GoPool,
 			Handler: sf.handleUDP,
 		}
 	} else {
 		sf.channel = &cs.TCPServer{
 			Addr:        sf.cfg.local,
 			Status:      status,
-			GoPool:      sword.GPool,
+			GoPool:      sword.GoPool,
 			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(false)},
 			Handler:     cs.HandlerFunc(sf.handleTCP),
 		}
 	}
-	sf.gPool.Go(func() { _ = sf.channel.ListenAndServe() })
+	sword.Go(func() { _ = sf.channel.ListenAndServe() })
 
 	if err = <-status; err != nil {
 		return
@@ -187,7 +186,7 @@ func (sf *Server) Start() (err error) {
 	time.Sleep(time.Millisecond * 100)
 
 	if sf.cfg.isUDP {
-		sf.gPool.Go(func() {
+		sword.Go(func() {
 			sf.udpConns.Watch(sf.ctx)
 		})
 	}
@@ -291,7 +290,7 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 		}
 
 		sf.log.Infof("session[%s] created", sf.cfg.SecretKey)
-		sf.gPool.Go(func() {
+		sword.Go(func() {
 			t := time.NewTicker(time.Second * 5)
 			defer t.Stop()
 			for {
@@ -361,7 +360,7 @@ func (sf *Server) runUDPReceive(key, id string) {
 			return
 		}
 		atomic.StoreInt64(&udpConnItem.lastActiveTime, time.Now().Unix())
-		sf.gPool.Go(func() {
+		sword.Go(func() {
 			sf.channel.(*cs.UDPServer).WriteToUDP(da.Data, udpConnItem.srcAddr)
 		})
 	}
@@ -388,7 +387,7 @@ func (sf *Server) handleUDP(_ *net.UDPConn, msg cs.Message) {
 		}
 		sf.udpConns.Set(srcAddr, udpConnItem)
 		// 从远端接收数据,发送到本地
-		sf.gPool.Go(func() {
+		sword.Go(func() {
 			sf.runUDPReceive(srcAddr, id)
 		})
 	}

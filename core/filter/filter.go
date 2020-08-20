@@ -13,7 +13,7 @@ import (
 
 	cmap "github.com/orcaman/concurrent-map"
 
-	"github.com/thinkgos/jocasta/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gopool"
 	"github.com/thinkgos/jocasta/lib/logger"
 )
 
@@ -39,7 +39,7 @@ type Filter struct {
 	aliveThreshold   int64
 	cancel           context.CancelFunc
 	ctx              context.Context
-	gPool            gpool.Pool
+	gPool            gopool.Pool
 	log              logger.Logger
 }
 

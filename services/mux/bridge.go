@@ -47,7 +47,6 @@ type Bridge struct {
 	channel     cs.Server
 	clientConns *connection.Manager // sk 对 session映射
 	serverConns cmap.ConcurrentMap  // address 对 session映射
-	gPool       sword.GoPool
 	cancel      context.CancelFunc
 	ctx         context.Context
 	log         logger.Logger
@@ -114,7 +113,7 @@ func (sf *Bridge) Start() (err error) {
 			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 		},
-		GoPool:      sf.gPool,
+		GoPool:      sword.GoPool,
 		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.Compress)},
 		Handler:     cs.HandlerFunc(sf.handler),
 	}
@@ -123,7 +122,7 @@ func (sf *Bridge) Start() (err error) {
 	if err = <-errChan; err != nil {
 		return
 	}
-	sf.gPool.Go(func() { sf.clientConns.Watch(sf.ctx) })
+	sword.Go(func() { sf.clientConns.Watch(sf.ctx) })
 	sf.log.Infof("[ Bridge ] use bridge %s on %s", sf.cfg.LocalType, sf.channel.LocalAddr())
 	return
 }
@@ -186,7 +185,7 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			if err != nil {
 				return
 			}
-			sf.gPool.Go(func() {
+			sword.Go(func() {
 				sf.proxyStream(stream, Negos.Nego.SecretKey, Negos.Nego.Id)
 			})
 		}

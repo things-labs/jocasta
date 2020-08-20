@@ -5,7 +5,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/thinkgos/jocasta/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gopool"
 )
 
 // TCPServer tcp server
@@ -14,7 +14,7 @@ type TCPServer struct {
 	Config *tls.Config // if not nil it will use tls
 
 	Status      chan error
-	GoPool      gpool.Pool
+	GoPool      gopool.Pool
 	AfterChains AdornConnsChain
 	Handler     Handler
 
@@ -44,7 +44,7 @@ func (sf *TCPServer) ListenAndServe() error {
 		if err != nil {
 			return err
 		}
-		gpool.Go(sf.GoPool, func() {
+		gopool.Go(sf.GoPool, func() {
 			for _, chain := range sf.AfterChains {
 				conn = chain(conn)
 			}

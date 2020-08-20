@@ -82,7 +82,6 @@ type TCP struct {
 	single      singleflight.Group
 	proxyURL    *url.URL
 	dnsResolver *idns.Resolver
-	goPool      sword.GoPool
 	cancel      context.CancelFunc
 	ctx         context.Context
 	log         logger.Logger
@@ -170,7 +169,7 @@ func (sf *TCP) Start() (err error) {
 			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 		},
-		GoPool:      sf.goPool,
+		GoPool:      sword.GoPool,
 		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
 		Handler:     cs.HandlerFunc(sf.handler),
 	}
@@ -181,7 +180,7 @@ func (sf *TCP) Start() (err error) {
 	sf.channel = channel
 
 	if sf.cfg.ParentType == "udp" {
-		sf.goPool.Go(func() { sf.userConns.Watch(sf.ctx) })
+		sword.Go(func() { sf.userConns.Watch(sf.ctx) })
 	}
 
 	sf.log.Infof("[ TCP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)
@@ -298,7 +297,7 @@ func (sf *TCP) proxyStream2UDP(inConn net.Conn) {
 				targetConn: targetConn,
 			}
 			sf.userConns.Set(srcAddr, item)
-			sf.goPool.Go(func() {
+			sword.Go(func() {
 				sf.log.Infof("[ TCP ] udp conn %s ---> %s connected", srcAddr, localAddr)
 				buf := sword.Binding.Get()
 				defer func() {

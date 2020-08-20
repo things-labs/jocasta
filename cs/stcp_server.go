@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/thinkgos/jocasta/lib/encrypt"
-	"github.com/thinkgos/jocasta/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gopool"
 )
 
 // StcpServer stcp server
@@ -15,7 +15,7 @@ type StcpServer struct {
 	Config StcpConfig
 
 	Status      chan error
-	GoPool      gpool.Pool
+	GoPool      gopool.Pool
 	AfterChains AdornConnsChain
 	Handler     Handler
 
@@ -53,7 +53,7 @@ func (sf *StcpServer) ListenAndServe() error {
 		if err != nil {
 			return err
 		}
-		gpool.Go(sf.GoPool, func() {
+		gopool.Go(sf.GoPool, func() {
 			conn = AdornCencrypt(sf.Config.Method, sf.Config.Password)(conn)
 			for _, chain := range sf.AfterChains {
 				conn = chain(conn)

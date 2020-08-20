@@ -262,7 +262,7 @@ func (sf *SPS) InitService() (err error) {
 			loadbalance.WithDNSServer(sf.domainResolver),
 			loadbalance.WithLogger(sf.log),
 			loadbalance.WithEnableDebug(sf.cfg.Debug),
-			loadbalance.WithGPool(sword.GPool),
+			loadbalance.WithGPool(sword.GoPool),
 		)
 	}
 
@@ -302,7 +302,7 @@ func (sf *SPS) Start() (err error) {
 					StcpConfig:   sf.cfg.STCPConfig,
 					KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 				},
-				GoPool:      sword.GPool,
+				GoPool:      sword.GoPool,
 				AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
 				Handler:     cs.HandlerFunc(sf.handle),
 			}

@@ -3,7 +3,7 @@ package cs
 import (
 	"net"
 
-	"github.com/thinkgos/jocasta/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gopool"
 )
 
 // Message message
@@ -18,7 +18,7 @@ type UDPServer struct {
 	Addr   string
 	Status chan error
 	*net.UDPConn
-	GoPool  gpool.Pool
+	GoPool  gopool.Pool
 	Handler func(listen *net.UDPConn, message Message)
 }
 
@@ -57,7 +57,7 @@ func (sf *UDPServer) ListenAndServe() error {
 		}
 		data := buf[0:n]
 
-		gpool.Go(sf.GoPool, func() {
+		gopool.Go(sf.GoPool, func() {
 			sf.Handler(sf.UDPConn, Message{
 				LocalAddr: addr,
 				SrcAddr:   srcAddr,

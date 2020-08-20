@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services/mux"
 )
 
@@ -22,9 +21,7 @@ var muxClientCmd = &cobra.Command{
 		}
 		muxClient.SKCPConfig = kcpCfg
 
-		srv := mux.NewClient(muxClient,
-			mux.WithClientLogger(zap.S()),
-			mux.WithClientGPool(sword.GPool))
+		srv := mux.NewClient(muxClient, mux.WithClientLogger(zap.S()))
 		err := srv.Start()
 		if err != nil {
 			log.Fatalf("run service [%s],%s", cmd.Name(), err)

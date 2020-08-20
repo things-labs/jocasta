@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/thinkgos/jocasta/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gopool"
 	"github.com/thinkgos/jocasta/lib/logger"
 )
 
@@ -21,7 +21,7 @@ func WithLogger(log logger.Logger) Option {
 }
 
 // WithGPool 使用协程池
-func WithGPool(pool gpool.Pool) Option {
+func WithGPool(pool gopool.Pool) Option {
 	return func(f *Filter) {
 		if pool != nil {
 			f.gPool = pool

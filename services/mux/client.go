@@ -65,7 +65,6 @@ type Client struct {
 	sessions *smux.Session
 	udpConns *connection.Manager
 	proxyURL *url.URL
-	gPool    sword.GoPool
 	cancel   context.CancelFunc
 	ctx      context.Context
 	log      logger.Logger
@@ -133,11 +132,11 @@ func (sf *Client) Start() (err error) {
 		return
 	}
 
-	sf.gPool.Go(func() {
+	sword.Go(func() {
 		sf.udpConns.Watch(sf.ctx)
 	})
 
-	sf.gPool.Go(func() {
+	sword.Go(func() {
 		boff := backoff.WithContext(&backoff.ExponentialBackOff{
 			InitialInterval:     time.Second,
 			RandomizationFactor: 0.5,
@@ -205,7 +204,7 @@ func (sf *Client) Start() (err error) {
 					sf.log.Infof("[ Client ] accept stream %s, retrying...", err)
 					return err
 				}
-				sf.gPool.Go(func() {
+				sword.Go(func() {
 					hand, err := through.ParseHandshakeRequest(stream)
 					if err != nil {
 						sf.log.Errorf("[ Client ] read stream signal %s", err)
@@ -282,13 +281,13 @@ func (sf *Client) proxyUDP(inConn *smux.Stream, localAddr, sessId string) {
 				sessId:    sessId,
 			}
 			sf.udpConns.Set(cacheSrcAddr, item)
-			sf.gPool.Go(func() {
+			sword.Go(func() {
 				sf.runUdpReceive(cacheSrcAddr, sessId)
 			})
 		}
 
 		atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-		sf.gPool.Go(func() {
+		sword.Go(func() {
 			item.localConn.Write(da.Data)
 		})
 	}
@@ -353,7 +352,7 @@ func (sf *Client) runUdpReceive(key, id string) {
 			return
 		}
 		atomic.StoreInt64(&connItem.lastActiveTime, time.Now().Unix())
-		sf.gPool.Go(func() {
+		sword.Go(func() {
 			defer sword.Binding.Put(buf)
 			as, err := captain.ParseAddrSpec(connItem.srcAddr.String())
 			if err != nil {

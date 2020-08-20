@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/thinkgos/jocasta/core/idns"
-	"github.com/thinkgos/jocasta/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gopool"
 	"github.com/thinkgos/jocasta/lib/logger"
 )
 
@@ -33,7 +33,7 @@ func WithEnableDebug(b bool) Option {
 }
 
 // WithGPool 使用协程池
-func WithGPool(pool gpool.Pool) Option {
+func WithGPool(pool gopool.Pool) Option {
 	return func(g *Balanced) {
 		g.goPool = pool
 	}

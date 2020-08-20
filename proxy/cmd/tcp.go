@@ -7,8 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
-	"github.com/thinkgos/jocasta/pkg/sword"
-
 	stcp "github.com/thinkgos/jocasta/services/tcp"
 )
 
@@ -21,9 +19,7 @@ var tcpCmd = &cobra.Command{
 		if forever {
 			return
 		}
-		srv := stcp.New(tcpCfg,
-			stcp.WithGPool(sword.GPool),
-			stcp.WithLogger(zap.S()))
+		srv := stcp.New(tcpCfg, stcp.WithLogger(zap.S()))
 		err := srv.Start()
 		if err != nil {
 			log.Fatalf("run service [%s],%s", cmd.Name(), err)

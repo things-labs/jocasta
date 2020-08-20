@@ -8,13 +8,13 @@ import (
 
 	"github.com/thinkgos/jocasta/lib/bpool"
 	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gopool"
 )
 
 // Forward forward stream
 type Forward struct {
 	bpool.BufferPool
-	gPool gpool.Pool
+	gPool gopool.Pool
 }
 
 // New binding forward with buffer size 缓冲切片大小

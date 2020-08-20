@@ -17,11 +17,9 @@ func TestTCP_Forward_Direct(t *testing.T) {
 		func() {
 			// server
 			srv := &TCPServer{
-				Addr:   "127.0.0.1:0",
-				Status: make(chan error, 1),
-				AfterChains: AdornConnsChain{
-					AdornCsnappy(compress),
-				},
+				Addr:        "127.0.0.1:0",
+				Status:      make(chan error, 1),
+				AfterChains: AdornConnsChain{AdornCsnappy(compress)},
 				Handler: HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -65,11 +63,9 @@ func TestTCP_Forward_socks5(t *testing.T) {
 		func() {
 			// start server
 			srv := &TCPServer{
-				Addr:   "127.0.0.1:0",
-				Status: make(chan error, 1),
-				AfterChains: AdornConnsChain{
-					AdornCsnappy(compress),
-				},
+				Addr:        "127.0.0.1:0",
+				Status:      make(chan error, 1),
+				AfterChains: AdornConnsChain{AdornCsnappy(compress)},
 				Handler: HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -156,12 +152,10 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 
 				// server
 				srv := &TCPServer{
-					Addr:   "127.0.0.1:0",
-					Config: serverConfig,
-					Status: make(chan error, 1),
-					AfterChains: AdornConnsChain{
-						AdornCsnappy(compress),
-					},
+					Addr:        "127.0.0.1:0",
+					Config:      serverConfig,
+					Status:      make(chan error, 1),
+					AfterChains: AdornConnsChain{AdornCsnappy(compress)},
 					Handler: HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -193,11 +187,9 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 				require.NoError(t, err)
 
 				d := &TCPDialer{
-					Config:  clientConfig,
-					Timeout: time.Second,
-					AfterChains: AdornConnsChain{
-						AdornCsnappy(compress),
-					},
+					Config:      clientConfig,
+					Timeout:     time.Second,
+					AfterChains: AdornConnsChain{AdornCsnappy(compress)},
 				}
 
 				cli, err := d.Dial("tcp", srv.LocalAddr())
@@ -234,12 +226,10 @@ func TestJumper_socks5_tls(t *testing.T) {
 
 				// server
 				srv := &TCPServer{
-					Addr:   "127.0.0.1:0",
-					Config: serverConfig,
-					Status: make(chan error, 1),
-					AfterChains: AdornConnsChain{
-						AdornCsnappy(compress),
-					},
+					Addr:        "127.0.0.1:0",
+					Config:      serverConfig,
+					Status:      make(chan error, 1),
+					AfterChains: AdornConnsChain{AdornCsnappy(compress)},
 					Handler: HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -296,12 +286,10 @@ func TestJumper_socks5_tls(t *testing.T) {
 				clientConfig, err := cliConfig.ClientConfig()
 				require.NoError(t, err)
 				d := &TCPDialer{
-					Config:  clientConfig,
-					Timeout: time.Second,
-					Forward: Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
-					AfterChains: AdornConnsChain{
-						AdornCsnappy(compress),
-					},
+					Config:      clientConfig,
+					Timeout:     time.Second,
+					Forward:     Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
+					AfterChains: AdornConnsChain{AdornCsnappy(compress)},
 				}
 				conn, err := d.Dial("tcp", srv.LocalAddr())
 				require.NoError(t, err)

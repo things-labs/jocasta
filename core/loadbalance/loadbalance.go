@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/thinkgos/jocasta/core/idns"
-	"github.com/thinkgos/jocasta/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gopool"
 	"github.com/thinkgos/jocasta/lib/logger"
 )
 
@@ -76,7 +76,7 @@ type Balanced struct {
 	interval time.Duration
 	debug    bool
 	dns      *idns.Resolver
-	goPool   gpool.Pool
+	goPool   gopool.Pool
 	log      logger.Logger
 
 	rw        sync.RWMutex
@@ -204,7 +204,7 @@ func (sf *Balanced) activeHealthChecker() {
 		sf.rw.Lock()
 		for _, upstream := range sf.upstreams {
 			ups := upstream
-			gpool.Go(sf.goPool, func() {
+			gopool.Go(sf.goPool, func() {
 				defer func() {
 					if err := recover(); err != nil {
 						sf.log.DPanicf("active health checks: %v\n%s", err, debug.Stack())

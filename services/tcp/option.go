@@ -3,7 +3,6 @@ package tcp
 import (
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/lib/logger"
-	"github.com/thinkgos/jocasta/pkg/sword"
 )
 
 type Option func(t *TCP)
@@ -13,12 +12,6 @@ func WithLogger(l logger.Logger) Option {
 		if l != nil {
 			t.log = l
 		}
-	}
-}
-
-func WithGPool(pool sword.GoPool) Option {
-	return func(t *TCP) {
-		t.goPool = pool
 	}
 }
 

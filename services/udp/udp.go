@@ -66,7 +66,6 @@ type UDP struct {
 	// src地址对其它连接的绑定
 	conns       *connection.Manager
 	single      singleflight.Group
-	gPool       sword.GoPool
 	dnsResolver *idns.Resolver
 	cancel      context.CancelFunc
 	ctx         context.Context
@@ -139,7 +138,7 @@ func (sf *UDP) Start() (err error) {
 		Addr:    sf.cfg.Local,
 		Status:  make(chan error, 1),
 		Handler: sf.handle,
-		GoPool:  sf.gPool,
+		GoPool:  sword.GoPool,
 	}
 	go channel.ListenAndServe()
 	if err = <-channel.Status; err != nil {
@@ -147,7 +146,7 @@ func (sf *UDP) Start() (err error) {
 	}
 	sf.channel = channel
 
-	sf.gPool.Go(func() { sf.conns.Watch(sf.ctx) })
+	sword.Go(func() { sf.conns.Watch(sf.ctx) })
 	sf.log.Infof("[ UDP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)
 	sf.log.Infof("[ UDP ] use proxy udp on %s", sf.channel.LocalAddr())
 	return
@@ -197,7 +196,7 @@ func (sf *UDP) proxyUdp2Stream(_ *net.UDPConn, msg cs.Message) {
 		}
 		sf.conns.Set(srcAddr, item)
 		// src ---> parent
-		sf.gPool.Go(func() {
+		sword.Go(func() {
 			sf.log.Infof("[ UDP ] udp conn %s ---> stream %s  connected", srcAddr, targetConn.RemoteAddr().String())
 			defer func() {
 				sf.conns.Remove(srcAddr)
@@ -281,7 +280,7 @@ func (sf *UDP) proxyUdp2Udp(_ *net.UDPConn, msg cs.Message) {
 		}
 		sf.conns.Set(srcAddr, item)
 		// parent ---> src
-		sf.gPool.Go(func() {
+		sword.Go(func() {
 			sf.log.Infof("[ UDP ] udp conn %s ---> %s connected", srcAddr, targetAddr.String())
 			buf := sword.Binding.Get()
 			defer func() {

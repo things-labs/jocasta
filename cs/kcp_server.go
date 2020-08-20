@@ -7,7 +7,7 @@ import (
 	"github.com/xtaci/kcp-go/v5"
 	"go.uber.org/multierr"
 
-	"github.com/thinkgos/jocasta/lib/gpool"
+	"github.com/thinkgos/jocasta/lib/gopool"
 )
 
 // KCPServer 传输,可选snappy压缩
@@ -17,7 +17,7 @@ type KCPServer struct {
 	Config KcpConfig
 
 	Status      chan error
-	GoPool      gpool.Pool
+	GoPool      gopool.Pool
 	AfterChains AdornConnsChain
 	Handler     Handler
 
@@ -51,7 +51,7 @@ func (sf *KCPServer) ListenAndServe() error {
 		if err != nil {
 			return err
 		}
-		gpool.Go(sf.GoPool, func() {
+		gopool.Go(sf.GoPool, func() {
 			conn.SetStreamMode(true)
 			conn.SetWriteDelay(true)
 			conn.SetNoDelay(sf.Config.NoDelay, sf.Config.Interval, sf.Config.Resend, sf.Config.NoCongestion)
