@@ -449,3 +449,13 @@ func (sf *Server) handleTCP(inConn net.Conn) {
 		sf.log.Errorf("[ Server ] proxying, %s", err)
 	}
 }
+
+type ServerOption func(b *Server)
+
+func WithServerLogger(l logger.Logger) ServerOption {
+	return func(b *Server) {
+		if l != nil {
+			b.log = l
+		}
+	}
+}

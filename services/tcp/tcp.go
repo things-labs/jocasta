@@ -60,7 +60,7 @@ type Config struct {
 	//      socks5://host:port
 	RawProxyURL string
 	// private
-	tcpTlsConfig cs.TLSConfig
+	tlsConfig cs.TLSConfig
 }
 
 type connItem struct {
@@ -125,11 +125,11 @@ func (sf *TCP) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return errors.New("cert file and key file required")
 		}
-		if sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
+		if sf.cfg.tlsConfig.Cert, sf.cfg.tlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
 			return err
 		}
 		if sf.cfg.CaCertFile != "" {
-			if sf.cfg.tcpTlsConfig.CaCert, err = cert.LoadCrt(sf.cfg.CaCertFile); err != nil {
+			if sf.cfg.tlsConfig.CaCert, err = cert.LoadCrt(sf.cfg.CaCertFile); err != nil {
 				return fmt.Errorf("read ca file %+v", err)
 			}
 		}
@@ -165,7 +165,7 @@ func (sf *TCP) Start() (err error) {
 		Protocol: sf.cfg.LocalType,
 		Addr:     sf.cfg.Local,
 		Config: ccs.Config{
-			TCPTlsConfig: sf.cfg.tcpTlsConfig,
+			TCPTlsConfig: sf.cfg.tlsConfig,
 			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 		},
@@ -366,7 +366,7 @@ func (sf *TCP) dialParent(address string) (net.Conn, error) {
 		Protocol: sf.cfg.ParentType,
 		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
-			TCPTlsConfig: sf.cfg.tcpTlsConfig,
+			TCPTlsConfig: sf.cfg.tlsConfig,
 			StcpConfig:   sf.cfg.STCPConfig,
 			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:     sf.proxyURL,

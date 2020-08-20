@@ -397,3 +397,13 @@ func (sf *Client) dialParent(address string) (net.Conn, error) {
 	}
 	return d.Dial("tcp", address)
 }
+
+type ClientOption func(b *Client)
+
+func WithClientLogger(l logger.Logger) ClientOption {
+	return func(b *Client) {
+		if l != nil {
+			b.log = l
+		}
+	}
+}

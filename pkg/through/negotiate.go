@@ -10,7 +10,7 @@ import (
 
 // NegotiateRequest negotiate request
 type NegotiateRequest struct {
-	Types   byte
+	Types   Types
 	Version byte
 	Nego    ddt.NegotiateRequest
 }
