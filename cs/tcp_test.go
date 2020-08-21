@@ -40,8 +40,8 @@ func TestTCP_Forward_Direct(t *testing.T) {
 
 			// client
 			d := &TCPDialer{
-				Timeout:     time.Second,
-				AfterChains: AdornConnsChain{AdornCsnappy(compress)},
+				Timeout:          time.Second,
+				AfterAdornChains: AdornConnsChain{AdornCsnappy(compress)},
 			}
 			cli, err := d.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)
@@ -106,9 +106,9 @@ func TestTCP_Forward_socks5(t *testing.T) {
 
 			// client
 			cli := &TCPDialer{
-				Timeout:     time.Second,
-				Forward:     Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
-				AfterChains: AdornConnsChain{AdornCsnappy(compress)},
+				Timeout:          time.Second,
+				Forward:          Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
+				AfterAdornChains: AdornConnsChain{AdornCsnappy(compress)},
 			}
 			conn, err := cli.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)
@@ -150,7 +150,7 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 				srv := &TCPServer{
 					Addr:          "127.0.0.1:0",
 					Status:        make(chan error, 1),
-					BaseAdornConn: BaseAdornTLSServer(serverConfig),
+					BaseAdornConn: BaseTLSAdornServer(serverConfig),
 					AfterChains:   AdornConnsChain{AdornCsnappy(compress)},
 					Handler: HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
@@ -180,9 +180,9 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 				require.NoError(t, err)
 
 				d := &TCPDialer{
-					Timeout:       time.Second,
-					BaseAdornConn: BaseAdornTLSClient(clientConfig),
-					AfterChains:   AdornConnsChain{AdornCsnappy(compress)},
+					Timeout:          time.Second,
+					BaseAdorn:        BaseTLSAdornClient(clientConfig),
+					AfterAdornChains: AdornConnsChain{AdornCsnappy(compress)},
 				}
 
 				cli, err := d.Dial("tcp", srv.LocalAddr())
@@ -223,7 +223,7 @@ func TestJumper_socks5_tls(t *testing.T) {
 				srv := &TCPServer{
 					Addr:          "127.0.0.1:0",
 					Status:        make(chan error, 1),
-					BaseAdornConn: BaseAdornTLSServer(serverConfig),
+					BaseAdornConn: BaseTLSAdornServer(serverConfig),
 					AfterChains:   AdornConnsChain{AdornCsnappy(compress)},
 					Handler: HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
@@ -275,10 +275,10 @@ func TestJumper_socks5_tls(t *testing.T) {
 				clientConfig, err := cliConfig.ClientConfig()
 				require.NoError(t, err)
 				d := &TCPDialer{
-					Timeout:       time.Second,
-					Forward:       Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
-					BaseAdornConn: BaseAdornTLSClient(clientConfig),
-					AfterChains:   AdornConnsChain{AdornCsnappy(compress)},
+					Timeout:          time.Second,
+					Forward:          Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
+					BaseAdorn:        BaseTLSAdornClient(clientConfig),
+					AfterAdornChains: AdornConnsChain{AdornCsnappy(compress)},
 				}
 				conn, err := d.Dial("tcp", srv.LocalAddr())
 				require.NoError(t, err)
@@ -303,7 +303,7 @@ func TestSTCP_Forward_Direct(t *testing.T) {
 				srv := &TCPServer{
 					Addr:          "127.0.0.1:0",
 					Status:        make(chan error, 1),
-					BaseAdornConn: BaseAdornEncrypt(method, password),
+					BaseAdornConn: BaseStcpAdorn(method, password),
 					AfterChains:   AdornConnsChain{AdornCsnappy(compress)},
 					Handler: HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
@@ -323,9 +323,9 @@ func TestSTCP_Forward_Direct(t *testing.T) {
 				defer srv.Close()
 
 				d := &TCPDialer{
-					Timeout:       time.Second,
-					BaseAdornConn: BaseAdornEncrypt(method, password),
-					AfterChains:   AdornConnsChain{AdornCsnappy(compress)},
+					Timeout:          time.Second,
+					BaseAdorn:        BaseStcpAdorn(method, password),
+					AfterAdornChains: AdornConnsChain{AdornCsnappy(compress)},
 				}
 				cli, err := d.Dial("tcp", srv.LocalAddr())
 				require.NoError(t, err)
@@ -351,7 +351,7 @@ func TestStcp_Forward_socks5(t *testing.T) {
 				srv := &TCPServer{
 					Addr:          "127.0.0.1:0",
 					Status:        make(chan error, 1),
-					BaseAdornConn: BaseAdornEncrypt(method, password),
+					BaseAdornConn: BaseStcpAdorn(method, password),
 					AfterChains:   AdornConnsChain{AdornCsnappy(compress)},
 					Handler: HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
@@ -397,10 +397,10 @@ func TestStcp_Forward_socks5(t *testing.T) {
 				// t.Logf("socks5 proxy url: %v", proxyURL)
 
 				d := &TCPDialer{
-					Timeout:       time.Second,
-					Forward:       Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
-					BaseAdornConn: BaseAdornEncrypt(method, password),
-					AfterChains:   AdornConnsChain{AdornCsnappy(compress)},
+					Timeout:          time.Second,
+					Forward:          Socks5{pURL.Host, ProxyAuth(pURL), time.Second, nil},
+					BaseAdorn:        BaseStcpAdorn(method, password),
+					AfterAdornChains: AdornConnsChain{AdornCsnappy(compress)},
 				}
 				conn, err := d.Dial("tcp", srv.LocalAddr())
 				require.NoError(t, err)
@@ -426,7 +426,7 @@ func TestSSSSTCP(t *testing.T) {
 	srv := &TCPServer{
 		Addr:          "127.0.0.1:0",
 		Status:        make(chan error, 1),
-		BaseAdornConn: BaseAdornEncrypt(method, password),
+		BaseAdornConn: BaseStcpAdorn(method, password),
 		AfterChains:   AdornConnsChain{AdornCsnappy(compress)},
 		Handler: HandlerFunc(func(inconn net.Conn) {
 			buf := make([]byte, 512)
@@ -450,9 +450,9 @@ func TestSSSSTCP(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		func() {
 			d := TCPDialer{
-				Timeout:       time.Second,
-				BaseAdornConn: BaseAdornEncrypt(method, password),
-				AfterChains:   AdornConnsChain{AdornCsnappy(compress)},
+				Timeout:          time.Second,
+				BaseAdorn:        BaseStcpAdorn(method, password),
+				AfterAdornChains: AdornConnsChain{AdornCsnappy(compress)},
 			}
 			cli, err := d.Dial("tcp", srv.LocalAddr())
 			require.NoError(t, err)

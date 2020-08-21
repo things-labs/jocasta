@@ -64,9 +64,9 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 	switch sf.Protocol {
 	case "tcp":
 		d = &cs.TCPDialer{
-			Timeout:     sf.Timeout,
-			AfterChains: sf.AfterChains,
-			Forward:     forward,
+			Timeout:          sf.Timeout,
+			AfterAdornChains: sf.AfterChains,
+			Forward:          forward,
 		}
 	case "tls":
 		tlsConfig, err := sf.TLSConfig.ClientConfig()
@@ -74,20 +74,20 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 			return nil, err
 		}
 		d = &cs.TCPDialer{
-			Timeout:       sf.Timeout,
-			BaseAdornConn: cs.BaseAdornTLSClient(tlsConfig),
-			AfterChains:   sf.AfterChains,
-			Forward:       forward,
+			Timeout:          sf.Timeout,
+			BaseAdorn:        cs.BaseTLSAdornClient(tlsConfig),
+			AfterAdornChains: sf.AfterChains,
+			Forward:          forward,
 		}
 	case "stcp":
 		if ok := sf.StcpConfig.Valid(); !ok {
 			return nil, errors.New("invalid stcp config")
 		}
 		d = &cs.TCPDialer{
-			Timeout:       sf.Timeout,
-			BaseAdornConn: cs.BaseAdornEncrypt(sf.StcpConfig.Method, sf.StcpConfig.Password),
-			AfterChains:   sf.AfterChains,
-			Forward:       forward,
+			Timeout:          sf.Timeout,
+			BaseAdorn:        cs.BaseStcpAdorn(sf.StcpConfig.Method, sf.StcpConfig.Password),
+			AfterAdornChains: sf.AfterChains,
+			Forward:          forward,
 		}
 	case "kcp":
 		d = &cs.KCPDialer{
@@ -135,7 +135,7 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 		}
 		srv = &cs.TCPServer{
 			Addr:          sf.Addr,
-			BaseAdornConn: cs.BaseAdornTLSServer(tlsConfig),
+			BaseAdornConn: cs.BaseTLSAdornServer(tlsConfig),
 			AfterChains:   sf.AfterChains,
 			Handler:       sf.Handler,
 			Status:        sf.status,
@@ -149,7 +149,7 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 		}
 		srv = &cs.TCPServer{
 			Addr:          sf.Addr,
-			BaseAdornConn: cs.BaseAdornEncrypt(sf.StcpConfig.Method, sf.StcpConfig.Password),
+			BaseAdornConn: cs.BaseStcpAdorn(sf.StcpConfig.Method, sf.StcpConfig.Password),
 			AfterChains:   sf.AfterChains,
 			Handler:       sf.Handler,
 			Status:        sf.status,

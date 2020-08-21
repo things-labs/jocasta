@@ -23,8 +23,8 @@ func (sf StcpConfig) Valid() bool {
 	return err == nil
 }
 
-// BaseAdornEncrypt base adorn encrypt with method and password
-func BaseAdornEncrypt(method, password string) func(conn net.Conn) net.Conn {
+// BaseStcpAdorn base adorn encrypt with method and password
+func BaseStcpAdorn(method, password string) func(conn net.Conn) net.Conn {
 	return func(conn net.Conn) net.Conn {
 		cip, err := encrypt.NewCipher(method, password)
 		if err != nil {
@@ -48,15 +48,15 @@ type TLSConfig struct {
 	Single bool
 }
 
-// BaseAdornTLSClient base adorn tls client
-func BaseAdornTLSClient(conf *tls.Config) func(conn net.Conn) net.Conn {
+// BaseTLSAdornClient base adorn tls client
+func BaseTLSAdornClient(conf *tls.Config) func(conn net.Conn) net.Conn {
 	return func(conn net.Conn) net.Conn {
 		return tls.Client(conn, conf)
 	}
 }
 
-// BaseAdornTLSServer base adorn tls server
-func BaseAdornTLSServer(conf *tls.Config) func(conn net.Conn) net.Conn {
+// BaseTLSAdornServer base adorn tls server
+func BaseTLSAdornServer(conf *tls.Config) func(conn net.Conn) net.Conn {
 	return func(conn net.Conn) net.Conn {
 		return tls.Server(conn, conf)
 	}

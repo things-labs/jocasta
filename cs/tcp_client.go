@@ -8,10 +8,10 @@ import (
 
 // TCPDialer tcp dialer
 type TCPDialer struct {
-	Timeout       time.Duration   // timeout for dial
-	BaseAdornConn AdornConn       // base adorn conn
-	AfterChains   AdornConnsChain // chains after base
-	Forward       Dialer          // if set it will use forward.
+	Timeout          time.Duration   // timeout for dial
+	BaseAdorn        AdornConn       // base adorn conn
+	AfterAdornChains AdornConnsChain // chains after base
+	Forward          Dialer          // if set it will use forward.
 }
 
 // Dial connects to the address on the named network.
@@ -38,10 +38,10 @@ func (sf *TCPDialer) DialContext(ctx context.Context, network, addr string) (net
 	if err != nil {
 		return nil, err
 	}
-	if sf.BaseAdornConn != nil {
-		conn = sf.BaseAdornConn(conn)
+	if sf.BaseAdorn != nil {
+		conn = sf.BaseAdorn(conn)
 	}
-	for _, chain := range sf.AfterChains {
+	for _, chain := range sf.AfterAdornChains {
 		conn = chain(conn)
 	}
 	return conn, nil
