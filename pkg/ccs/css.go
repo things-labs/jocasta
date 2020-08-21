@@ -2,6 +2,7 @@ package ccs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -14,7 +15,7 @@ import (
 // Config config
 type Config struct {
 	// 仅tls有效
-	TCPTlsConfig cs.TLSConfig
+	TLSConfig cs.TLSConfig
 	// 仅stcp有效
 	StcpConfig cs.StcpConfig
 	// 仅KCP有效
@@ -64,26 +65,29 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 	case "tcp":
 		d = &cs.TCPDialer{
 			Timeout:     sf.Timeout,
-			Forward:     forward,
 			AfterChains: sf.AfterChains,
+			Forward:     forward,
 		}
 	case "tls":
-		tlsConfig, err := sf.TCPTlsConfig.ClientConfig()
+		tlsConfig, err := sf.TLSConfig.ClientConfig()
 		if err != nil {
 			return nil, err
 		}
 		d = &cs.TCPDialer{
-			Config:      tlsConfig,
-			Timeout:     sf.Timeout,
-			Forward:     forward,
-			AfterChains: sf.AfterChains,
+			Timeout:       sf.Timeout,
+			BaseAdornConn: cs.BaseAdornTLSClient(tlsConfig),
+			AfterChains:   sf.AfterChains,
+			Forward:       forward,
 		}
 	case "stcp":
-		d = &cs.StcpDialer{
-			Config:      sf.StcpConfig,
-			Timeout:     sf.Timeout,
-			Forward:     forward,
-			AfterChains: sf.AfterChains,
+		if ok := sf.StcpConfig.Valid(); !ok {
+			return nil, errors.New("invalid stcp config")
+		}
+		d = &cs.TCPDialer{
+			Timeout:       sf.Timeout,
+			BaseAdornConn: cs.BaseAdornEncrypt(sf.StcpConfig.Method, sf.StcpConfig.Password),
+			AfterChains:   sf.AfterChains,
+			Forward:       forward,
 		}
 	case "kcp":
 		d = &cs.KCPDialer{
@@ -118,42 +122,47 @@ func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
 	case "tcp":
 		srv = &cs.TCPServer{
 			Addr:        sf.Addr,
-			Status:      sf.status,
-			GoPool:      sf.GoPool,
 			AfterChains: sf.AfterChains,
 			Handler:     sf.Handler,
+			Status:      sf.status,
+			GoPool:      sf.GoPool,
 		}
 	case "tls":
-		tlsConfig, err := sf.TCPTlsConfig.ServerConfig()
+		tlsConfig, err := sf.TLSConfig.ServerConfig()
 		if err != nil {
 			sf.status <- err
 			return nil, sf.status
 		}
 		srv = &cs.TCPServer{
-			Addr:        sf.Addr,
-			Config:      tlsConfig,
-			Status:      sf.status,
-			GoPool:      sf.GoPool,
-			AfterChains: sf.AfterChains,
-			Handler:     sf.Handler,
+			Addr:          sf.Addr,
+			BaseAdornConn: cs.BaseAdornTLSServer(tlsConfig),
+			AfterChains:   sf.AfterChains,
+			Handler:       sf.Handler,
+			Status:        sf.status,
+			GoPool:        sf.GoPool,
 		}
 	case "stcp":
-		srv = &cs.StcpServer{
-			Addr:        sf.Addr,
-			Config:      sf.StcpConfig,
-			Status:      sf.status,
-			GoPool:      sf.GoPool,
-			AfterChains: sf.AfterChains,
-			Handler:     sf.Handler,
+		if ok := sf.StcpConfig.Valid(); !ok {
+			err := errors.New("invalid stcp config")
+			sf.status <- err
+			return nil, sf.status
+		}
+		srv = &cs.TCPServer{
+			Addr:          sf.Addr,
+			BaseAdornConn: cs.BaseAdornEncrypt(sf.StcpConfig.Method, sf.StcpConfig.Password),
+			AfterChains:   sf.AfterChains,
+			Handler:       sf.Handler,
+			Status:        sf.status,
+			GoPool:        sf.GoPool,
 		}
 	case "kcp":
 		srv = &cs.KCPServer{
 			Addr:        sf.Addr,
 			Config:      sf.KcpConfig,
-			Status:      sf.status,
-			GoPool:      sf.GoPool,
 			AfterChains: sf.AfterChains,
 			Handler:     sf.Handler,
+			Status:      sf.status,
+			GoPool:      sf.GoPool,
 		}
 	default:
 		sf.status <- fmt.Errorf("not support protocol: %s", sf.Protocol)

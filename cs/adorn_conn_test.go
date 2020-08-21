@@ -30,7 +30,7 @@ this is a testing mock!this is a testing mock!this is a testing mock!this is a t
 	chains := AdornConnsChain{
 		AdornCiol(),
 		AdornCflow(wc, rc, tc),
-		AdornCencrypt("aes-256-cfb", "password"),
+		BaseAdornEncrypt("aes-256-cfb", "password"),
 		AdornCsnappy(true),
 	}
 

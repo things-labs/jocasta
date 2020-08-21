@@ -327,9 +327,9 @@ func (sf *Socks) Start() (err error) {
 		Protocol: sf.cfg.LocalType,
 		Addr:     sf.cfg.Local,
 		Config: ccs.Config{
-			TCPTlsConfig: sf.cfg.tlsConfig,
-			StcpConfig:   sf.cfg.STCPConfig,
-			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
+			TLSConfig:  sf.cfg.tlsConfig,
+			StcpConfig: sf.cfg.STCPConfig,
+			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sword.GoPool,
 		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
@@ -559,9 +559,9 @@ func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
 			Protocol: sf.cfg.ParentType,
 			Timeout:  sf.cfg.Timeout,
 			Config: ccs.Config{
-				TCPTlsConfig: sf.cfg.tlsConfig,
-				StcpConfig:   sf.cfg.STCPConfig,
-				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
+				TLSConfig:  sf.cfg.tlsConfig,
+				StcpConfig: sf.cfg.STCPConfig,
+				KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			},
 			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
 		}

@@ -322,10 +322,10 @@ func (sf *Server) dialParent() (net.Conn, error) {
 		Protocol: sf.cfg.ParentType,
 		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
-			TCPTlsConfig: sf.cfg.tcpTlsConfig,
-			StcpConfig:   sf.cfg.STCPConfig,
-			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
-			ProxyURL:     sf.proxyURL,
+			TLSConfig:  sf.cfg.tcpTlsConfig,
+			StcpConfig: sf.cfg.STCPConfig,
+			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
+			ProxyURL:   sf.proxyURL,
 		},
 		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.Compress)},
 	}

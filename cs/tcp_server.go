@@ -1,7 +1,6 @@
 package cs
 
 import (
-	"crypto/tls"
 	"net"
 	"sync"
 
@@ -10,13 +9,13 @@ import (
 
 // TCPServer tcp server
 type TCPServer struct {
-	Addr   string
-	Config *tls.Config // if not nil it will use tls
+	Addr          string
+	BaseAdornConn AdornConn
+	AfterChains   AdornConnsChain
+	Handler       Handler
 
-	Status      chan error
-	GoPool      gopool.Pool
-	AfterChains AdornConnsChain
-	Handler     Handler
+	Status chan error
+	GoPool gopool.Pool
 
 	mu sync.Mutex
 	ln net.Listener
@@ -25,10 +24,6 @@ type TCPServer struct {
 // ListenAndServe listen and serve
 func (sf *TCPServer) ListenAndServe() error {
 	ln, err := net.Listen("tcp", sf.Addr)
-	if sf.Config != nil {
-		ln = tls.NewListener(ln, sf.Config.Clone())
-	}
-
 	if err != nil {
 		setStatus(sf.Status, err)
 		return err
@@ -45,6 +40,9 @@ func (sf *TCPServer) ListenAndServe() error {
 			return err
 		}
 		gopool.Go(sf.GoPool, func() {
+			if sf.BaseAdornConn != nil {
+				conn = sf.BaseAdornConn(conn)
+			}
 			for _, chain := range sf.AfterChains {
 				conn = chain(conn)
 			}

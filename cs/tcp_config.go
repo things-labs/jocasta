@@ -5,7 +5,34 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"net"
+
+	"github.com/thinkgos/jocasta/connection/cencrypt"
+	"github.com/thinkgos/jocasta/lib/encrypt"
 )
+
+// StcpConfig stcp config
+type StcpConfig struct {
+	Method   string
+	Password string
+}
+
+// Valid  valid the config
+func (sf StcpConfig) Valid() bool {
+	_, err := encrypt.NewCipher(sf.Method, sf.Password)
+	return err == nil
+}
+
+// BaseAdornEncrypt base adorn encrypt with method and password
+func BaseAdornEncrypt(method, password string) func(conn net.Conn) net.Conn {
+	return func(conn net.Conn) net.Conn {
+		cip, err := encrypt.NewCipher(method, password)
+		if err != nil {
+			panic("encrypt method should be valid")
+		}
+		return cencrypt.New(conn, cip)
+	}
+}
 
 // TLSConfig tcp tls config
 // Single == true,  单向认证
@@ -19,6 +46,20 @@ type TLSConfig struct {
 	Cert   []byte
 	Key    []byte
 	Single bool
+}
+
+// BaseAdornTLSClient base adorn tls client
+func BaseAdornTLSClient(conf *tls.Config) func(conn net.Conn) net.Conn {
+	return func(conn net.Conn) net.Conn {
+		return tls.Client(conn, conf)
+	}
+}
+
+// BaseAdornTLSServer base adorn tls server
+func BaseAdornTLSServer(conf *tls.Config) func(conn net.Conn) net.Conn {
+	return func(conn net.Conn) net.Conn {
+		return tls.Server(conn, conf)
+	}
 }
 
 // ClientConfig client tls config
@@ -100,7 +141,6 @@ func (sf *TLSConfig) ServerConfig() (*tls.Config, error) {
 	}
 	config := &tls.Config{Certificates: []tls.Certificate{certificate}}
 	if !sf.Single {
-		// 双向认证
 		certPool := x509.NewCertPool()
 		caBytes := sf.Cert
 		if sf.CaCert != nil {

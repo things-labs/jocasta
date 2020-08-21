@@ -5,11 +5,9 @@ import (
 
 	"go.uber.org/atomic"
 
-	"github.com/thinkgos/jocasta/connection/cencrypt"
 	"github.com/thinkgos/jocasta/connection/cflow"
 	"github.com/thinkgos/jocasta/connection/ciol"
 	"github.com/thinkgos/jocasta/connection/csnappy"
-	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
 // AdornConn defines the conn decorate.
@@ -29,24 +27,6 @@ func AdornCsnappy(compress bool) func(conn net.Conn) net.Conn {
 	}
 	return func(conn net.Conn) net.Conn {
 		return conn
-	}
-}
-
-// AdornCencryptCip cencrypt chain
-func AdornCencryptCip(cip *encrypt.Cipher) func(conn net.Conn) net.Conn {
-	return func(conn net.Conn) net.Conn {
-		return cencrypt.New(conn, cip)
-	}
-}
-
-// AdornCencrypt cencrypt chain with method and password
-func AdornCencrypt(method, password string) func(conn net.Conn) net.Conn {
-	return func(conn net.Conn) net.Conn {
-		cip, err := encrypt.NewCipher(method, password)
-		if err != nil {
-			panic("encrypt method should be valid")
-		}
-		return cencrypt.New(conn, cip)
 	}
 }
 

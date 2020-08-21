@@ -17,7 +17,7 @@ func global(cmd *cobra.Command) {
 	persistent := cmd.PersistentFlags()
 	// kcp config
 	persistent.StringVar(&kcpCfg.Method, "kcp-method", "aes", "encrypt/decrypt method, can be on of "+strings.Join(cs.KcpBlockCryptMethods(), ","))
-	persistent.StringVar(&kcpCfg.Key, "kcp-key", "secrect", "pre-shared secret between client and server")
+	persistent.StringVar(&kcpCfg.Key, "kcp-key", "secret", "pre-shared secret between client and server")
 	persistent.StringVar(&kcpCfg.Mode, "kcp-mode", "fast", "profiles: fast3, fast2, fast, normal, manual")
 	persistent.IntVar(&kcpCfg.MTU, "kcp-mtu", 1400, "set maximum transmission unit for UDP packets")
 	persistent.IntVar(&kcpCfg.SndWnd, "kcp-sndwnd", 1024, "set send window size(num of packets)")

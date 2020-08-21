@@ -324,9 +324,9 @@ func (sf *UDP) dialParent(address string) (net.Conn, error) {
 		Protocol: sf.cfg.ParentType,
 		Timeout:  sf.cfg.Timeout,
 		Config: ccs.Config{
-			TCPTlsConfig: sf.cfg.tcpTlsConfig,
-			StcpConfig:   sf.cfg.STCPConfig,
-			KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
+			TLSConfig:  sf.cfg.tcpTlsConfig,
+			StcpConfig: sf.cfg.STCPConfig,
+			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
 		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
 	}
