@@ -62,22 +62,13 @@ type Config struct {
 	// stcp 加密密钥 default: thinkgos's_jocasta
 	STCPConfig cs.StcpConfig
 	// 其它
-	Timeout time.Duration // tcp连接到父级或真实服务器超时时间,default 2000 单位ms
+	Timeout time.Duration // tcp连接到父级或真实服务器超时时间,default 2s
 	// basic auth配置
-	AuthFile       string
-	Auth           []string
-	AuthURL        string
-	AuthURLOkCode  int
-	AuthURLTimeout time.Duration
-	AuthURLRetry   uint
+	AuthConfig ccs.AuthConfig
 	// dns域名解析
-	DNSAddress string
-	DNSTTL     int
+	DNSConfig ccs.DNSConfig
 	// 负载均衡
-	LoadBalanceMethod     string
-	LoadBalanceTimeout    time.Duration
-	LoadBalanceRetryTime  time.Duration
-	LoadBalanceHashTarget bool
+	LbConfig ccs.LbConfig
 
 	ParentServiceType string
 	ParentSSMethod    string
@@ -180,25 +171,25 @@ func (sf *SPS) InitService() (err error) {
 	var opts []basicAuth.Option
 
 	// init domain resolver
-	if sf.cfg.DNSAddress != "" {
-		sf.domainResolver = idns.New(sf.cfg.DNSAddress, sf.cfg.DNSTTL)
+	if sf.cfg.DNSConfig.Addr != "" {
+		sf.domainResolver = idns.New(sf.cfg.DNSConfig.Addr, sf.cfg.DNSConfig.TTL)
 	}
 	// init basic auth
-	if sf.cfg.AuthFile != "" || len(sf.cfg.Auth) > 0 || sf.cfg.AuthURL != "" {
+	if sf.cfg.AuthConfig.File != "" || len(sf.cfg.AuthConfig.UserPasses) > 0 || sf.cfg.AuthConfig.URL != "" {
 		if sf.domainResolver != nil {
 			opts = append(opts, basicAuth.WithDNSServer(sf.domainResolver))
 		}
-		if sf.cfg.AuthURL != "" {
-			opts = append(opts, basicAuth.WithAuthURL(sf.cfg.AuthURL, sf.cfg.AuthURLTimeout, sf.cfg.AuthURLOkCode, sf.cfg.AuthURLRetry))
-			sf.log.Debugf("auth from url [%s]", sf.cfg.AuthURL)
+		if sf.cfg.AuthConfig.URL != "" {
+			opts = append(opts, basicAuth.WithAuthURL(sf.cfg.AuthConfig.URL, sf.cfg.AuthConfig.Timeout, sf.cfg.AuthConfig.OkCode, sf.cfg.AuthConfig.Retry))
+			sf.log.Debugf("auth from url [%s]", sf.cfg.AuthConfig.URL)
 		}
 		sf.basicAuthCenter = basicAuth.New(opts...)
 
-		n := sf.basicAuthCenter.Add(sf.cfg.Auth...)
+		n := sf.basicAuthCenter.Add(sf.cfg.AuthConfig.UserPasses...)
 		sf.log.Debugf("auth data added %d, total:%d", n, sf.basicAuthCenter.Total())
 
-		if sf.cfg.AuthFile != "" {
-			n, err := sf.basicAuthCenter.LoadFromFile(sf.cfg.AuthFile)
+		if sf.cfg.AuthConfig.File != "" {
+			n, err := sf.basicAuthCenter.LoadFromFile(sf.cfg.AuthConfig.File)
 			if err != nil {
 				sf.log.Warnf("load auth-file %v", err)
 			}
@@ -254,11 +245,11 @@ func (sf *SPS) InitService() (err error) {
 				Weight:           weight,
 				SuccessThreshold: 1,
 				FailureThreshold: 2,
-				Period:           sf.cfg.LoadBalanceRetryTime,
-				Timeout:          sf.cfg.LoadBalanceTimeout,
+				Period:           sf.cfg.LbConfig.RetryTime,
+				Timeout:          sf.cfg.LbConfig.Timeout,
 			})
 		}
-		sf.lb = loadbalance.New(sf.cfg.LoadBalanceMethod, configs,
+		sf.lb = loadbalance.New(sf.cfg.LbConfig.Method, configs,
 			loadbalance.WithDNSServer(sf.domainResolver),
 			loadbalance.WithLogger(sf.log),
 			loadbalance.WithEnableDebug(sf.cfg.Debug),
@@ -291,7 +282,7 @@ func (sf *SPS) Start() (err error) {
 		return
 	}
 
-	sf.log.Infof("use %s %s parent %v [ %s ]", sf.cfg.ParentType, sf.cfg.ParentServiceType, sf.cfg.Parent, strings.ToUpper(sf.cfg.LoadBalanceMethod))
+	sf.log.Infof("use %s %s parent %v [ %s ]", sf.cfg.ParentType, sf.cfg.ParentServiceType, sf.cfg.Parent, strings.ToUpper(sf.cfg.LbConfig.Method))
 	for _, addr := range strings.Split(sf.cfg.Local, ",") {
 		if addr != "" {
 			srv := ccs.Server{
@@ -475,7 +466,7 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 	//connect to parent
 	var outConn net.Conn
 	selectAddr := inConn.RemoteAddr().String()
-	if sf.cfg.LoadBalanceMethod == "hash" && sf.cfg.LoadBalanceHashTarget {
+	if sf.cfg.LbConfig.Method == "hash" && sf.cfg.LbConfig.HashTarget {
 		selectAddr = address
 	}
 	lbAddr := sf.lb.Select(selectAddr)

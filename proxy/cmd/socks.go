@@ -51,34 +51,33 @@ func init() {
 	// stcp
 	socksCfg.STCPConfig = stcpCfg
 	// ssh
-	flags.StringVarP(&socksCfg.SSHUser, "ssh-user", "u", "", "user for ssh")
-	flags.StringVarP(&socksCfg.SSHKeyFile, "ssh-key", "S", "", "private key file for ssh")
-	flags.StringVarP(&socksCfg.SSHKeyFileSalt, "ssh-keysalt", "s", "", "salt of ssh private key")
-	flags.StringVarP(&socksCfg.SSHPassword, "ssh-password", "D", "", "password for ssh")
+	flags.StringVarP(&socksCfg.SSHConfig.User, "ssh-user", "u", "", "user for ssh")
+	flags.StringVarP(&socksCfg.SSHConfig.KeyFile, "ssh-key", "S", "", "private key file for ssh")
+	flags.StringVarP(&socksCfg.SSHConfig.KeyFileSalt, "ssh-keysalt", "s", "", "salt of ssh private key")
+	flags.StringVarP(&socksCfg.SSHConfig.Password, "ssh-password", "D", "", "password for ssh")
 	// 其它
 	flags.DurationVar(&socksCfg.Timeout, "timeout", 5*time.Second, "tcp timeout duration when connect to real server or parent proxy")
 	flags.BoolVar(&socksCfg.Always, "always", false, "always use parent proxy")
 	// 代理过滤
-	flags.StringVarP(&socksCfg.ProxyFile, "blocked", "b", "blocked", "blocked domain file , one domain each line")
-	flags.StringVarP(&socksCfg.DirectFile, "direct", "d", "direct", "direct domain file , one domain each line")
-	flags.DurationVar(&socksCfg.Interval, "interval", 10*time.Second, "check domain if blocked every interval duration")
+	flags.StringVar(&socksCfg.FilterConfig.Intelligent, "intelligent", "intelligent", "settting intelligent HTTP, SOCKS5 proxy mode, can be <intelligent|direct|parent>")
+	flags.StringVarP(&socksCfg.FilterConfig.ProxyFile, "blocked", "b", "blocked", "blocked domain file , one domain each line")
+	flags.StringVarP(&socksCfg.FilterConfig.DirectFile, "direct", "d", "direct", "direct domain file , one domain each line")
+	flags.DurationVar(&socksCfg.FilterConfig.Interval, "interval", 10*time.Second, "check domain if blocked every interval duration")
 	// basic auth 配置
-	flags.StringVarP(&socksCfg.AuthFile, "auth-file", "F", "", "http basic auth file,\"username:password\" each line in file")
-	flags.StringSliceVarP(&socksCfg.Auth, "auth", "a", nil, "http basic auth username and password, multiple user repeat -a ,such as: -a user1:pass1 -a user2:pass2")
-	flags.StringVar(&socksCfg.AuthURL, "auth-url", "", "http basic auth username and password will send to this url,response http code equal to 'auth-code' means ok,others means fail.")
-	flags.DurationVar(&socksCfg.AuthURLTimeout, "auth-timeout", 3*time.Second, "access 'auth-url' timeout duration")
-	flags.IntVar(&socksCfg.AuthURLOkCode, "auth-code", 204, "access 'auth-url' success http code")
-	flags.UintVar(&socksCfg.AuthURLRetry, "auth-retry", 0, "access 'auth-url' fail and retry count")
+	flags.StringVarP(&socksCfg.AuthConfig.File, "auth-file", "F", "", "http basic auth file,\"username:password\" each line in file")
+	flags.StringSliceVarP(&socksCfg.AuthConfig.UserPasses, "auth", "a", nil, "http basic auth username and password, multiple user repeat -a ,such as: -a user1:pass1 -a user2:pass2")
+	flags.StringVar(&socksCfg.AuthConfig.URL, "auth-url", "", "http basic auth username and password will send to this url,response http code equal to 'auth-code' means ok,others means fail.")
+	flags.DurationVar(&socksCfg.AuthConfig.Timeout, "auth-timeout", 3*time.Second, "access 'auth-url' timeout duration")
+	flags.IntVar(&socksCfg.AuthConfig.OkCode, "auth-code", 204, "access 'auth-url' success http code")
+	flags.UintVar(&socksCfg.AuthConfig.Retry, "auth-retry", 0, "access 'auth-url' fail and retry count")
 	// dns域名解析
-	flags.StringVarP(&socksCfg.DNSAddress, "dns-address", "q", "", "if set this, proxy will use this dns for resolve doamin")
-	flags.IntVarP(&socksCfg.DNSTTL, "dns-ttl", "e", 300, "caching seconds of dns query result")
-	// 代理工作模式
-	flags.StringVar(&socksCfg.Intelligent, "intelligent", "intelligent", "settting intelligent HTTP, SOCKS5 proxy mode, can be <intelligent|direct|parent>")
+	flags.StringVarP(&socksCfg.DNSConfig.Addr, "dns-address", "q", "", "if set this, proxy will use this dns for resolve doamin")
+	flags.IntVarP(&socksCfg.DNSConfig.TTL, "dns-ttl", "e", 300, "caching seconds of dns query result")
 	// 负载均衡
-	flags.StringVar(&socksCfg.LoadBalanceMethod, "lb-method", "roundrobin", "load balance method when use multiple parent,can be <roundrobin|leastconn|leasttime|hash|weight>")
-	flags.DurationVar(&socksCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp duration timeout of connecting to parent")
-	flags.DurationVar(&socksCfg.LoadBalanceRetryTime, "lb-retrytime", 1*time.Second, "sleep time duration after checking")
-	flags.BoolVar(&socksCfg.LoadBalanceHashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")
+	flags.StringVar(&socksCfg.LbConfig.Method, "lb-method", "roundrobin", "load balance method when use multiple parent,can be <roundrobin|leastconn|leasttime|hash|weight>")
+	flags.DurationVar(&socksCfg.LbConfig.Timeout, "lb-timeout", 500*time.Millisecond, "tcp duration timeout of connecting to parent")
+	flags.DurationVar(&socksCfg.LbConfig.RetryTime, "lb-retrytime", 1*time.Second, "sleep time duration after checking")
+	flags.BoolVar(&socksCfg.LbConfig.HashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")
 	// 限速器
 	flags.StringVarP(&socksCfg.RateLimit, "rate-limit", "l", "0", "rate limit (bytes/second) of each connection, such as: 100K 1.5M . 0 means no limitation")
 	flags.StringSliceVarP(&socksCfg.LocalIPS, "local-bind-ips", "g", nil, "if your host behind a nat,set your public ip here avoid dead loop")

@@ -32,16 +32,14 @@ func New(inConn net.Conn, bufSize int, opts ...Option) (req Request, err error) 
 		opt(&req)
 	}
 
-	if req.RawHeader == nil {
-		n := 0
-		buf := make([]byte, bufSize)
-		n, err = inConn.Read(buf[:])
-		if err != nil {
-			inConn.Close()
-			return
-		}
-		req.RawHeader = buf[:n]
+	n := 0
+	buf := make([]byte, bufSize)
+	n, err = inConn.Read(buf)
+	if err != nil {
+		inConn.Close()
+		return
 	}
+	req.RawHeader = buf[:n]
 
 	var serverName string
 	//try sni

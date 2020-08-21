@@ -273,7 +273,7 @@ func (sf *Socks) parentUDPKey() (key []byte) {
 			return []byte(v)[:24]
 		}
 	case "tls":
-		return sf.cfg.tcpTlsConfig.Key[:24]
+		return sf.cfg.tlsConfig.Key[:24]
 	case "kcp":
 		v := fmt.Sprintf("%x", md5.Sum([]byte(sf.cfg.SKCPConfig.Key)))
 		return []byte(v)[:24]
@@ -289,7 +289,7 @@ func (sf *Socks) localUDPKey() (key []byte) {
 			return []byte(v)[:24]
 		}
 	case "tls":
-		return sf.cfg.tcpTlsConfig.Key[:24]
+		return sf.cfg.tlsConfig.Key[:24]
 	case "kcp":
 		v := fmt.Sprintf("%x", md5.Sum([]byte(sf.cfg.SKCPConfig.Key)))
 		return []byte(v)[:24]

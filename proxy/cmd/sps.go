@@ -55,20 +55,20 @@ func init() {
 	// 其它
 	flags.DurationVar(&spsCfg.Timeout, "timeout", 5*time.Second, "tcp timeout duration when connect to real server or parent proxy")
 	// basic auth 配置
-	flags.StringVarP(&spsCfg.AuthFile, "auth-file", "F", "", "http basic auth file,\"username:password\" each line in file")
-	flags.StringSliceVarP(&spsCfg.Auth, "auth", "a", nil, "http basic auth username and password, multiple user repeat -a ,such as: -a user1:pass1 -a user2:pass2")
-	flags.StringVar(&spsCfg.AuthURL, "auth-url", "", "http basic auth username and password will send to this url,response http code equal to 'auth-code' means ok,others means fail.")
-	flags.DurationVar(&spsCfg.AuthURLTimeout, "auth-timeout", 3*time.Second, "access 'auth-url' timeout duration")
-	flags.IntVar(&spsCfg.AuthURLOkCode, "auth-code", 204, "access 'auth-url' success http code")
-	flags.UintVar(&spsCfg.AuthURLRetry, "auth-retry", 0, "access 'auth-url' fail and retry count")
+	flags.StringVarP(&spsCfg.AuthConfig.File, "auth-file", "F", "", "http basic auth file,\"username:password\" each line in file")
+	flags.StringSliceVarP(&spsCfg.AuthConfig.UserPasses, "auth", "a", nil, "http basic auth username and password, multiple user repeat -a ,such as: -a user1:pass1 -a user2:pass2")
+	flags.StringVar(&spsCfg.AuthConfig.URL, "auth-url", "", "http basic auth username and password will send to this url,response http code equal to 'auth-code' means ok,others means fail.")
+	flags.DurationVar(&spsCfg.AuthConfig.Timeout, "auth-timeout", 3*time.Second, "access 'auth-url' timeout duration")
+	flags.IntVar(&spsCfg.AuthConfig.OkCode, "auth-code", 204, "access 'auth-url' success http code")
+	flags.UintVar(&spsCfg.AuthConfig.Retry, "auth-retry", 0, "access 'auth-url' fail and retry count")
 	// dns域名解析
-	flags.StringVarP(&spsCfg.DNSAddress, "dns-address", "q", "", "if set this, proxy will use this dns for resolve doamin")
-	flags.IntVarP(&spsCfg.DNSTTL, "dns-ttl", "e", 300, "caching seconds of dns query result")
+	flags.StringVarP(&spsCfg.DNSConfig.Addr, "dns-address", "q", "", "if set this, proxy will use this dns for resolve doamin")
+	flags.IntVarP(&spsCfg.DNSConfig.TTL, "dns-ttl", "e", 300, "caching seconds of dns query result")
 	// 负载均衡
-	flags.StringVar(&spsCfg.LoadBalanceMethod, "lb-method", "roundrobin", "load balance method when use multiple parent,can be <roundrobin|leastconn|leasttime|hash|weight>")
-	flags.DurationVar(&spsCfg.LoadBalanceTimeout, "lb-timeout", 500*time.Millisecond, "tcp duration timeout of connecting to parent")
-	flags.DurationVar(&spsCfg.LoadBalanceRetryTime, "lb-retrytime", time.Second, "sleep time duration after checking")
-	flags.BoolVar(&spsCfg.LoadBalanceHashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")
+	flags.StringVar(&spsCfg.LbConfig.Method, "lb-method", "roundrobin", "load balance method when use multiple parent,can be <roundrobin|leastconn|leasttime|hash|weight>")
+	flags.DurationVar(&spsCfg.LbConfig.Timeout, "lb-timeout", 500*time.Millisecond, "tcp duration timeout of connecting to parent")
+	flags.DurationVar(&spsCfg.LbConfig.RetryTime, "lb-retrytime", time.Second, "sleep time duration after checking")
+	flags.BoolVar(&spsCfg.LbConfig.HashTarget, "lb-hashtarget", false, "use target address to choose parent for LB")
 	// 限速器
 	flags.StringVarP(&spsCfg.RateLimit, "rate-limit", "l", "0", "rate limit (bytes/second) of each connection, such as: 100K 1.5M . 0 means no limitation")
 	flags.StringSliceVarP(&spsCfg.LocalIPS, "local-bind-ips", "g", nil, "if your host behind a nat,set your public ip here avoid dead loop")

@@ -27,7 +27,6 @@ import (
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/filter"
 	"github.com/thinkgos/jocasta/core/idns"
-	"github.com/thinkgos/jocasta/core/issh"
 	"github.com/thinkgos/jocasta/core/loadbalance"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
@@ -52,9 +51,10 @@ type Config struct {
 	LocalCompress bool   // 本地支持压缩传输, default: false
 	LocalKey      string // 本地加密的key default: empty
 	// tls 有效
+	CaCertFile string // ca文件名 default: empty
 	CertFile   string // cert文件名 default: proxy.crt
 	KeyFile    string // key文件名 default: proxy.key
-	CaCertFile string // ca文件名 default: empty
+
 	// kcp 有效
 	SKCPConfig ccs.SKCPConfig
 	// stcp有效
@@ -62,39 +62,21 @@ type Config struct {
 	// stcp 加密密钥 default: thinkgos's_jocasta
 	STCPConfig cs.StcpConfig
 	// ssh有效
-	SSHKeyFile     string // ssh 私有key文件 default: empty
-	SSHKeyFileSalt string // ssh 私有key加盐 default: empty
-	SSHUser        string // ssh 用户
-	SSHPassword    string // ssh 密码
+	SSHConfig ccs.SSHConfig
 	// 其它
 	Timeout time.Duration // 连接父级或真实服务器超时时间,default: 2s
 	Always  bool          // 强制一直使用父级代理,default: false
-	// 代理过滤
-	ProxyFile   string        // 代理域文件名 default: blocked
-	DirectFile  string        // 直连域文件名 default: direct
-	HTTPTimeout time.Duration // http连接主机超时时间 default: 3s
-	Interval    time.Duration // 检查域名间隔 default: 10s
-	// basic auth 配置
-	AuthFile       string        // 授权文件,一行一条(格式user:passwrod), default empty
-	Auth           []string      // 授权用户密码对, default empty
-	AuthURL        string        // 外部认证授权url, default: empty
-	AuthURLTimeout time.Duration // 外部认证授权超时时间, default: 3s
-	AuthURLOkCode  int           // 外部认证授权成功的code, default: 204
-	AuthURLRetry   uint          // 外部认证授权重试次数, default: 1
-	// 自定义dns服务
-	DNSAddress string // dns 解析服务器地址 default: empty
-	DNSTTL     int    // 解析结果缓存时间,单位秒 default: 300
 	// 代理过滤 default: intelligent
 	//      direct 不在blocked都直连
 	//      proxy  不在direct都走代理
 	//      intelligent blocked和direct都没有,智能判断
-	Intelligent string
+	FilterConfig ccs.FilterConfig
+	// basic auth 配置
+	AuthConfig ccs.AuthConfig
+	// 自定义dns服务
+	DNSConfig ccs.DNSConfig
 	// 负载均衡
-	LoadBalanceMethod     string        // 负载均衡方法, random|roundrobin|leastconn|hash|addrhash|leasttime|weight default: roundrobin
-	LoadBalanceTimeout    time.Duration // 负载均衡dial超时时间 default 500ms
-	LoadBalanceRetryTime  time.Duration // 负载均衡重试时间间隔 default 1000ms
-	LoadBalanceHashTarget bool          // hash方法时,选择hash的目标, default: false
-	LoadBalanceOnlyHA     bool          // 高可用模式, default false
+	LbConfig ccs.LbConfig
 	// 限速器
 	RateLimit  string //  限制速byte/s,可设置为2m, 100k等数值,0表示不限速 default: 0
 	LocalIPS   []string
@@ -108,7 +90,7 @@ type Config struct {
 	RawProxyURL string
 
 	// private
-	tcpTlsConfig  cs.TLSConfig
+	tlsConfig     cs.TLSConfig
 	rateLimit     rate.Limit
 	sshAuthMethod ssh.AuthMethod
 }
@@ -151,30 +133,15 @@ func (sf *HTTP) inspectConfig() (err error) {
 		if !strext.Contains([]string{"tcp", "tls", "stcp", "kcp", "ssh"}, sf.cfg.ParentType) {
 			return fmt.Errorf("parent type suport <tcp|tls|stcp|kcp|ssh>")
 		}
-		if !strext.Contains(loadbalance.Methods(), sf.cfg.LoadBalanceMethod) {
+		if !strext.Contains(loadbalance.Methods(), sf.cfg.LbConfig.Method) {
 			return fmt.Errorf("load balance method should be oneof <%s>", strings.Join(loadbalance.Methods(), ", "))
 		}
 
 		// ssh 证书
 		if sf.cfg.ParentType == "ssh" {
-			if sf.cfg.SSHUser == "" {
-				return fmt.Errorf("ssh user required")
-			}
-			if sf.cfg.SSHKeyFile == "" && sf.cfg.SSHPassword == "" {
-				return fmt.Errorf("ssh password or key file required")
-			}
-
-			if sf.cfg.SSHPassword != "" {
-				sf.cfg.sshAuthMethod = ssh.Password(sf.cfg.SSHPassword)
-			} else {
-				if sf.cfg.SSHKeyFileSalt != "" {
-					sf.cfg.sshAuthMethod, err = issh.ParsePrivateKeyFile2AuthMethod(sf.cfg.SSHKeyFile, []byte(sf.cfg.SSHKeyFileSalt))
-				} else {
-					sf.cfg.sshAuthMethod, err = issh.ParsePrivateKeyFile2AuthMethod(sf.cfg.SSHKeyFile)
-				}
-				if err != nil {
-					return fmt.Errorf("parse ssh private key file, %+v", err)
-				}
+			sf.cfg.sshAuthMethod, err = sf.cfg.SSHConfig.Parse()
+			if err != nil {
+				return fmt.Errorf("parse ssh config, %+v", err)
 			}
 		}
 	}
@@ -184,11 +151,11 @@ func (sf *HTTP) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return errors.New("cert file and key file required")
 		}
-		if sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
+		if sf.cfg.tlsConfig.Cert, sf.cfg.tlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
 			return err
 		}
 		if sf.cfg.CaCertFile != "" {
-			if sf.cfg.tcpTlsConfig.CaCert, err = ioutil.ReadFile(sf.cfg.CaCertFile); err != nil {
+			if sf.cfg.tlsConfig.CaCert, err = ioutil.ReadFile(sf.cfg.CaCertFile); err != nil {
 				return fmt.Errorf("read ca file %+v", err)
 			}
 		}
@@ -214,26 +181,26 @@ func (sf *HTTP) inspectConfig() (err error) {
 
 func (sf *HTTP) InitService() (err error) {
 	// init domain resolver
-	if sf.cfg.DNSAddress != "" {
-		sf.domainResolver = idns.New(sf.cfg.DNSAddress, sf.cfg.DNSTTL)
+	if sf.cfg.DNSConfig.Addr != "" {
+		sf.domainResolver = idns.New(sf.cfg.DNSConfig.Addr, sf.cfg.DNSConfig.TTL)
 	}
 	// init basic auth
-	if sf.cfg.AuthFile != "" || len(sf.cfg.Auth) > 0 || sf.cfg.AuthURL != "" {
+	if sf.cfg.AuthConfig.File != "" || len(sf.cfg.AuthConfig.UserPasses) > 0 || sf.cfg.AuthConfig.URL != "" {
 		var opts []basicAuth.Option
 
 		if sf.domainResolver != nil {
 			opts = append(opts, basicAuth.WithDNSServer(sf.domainResolver))
 		}
-		if sf.cfg.AuthURL != "" {
-			opts = append(opts, basicAuth.WithAuthURL(sf.cfg.AuthURL, sf.cfg.AuthURLTimeout, sf.cfg.AuthURLOkCode, sf.cfg.AuthURLRetry))
+		if sf.cfg.AuthConfig.URL != "" {
+			opts = append(opts, basicAuth.WithAuthURL(sf.cfg.AuthConfig.URL, sf.cfg.AuthConfig.Timeout, sf.cfg.AuthConfig.OkCode, sf.cfg.AuthConfig.Retry))
 		}
 		sf.basicAuthCenter = basicAuth.New(opts...)
 
-		n := sf.basicAuthCenter.Add(sf.cfg.Auth...)
+		n := sf.basicAuthCenter.Add(sf.cfg.AuthConfig.UserPasses...)
 		sf.log.Debugf("auth data added %d, total:%d", n, sf.basicAuthCenter.Total())
 
-		if sf.cfg.AuthFile != "" {
-			n, err := sf.basicAuthCenter.LoadFromFile(sf.cfg.AuthFile)
+		if sf.cfg.AuthConfig.File != "" {
+			n, err := sf.basicAuthCenter.LoadFromFile(sf.cfg.AuthConfig.File)
 			if err != nil {
 				return fmt.Errorf("load auth-file failed, %v", err)
 			}
@@ -243,21 +210,21 @@ func (sf *HTTP) InitService() (err error) {
 
 	// init lb
 	if len(sf.cfg.Parent) > 0 {
-		sf.filters = filter.New(sf.cfg.Intelligent,
-			filter.WithTimeout(sf.cfg.HTTPTimeout),
-			filter.WithLivenessPeriod(sf.cfg.Interval),
+		sf.filters = filter.New(sf.cfg.FilterConfig.Intelligent,
+			filter.WithTimeout(sf.cfg.FilterConfig.Timeout),
+			filter.WithLivenessPeriod(sf.cfg.FilterConfig.Interval),
 			filter.WithGPool(sword.GoPool), filter.WithLogger(sf.log),
 		)
 		var count int
-		count, err = sf.filters.LoadProxyFile(sf.cfg.ProxyFile)
+		count, err = sf.filters.LoadProxyFile(sf.cfg.FilterConfig.ProxyFile)
 		if err != nil {
-			sf.log.Warnf("load proxy file(%s) %+v", sf.cfg.ProxyFile, err)
+			sf.log.Warnf("load proxy file(%s) %+v", sf.cfg.FilterConfig.ProxyFile, err)
 		} else {
 			sf.log.Debugf("load proxy file, domains count: %d", count)
 		}
-		count, err = sf.filters.LoadDirectFile(sf.cfg.DirectFile)
+		count, err = sf.filters.LoadDirectFile(sf.cfg.FilterConfig.DirectFile)
 		if err != nil {
-			sf.log.Warnf("load direct file(%s) %+v", sf.cfg.ProxyFile, err)
+			sf.log.Warnf("load direct file(%s) %+v", sf.cfg.FilterConfig.ProxyFile, err)
 		} else {
 			sf.log.Debugf("load direct file, domains count: %d", count)
 		}
@@ -280,11 +247,11 @@ func (sf *HTTP) InitService() (err error) {
 				Weight:           weight,
 				SuccessThreshold: 1,
 				FailureThreshold: 2,
-				Period:           sf.cfg.LoadBalanceRetryTime,
-				Timeout:          sf.cfg.LoadBalanceTimeout,
+				Period:           sf.cfg.LbConfig.RetryTime,
+				Timeout:          sf.cfg.LbConfig.Timeout,
 			})
 		}
-		sf.lb = loadbalance.New(sf.cfg.LoadBalanceMethod, configs,
+		sf.lb = loadbalance.New(sf.cfg.LbConfig.Method, configs,
 			loadbalance.WithDNSServer(sf.domainResolver),
 			loadbalance.WithLogger(sf.log),
 			loadbalance.WithEnableDebug(sf.cfg.Debug),
@@ -365,7 +332,7 @@ func (sf *HTTP) Start() (err error) {
 			Protocol: sf.cfg.LocalType,
 			Addr:     addr,
 			Config: ccs.Config{
-				TCPTlsConfig: sf.cfg.tcpTlsConfig,
+				TCPTlsConfig: sf.cfg.tlsConfig,
 				StcpConfig:   sf.cfg.STCPConfig,
 				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 			},
@@ -381,7 +348,7 @@ func (sf *HTTP) Start() (err error) {
 		sf.log.Infof("use proxy %s on %s", sf.cfg.LocalType, sc.LocalAddr())
 	}
 	if len(sf.cfg.Parent) > 0 {
-		sf.log.Infof("use parent %s < %v [ %s ] >", sf.cfg.ParentType, sf.cfg.Parent, strings.ToUpper(sf.cfg.LoadBalanceMethod))
+		sf.log.Infof("use parent %s < %v [ %s ] >", sf.cfg.ParentType, sf.cfg.Parent, strings.ToUpper(sf.cfg.LbConfig.Method))
 	}
 	return
 }
@@ -445,7 +412,7 @@ func (sf *HTTP) handle(inConn net.Conn) {
 			dialAddr := targetDomainAddr
 			if sf.cfg.ParentType != "ssh" {
 				selectAddr := inConn.RemoteAddr().String()
-				if sf.cfg.LoadBalanceMethod == "hash" && sf.cfg.LoadBalanceHashTarget {
+				if sf.cfg.LbConfig.Method == "hash" && sf.cfg.LbConfig.HashTarget {
 					selectAddr = targetDomainAddr
 				}
 				lbAddr = sf.lb.Select(selectAddr)
@@ -530,7 +497,7 @@ func (sf *HTTP) IsDeadLoop(inLocalAddr string, host string) bool {
 	}
 	if inPort == outPort {
 		var outIPs []net.IP
-		if sf.cfg.DNSAddress != "" {
+		if sf.cfg.DNSConfig.Addr != "" {
 			outIPs = []net.IP{net.ParseIP(sf.resolve(outDomain))}
 		} else {
 			outIPs, err = net.LookupIP(outDomain)
@@ -574,7 +541,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 			Protocol: sf.cfg.ParentType,
 			Timeout:  sf.cfg.Timeout,
 			Config: ccs.Config{
-				TCPTlsConfig: sf.cfg.tcpTlsConfig,
+				TCPTlsConfig: sf.cfg.tlsConfig,
 				StcpConfig:   sf.cfg.STCPConfig,
 				KcpConfig:    sf.cfg.SKCPConfig.KcpConfig,
 				ProxyURL:     sf.proxyURL,
@@ -613,7 +580,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 	return
 }
 
-func (sf *HTTP) dialDirect(address string, localAddr string) (net.Conn, error) {
+func (sf *HTTP) dialDirect(addr string, localAddr string) (net.Conn, error) {
 	if sf.cfg.BindListen {
 		localIP, _, _ := net.SplitHostPort(localAddr)
 		if !extnet.IsIntranet(localIP) {
@@ -622,15 +589,15 @@ func (sf *HTTP) dialDirect(address string, localAddr string) (net.Conn, error) {
 				Timeout:   sf.cfg.Timeout,
 				LocalAddr: local,
 			}
-			return d.Dial("tcp", address)
+			return d.Dial("tcp", addr)
 		}
 	}
-	return net.DialTimeout("tcp", address, sf.cfg.Timeout)
+	return net.DialTimeout("tcp", addr, sf.cfg.Timeout)
 }
 
 func (sf *HTTP) dialSSH(lAddr string) (*ssh.Client, error) {
 	return ssh.Dial("tcp", sf.resolve(lAddr), &ssh.ClientConfig{
-		User:    sf.cfg.SSHUser,
+		User:    sf.cfg.SSHConfig.User,
 		Auth:    []ssh.AuthMethod{sf.cfg.sshAuthMethod},
 		Timeout: sf.cfg.Timeout,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
