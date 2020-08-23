@@ -18,11 +18,13 @@ func New(conn net.Conn) *Conn {
 }
 
 // NewLevel new a zlib compress with the level
+// level see zlib package
 func NewLevel(conn net.Conn, level int) *Conn {
 	return NewLevelDict(conn, level, nil)
 }
 
 // NewLevelDict new a zlib compress with the level and dict
+// level see zlib package
 func NewLevelDict(conn net.Conn, level int, dict []byte) *Conn {
 	return &Conn{
 		conn,

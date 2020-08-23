@@ -6,8 +6,10 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/thinkgos/jocasta/connection/cflow"
+	"github.com/thinkgos/jocasta/connection/cgzip"
 	"github.com/thinkgos/jocasta/connection/ciol"
 	"github.com/thinkgos/jocasta/connection/csnappy"
+	"github.com/thinkgos/jocasta/connection/czlib"
 )
 
 // AdornConn defines the conn decorate.
@@ -26,6 +28,63 @@ func AdornCsnappy(compress bool) func(conn net.Conn) net.Conn {
 		}
 	}
 	return func(conn net.Conn) net.Conn {
+		return conn
+	}
+}
+
+// AdornCgzip gzip chain
+func AdornCgzip(compress bool) func(conn net.Conn) net.Conn {
+	if compress {
+		return func(conn net.Conn) net.Conn {
+			return cgzip.New(conn)
+		}
+	}
+	return func(conn net.Conn) net.Conn {
+		return conn
+	}
+}
+
+// AdornCgzipLevel gzip chain with level
+// level see gzip package
+func AdornCgzipLevel(compress bool, level int) func(conn net.Conn) net.Conn {
+	if compress {
+		return func(conn net.Conn) net.Conn {
+			return cgzip.NewLevel(conn, level)
+		}
+	}
+	return func(conn net.Conn) net.Conn {
+		return conn
+	}
+}
+
+// AdornCzlib zlib chain
+func AdornCzlib(compress bool) func(net.Conn) net.Conn {
+	return func(conn net.Conn) net.Conn {
+		if compress {
+			return czlib.New(conn)
+		}
+		return conn
+	}
+}
+
+// AdornCzlibLevel zlib chain with the level
+// level see zlib package
+func AdornCzlibLevel(compress bool, level int) func(net.Conn) net.Conn {
+	return func(conn net.Conn) net.Conn {
+		if compress {
+			return czlib.NewLevel(conn, level)
+		}
+		return conn
+	}
+}
+
+// AdornCzlibLevelDict zlib chain with the level and dict
+// level see zlib package
+func AdornCzlibLevelDict(compress bool, level int, dict []byte) func(net.Conn) net.Conn {
+	return func(conn net.Conn) net.Conn {
+		if compress {
+			return czlib.NewLevelDict(conn, level, dict)
+		}
 		return conn
 	}
 }
