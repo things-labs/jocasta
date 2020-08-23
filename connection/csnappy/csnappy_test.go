@@ -32,7 +32,7 @@ hello worldhello worldhello worldhello worldhello worldhello worldhello world`,
 	require.NoError(t, err)
 	require.Equal(t, len(data), n)
 
-	t.Log(time.Since(start).String(), buf.Len())
+	t.Log(time.Since(start).String(), len(data), buf.Len())
 
 	// read
 	rd := make([]byte, len(data))

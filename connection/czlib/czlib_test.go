@@ -1,4 +1,4 @@
-package cgzip
+package czlib
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestConn(t *testing.T) {
-	t.Run("invalid gzip", func(t *testing.T) {
+	t.Run("invalid zlib", func(t *testing.T) {
 		data := []byte("aaaaa")
 
 		mconn := mock.New(new(bytes.Buffer))
@@ -30,7 +30,7 @@ func TestConn(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("gzip", func(t *testing.T) {
+	t.Run("zlib", func(t *testing.T) {
 		data := []byte(
 			`hello worldhello worldhello worldhello worldhello worldhello worldhello world
 hello worldhello worldhello worldhello worldhello worldhello worldhello world
@@ -56,7 +56,7 @@ hello worldhello worldhello worldhello worldhello worldhello worldhello world`,
 		t.Log(time.Now().Sub(start).String(), buf.Len())
 
 		// read
-		rd := make([]byte, len(data), len(data))
+		rd := make([]byte, len(data))
 		n, err = conn.Read(rd)
 		require.NoError(t, err)
 		require.Equal(t, len(data), n)
