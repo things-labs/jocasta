@@ -1,4 +1,4 @@
-package through
+package captain
 
 import (
 	"bytes"
@@ -18,7 +18,7 @@ func TestParseRequest(t *testing.T) {
 			"data",
 			bytes.NewBuffer([]byte{0x5a, 0xa5, 0x05, 1, 2, 3, 4, 5}),
 			Request{
-				0x5a & 0x07, 0xa5, []byte{1, 2, 3, 4, 5},
+				0x5a, 0xa5, []byte{1, 2, 3, 4, 5},
 			},
 			false,
 		},
@@ -26,7 +26,7 @@ func TestParseRequest(t *testing.T) {
 			"invalid data length",
 			bytes.NewBuffer([]byte{0x5a, 0xa5, 0xff, 0xff, 0xff, 1, 2, 3}),
 			Request{
-				0x5a & 0x07, 0xa5, nil,
+				0x5a, 0xa5, nil,
 			},
 			true,
 		},
@@ -61,25 +61,25 @@ func TestRequest_Bytes(t *testing.T) {
 		{
 			"dataLen = 0",
 			Request{0x5a, 0xa5, []byte{}},
-			[]byte{0x5a & 0x07, 0xa5, 0x00},
+			[]byte{0x5a, 0xa5, 0x00},
 			false,
 		},
 		{
 			"0 <= dataLen =< 127",
 			Request{0x5a, 0xa5, make([]byte, 5)},
-			append([]byte{0x5a & 0x07, 0xa5, 0x05}, make([]byte, 5)...),
+			append([]byte{0x5a, 0xa5, 0x05}, make([]byte, 5)...),
 			false,
 		},
 		{
 			"16383 >= dataLen >= 128",
 			Request{0x5a, 0xa5, make([]byte, 128)},
-			append([]byte{0x5a & 0x07, 0xa5, 0x80, 0x01}, make([]byte, 128)...),
+			append([]byte{0x5a, 0xa5, 0x80, 0x01}, make([]byte, 128)...),
 			false,
 		},
 		{
 			"2097151 >= dataLen >= 16384",
 			Request{0x5a, 0xa5, make([]byte, 16384)},
-			append([]byte{0x5a & 0x07, 0xa5, 0x80, 0x80, 0x01}, make([]byte, 16384)...),
+			append([]byte{0x5a, 0xa5, 0x80, 0x80, 0x01}, make([]byte, 16384)...),
 			false,
 		},
 	}
@@ -113,25 +113,25 @@ func TestRequest_Header(t *testing.T) {
 		{
 			"dataLen = 0",
 			Request{0x5a, 0xa5, []byte{}},
-			[]byte{0x5a & 0x07, 0xa5, 0x00},
+			[]byte{0x5a, 0xa5, 0x00},
 			false,
 		},
 		{
 			"0 <= dataLen =< 127",
 			Request{0x5a, 0xa5, make([]byte, 5)},
-			[]byte{0x5a & 0x07, 0xa5, 0x05},
+			[]byte{0x5a, 0xa5, 0x05},
 			false,
 		},
 		{
 			"16383 >= dataLen >= 128",
 			Request{0x5a, 0xa5, make([]byte, 128)},
-			[]byte{0x5a & 0x07, 0xa5, 0x80, 0x01},
+			[]byte{0x5a, 0xa5, 0x80, 0x01},
 			false,
 		},
 		{
 			"2097151 >= dataLen >= 16384",
 			Request{0x5a, 0xa5, make([]byte, 16384)},
-			[]byte{0x5a & 0x07, 0xa5, 0x80, 0x80, 0x01},
+			[]byte{0x5a, 0xa5, 0x80, 0x80, 0x01},
 			false,
 		},
 	}
@@ -158,8 +158,8 @@ func TestParseReply(t *testing.T) {
 	}{
 		{
 			"",
-			bytes.NewReader([]byte{RepSuccess, Version}),
-			Reply{RepSuccess, Version},
+			bytes.NewReader([]byte{1, 5}),
+			Reply{1, 5},
 			false,
 		},
 	}

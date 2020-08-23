@@ -3,11 +3,12 @@ package through
 import (
 	"io"
 
+	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/pkg/through/ddt"
 	"google.golang.org/protobuf/proto"
 )
 
-// Request through protocol request
+// HandshakeRequest through protocol request
 // handshake request/response is formed as follows:
 // +-------+------------+----------+
 // |  VER  |  DATA_LEN  |   DATA   |
@@ -24,7 +25,7 @@ type HandshakeRequest struct {
 
 // ParseHandshakeRequest parse negotiate request
 func ParseHandshakeRequest(r io.Reader) (*HandshakeRequest, error) {
-	tr, err := ParseRequest(r)
+	tr, err := captain.ParseRequest(r)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func (sf *HandshakeRequest) Bytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	tr := Request{
+	tr := captain.Request{
 		Version: sf.Version,
 		Data:    data,
 	}

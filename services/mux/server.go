@@ -273,8 +273,8 @@ func (sf *Server) GetConn() (conn net.Conn, err error) {
 			_ = pConn.Close()
 			return
 		}
-		var tr through.Reply
-		tr, err = through.ParseReply(pConn)
+		var tr captain.Reply
+		tr, err = captain.ParseReply(pConn)
 		if err != nil {
 			_ = pConn.Close()
 			return

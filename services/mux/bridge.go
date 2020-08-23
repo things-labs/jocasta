@@ -16,6 +16,7 @@ import (
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
+	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/encrypt"
@@ -184,7 +185,7 @@ func (sf *Bridge) handler(inConn net.Conn) {
 			}
 			return newValue
 		})
-		through.SendReply(inConn, through.RepSuccess, through.Version) // nolint: errcheck
+		captain.SendReply(inConn, through.RepSuccess, through.Version) // nolint: errcheck
 
 		sf.log.Infof("[ Bridge ] Node server %s connected -- sk< %s >", negos.Nego.Id, negos.Nego.SecretKey)
 		defer func() {
@@ -207,12 +208,12 @@ func (sf *Bridge) handler(inConn net.Conn) {
 	case through.TypesClient:
 		session, err := smux.Client(inConn, nil)
 		if err != nil {
-			through.SendReply(inConn, through.RepServerFailure, through.Version) // nolint: errcheck
+			captain.SendReply(inConn, through.RepServerFailure, through.Version) // nolint: errcheck
 			inConn.Close()                                                       // nolint: errcheck
 			sf.log.Errorf("[ Bridge ] Node client session, %+v", err)
 			return
 		}
-		through.SendReply(inConn, through.RepSuccess, through.Version) // nolint: errcheck
+		captain.SendReply(inConn, through.RepSuccess, through.Version) // nolint: errcheck
 
 		sf.clientSession.Upsert(negos.Nego.SecretKey, session, func(exist bool, valueInMap, newValue interface{}) interface{} {
 			if exist {
@@ -223,7 +224,7 @@ func (sf *Bridge) handler(inConn net.Conn) {
 
 		sf.log.Infof("[ Bridge ] Node client connected -- sk< %s >", negos.Nego.SecretKey)
 	default:
-		through.SendReply(inConn, through.RepTypesNotSupport, through.Version) // nolint: errcheck
+		captain.SendReply(inConn, through.RepTypesNotSupport, through.Version) // nolint: errcheck
 		sf.log.Errorf("[ Bridge ] Node type unknown < %d >", negos.Types)
 	}
 }

@@ -173,7 +173,7 @@ func (sf *Client) Start() (err error) {
 				return err
 			}
 
-			tr, err := through.ParseReply(pConn)
+			tr, err := captain.ParseReply(pConn)
 			if err != nil {
 				return err
 			}
