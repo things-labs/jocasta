@@ -12,6 +12,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
+	"github.com/thinkgos/go-core-package/lib/encrypt"
 	"github.com/thinkgos/strext"
 	"github.com/xtaci/smux"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
-	"github.com/thinkgos/jocasta/lib/encrypt"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/sword"

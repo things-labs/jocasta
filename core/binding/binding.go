@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/thinkgos/jocasta/lib/bpool"
+	"github.com/thinkgos/go-core-package/lib/bpool"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/gopool"
 )

@@ -5,7 +5,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/thinkgos/jocasta/lib/bpool"
+	"github.com/thinkgos/go-core-package/lib/bpool"
 )
 
 const bufferSize = 4108 // data.len(2) + hmacsha1(10) + data(4096)

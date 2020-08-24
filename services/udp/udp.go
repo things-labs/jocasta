@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/thinkgos/go-core-package/lib/encrypt"
 	"github.com/thinkgos/strext"
 	"golang.org/x/sync/singleflight"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
-	"github.com/thinkgos/jocasta/lib/encrypt"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"

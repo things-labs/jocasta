@@ -5,11 +5,11 @@ import (
 
 	"go.uber.org/atomic"
 
-	"github.com/thinkgos/jocasta/connection/cflow"
-	"github.com/thinkgos/jocasta/connection/cgzip"
-	"github.com/thinkgos/jocasta/connection/ciol"
-	"github.com/thinkgos/jocasta/connection/csnappy"
-	"github.com/thinkgos/jocasta/connection/czlib"
+	"github.com/thinkgos/go-core-package/extnet/connection/cflow"
+	"github.com/thinkgos/go-core-package/extnet/connection/cgzip"
+	"github.com/thinkgos/go-core-package/extnet/connection/ciol"
+	"github.com/thinkgos/go-core-package/extnet/connection/csnappy"
+	"github.com/thinkgos/go-core-package/extnet/connection/czlib"
 )
 
 // AdornConn defines the conn decorate.

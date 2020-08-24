@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/thinkgos/go-socks5"
 
+	"github.com/thinkgos/go-core-package/lib/encrypt"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/lib/cert"
-	"github.com/thinkgos/jocasta/lib/encrypt"
 )
 
 func Test_InvalidProtocol(t *testing.T) {

@@ -17,13 +17,15 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
-	"github.com/thinkgos/meter"
-	"github.com/thinkgos/strext"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/time/rate"
 
-	"github.com/thinkgos/jocasta/connection/ccrypt"
-	"github.com/thinkgos/jocasta/connection/ciol"
+	"github.com/thinkgos/go-core-package/extnet/connection/ccrypt"
+	"github.com/thinkgos/go-core-package/extnet/connection/ciol"
+	"github.com/thinkgos/go-core-package/lib/ternary"
+	"github.com/thinkgos/meter"
+	"github.com/thinkgos/strext"
+
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/filter"
 	"github.com/thinkgos/jocasta/core/idns"
@@ -32,7 +34,6 @@ import (
 	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
-	"github.com/thinkgos/jocasta/lib/ternary"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/httpc"
 	"github.com/thinkgos/jocasta/pkg/sword"

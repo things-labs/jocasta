@@ -6,7 +6,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/thinkgos/jocasta/lib/encrypt"
+	"github.com/thinkgos/go-core-package/lib/encrypt"
 )
 
 // Cipher cipher

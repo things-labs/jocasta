@@ -7,8 +7,8 @@ import (
 	"errors"
 	"net"
 
-	"github.com/thinkgos/jocasta/connection/cencrypt"
-	"github.com/thinkgos/jocasta/lib/encrypt"
+	"github.com/thinkgos/go-core-package/extnet/connection/cencrypt"
+	"github.com/thinkgos/go-core-package/lib/encrypt"
 )
 
 // StcpConfig stcp config

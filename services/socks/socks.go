@@ -18,13 +18,13 @@ import (
 	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 
+	"github.com/thinkgos/go-core-package/extnet/connection/ccrypt"
+	"github.com/thinkgos/go-core-package/extnet/connection/ciol"
 	"github.com/thinkgos/go-socks5"
 	"github.com/thinkgos/go-socks5/statute"
 	"github.com/thinkgos/meter"
 	"github.com/thinkgos/strext"
 
-	"github.com/thinkgos/jocasta/connection/ccrypt"
-	"github.com/thinkgos/jocasta/connection/ciol"
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/filter"
 	"github.com/thinkgos/jocasta/core/idns"

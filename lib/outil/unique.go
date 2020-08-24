@@ -1,15 +1,20 @@
 package outil
 
 import (
-	"crypto/md5"
+	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
+	"time"
+
+	"github.com/rs/xid"
 
 	"github.com/thinkgos/jocasta/internal/bytesconv"
 )
 
-// MD5Hex md5 string to hex string
-func MD5Hex(str string) string {
-	hash := md5.New()
+// UniqueID unique id
+func UniqueID() string {
+	str := fmt.Sprintf("%d%s", time.Now().UnixNano(), xid.New().String())
+	hash := sha1.New()
 	hash.Write(bytesconv.Str2Bytes(str)) // nolint: errcheck
 	return hex.EncodeToString(hash.Sum(nil))
 }

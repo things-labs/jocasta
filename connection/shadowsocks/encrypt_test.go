@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/thinkgos/jocasta/lib/encrypt"
+	"github.com/thinkgos/go-core-package/lib/encrypt"
 )
 
 func TestCipher(t *testing.T) {

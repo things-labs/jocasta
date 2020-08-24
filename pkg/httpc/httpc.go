@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/thinkgos/go-core-package/extbase64"
+
 	"github.com/thinkgos/jocasta/connection/sni"
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/lib/logger"
@@ -114,7 +116,8 @@ func (sf *Request) GetProxyAuthUserPassPair() (string, error) {
 		sf.conn.Close()
 		return "", fmt.Errorf("authorization data error,ERR:%s", authorization)
 	}
-	user, err := outil.Base64DecodeString(basic[1])
+
+	user, err := extbase64.DecodeString(basic[1])
 	if err != nil {
 		sf.conn.Close()
 		return "", fmt.Errorf("authorization data parse error,ERR:%s", err)

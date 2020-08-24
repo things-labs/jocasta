@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/thinkgos/jocasta/lib/outil"
+	"github.com/thinkgos/go-core-package/extmath"
 )
 
 func init() {
@@ -189,7 +189,7 @@ func getMaxWeightAndGCD(pool UpstreamPool) (int, int) {
 		if pool[i].Weight > maxWeight {
 			maxWeight = pool[i].Weight
 		}
-		g = outil.Gcdx(g, pool[i].Weight)
+		g = extmath.Gcdx(g, pool[i].Weight)
 	}
 	return maxWeight, g
 }
