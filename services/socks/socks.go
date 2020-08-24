@@ -13,6 +13,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
+	"github.com/thinkgos/go-core-package/extcert"
 	"go.uber.org/atomic"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/proxy"
@@ -30,7 +31,6 @@ import (
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/core/loadbalance"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
@@ -125,7 +125,7 @@ func (sf *Socks) inspectConfig() (err error) {
 	}
 
 	if sf.cfg.LocalType == "tls" || (sf.cfg.ParentType == "tls" && len(sf.cfg.Parent) > 0) {
-		sf.cfg.tlsConfig.Cert, sf.cfg.tlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile)
+		sf.cfg.tlsConfig.Cert, sf.cfg.tlsConfig.Key, err = extcert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile)
 		if err != nil {
 			return err
 		}

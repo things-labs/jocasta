@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/thinkgos/go-core-package/extcert"
 )
 
 func TestGenerateCA(t *testing.T) {
@@ -18,15 +19,15 @@ func TestGenerateCA(t *testing.T) {
 	require.NoError(t, err)
 
 	// invalid ca file
-	_, _, err = ParseCrtAndKeyFile("invalid.crt", "ca.key")
+	_, _, err = extcert.ParseCrtAndKeyFile("invalid.crt", "ca.key")
 	require.Error(t, err)
 
 	// invalid key file
-	_, _, err = ParseCrtAndKeyFile("ca.crt", "invalid.key")
+	_, _, err = extcert.ParseCrtAndKeyFile("ca.crt", "invalid.key")
 	require.Error(t, err)
 
 	// ca key file
-	ca, key, err := ParseCrtAndKeyFile("ca.crt", "ca.key")
+	ca, key, err := extcert.ParseCrtAndKeyFile("ca.crt", "ca.key")
 	require.NoError(t, err)
 	require.Equal(t, "CN", ca.Subject.Country[0])
 
@@ -34,18 +35,18 @@ func TestGenerateCA(t *testing.T) {
 	require.NoError(t, err)
 
 	// invalid ca file
-	_, _, err = LoadCrtAndKeyFile("invalid.crt", "ca.key")
+	_, _, err = extcert.LoadCrtAndKeyFile("invalid.crt", "ca.key")
 	require.Error(t, err)
 
 	// invalid key file
-	_, _, err = LoadCrtAndKeyFile("ca.crt", "invalid.key")
+	_, _, err = extcert.LoadCrtAndKeyFile("ca.crt", "invalid.key")
 	require.Error(t, err)
 
 	// ca key file
-	caBytes, keyBytes, err := LoadCrtAndKeyFile("ca.crt", "ca.key")
+	caBytes, keyBytes, err := extcert.LoadCrtAndKeyFile("ca.crt", "ca.key")
 	require.NoError(t, err)
 
-	ca, key, err = ParseCrtAndKey(caBytes, keyBytes)
+	ca, key, err = extcert.ParseCrtAndKey(caBytes, keyBytes)
 	require.NoError(t, err)
 	require.Equal(t, "CN", ca.Subject.Country[0])
 
@@ -53,25 +54,25 @@ func TestGenerateCA(t *testing.T) {
 	require.NoError(t, err)
 
 	// file
-	caBytes, keyBytes, err = LoadPair("ca.crt", "ca.key")
+	caBytes, keyBytes, err = extcert.LoadPair("ca.crt", "ca.key")
 	require.NoError(t, err)
 
-	_, _, err = ParseCrtAndKey(caBytes, keyBytes)
+	_, _, err = extcert.ParseCrtAndKey(caBytes, keyBytes)
 	require.NoError(t, err)
 	require.Equal(t, "CN", ca.Subject.Country[0])
 
 	// base64 string
 	caStr := base64Prefix + base64.StdEncoding.EncodeToString(caBytes)
 	keyStr := base64Prefix + base64.StdEncoding.EncodeToString(keyBytes)
-	caBytes, keyBytes, err = LoadPair(caStr, keyStr)
+	caBytes, keyBytes, err = extcert.LoadPair(caStr, keyStr)
 	require.NoError(t, err)
 
-	ca, key, err = ParseCrtAndKey(caBytes, keyBytes)
+	ca, key, err = extcert.ParseCrtAndKey(caBytes, keyBytes)
 	require.NoError(t, err)
 	require.Equal(t, "CN", ca.Subject.Country[0])
 
 	// invalid base64 string
-	_, _, err = LoadPair(base64Prefix+"invalidbase64", base64Prefix+"invalidbase64")
+	_, _, err = extcert.LoadPair(base64Prefix+"invalidbase64", base64Prefix+"invalidbase64")
 	require.Error(t, err)
 
 	err = key.Validate()
@@ -92,7 +93,7 @@ func TestSign(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	ca, key, err := ParseCrtAndKeyFile("ca.crt", "ca.key")
+	ca, key, err := extcert.ParseCrtAndKeyFile("ca.crt", "ca.key")
 	require.NoError(t, err)
 
 	err = CreateSignFile(ca, key, "server", Config{
@@ -106,7 +107,7 @@ func TestSign(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	srvCa, srvKey, err := ParseCrtAndKeyFile("server.crt", "server.key")
+	srvCa, srvKey, err := extcert.ParseCrtAndKeyFile("server.crt", "server.key")
 	require.NoError(t, err)
 	require.Equal(t, "server.com", srvCa.Subject.CommonName)
 

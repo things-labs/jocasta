@@ -12,6 +12,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
+	"github.com/thinkgos/go-core-package/extcert"
 	"github.com/thinkgos/go-core-package/lib/encrypt"
 	"github.com/thinkgos/strext"
 	"github.com/xtaci/smux"
@@ -19,7 +20,6 @@ import (
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/sword"
@@ -90,12 +90,12 @@ func (sf *Bridge) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return fmt.Errorf("cert file and key file required")
 		}
-		sf.cfg.tlsConfig.Cert, sf.cfg.tlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile)
+		sf.cfg.tlsConfig.Cert, sf.cfg.tlsConfig.Key, err = extcert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile)
 		if err != nil {
 			return
 		}
 		if sf.cfg.CaCertFile != "" {
-			if sf.cfg.tlsConfig.CaCert, err = cert.LoadCrt(sf.cfg.CaCertFile); err != nil {
+			if sf.cfg.tlsConfig.CaCert, err = extcert.LoadCrt(sf.cfg.CaCertFile); err != nil {
 				return fmt.Errorf("read ca file %+v", err)
 			}
 		}

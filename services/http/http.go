@@ -17,6 +17,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
+	"github.com/thinkgos/go-core-package/extcert"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/time/rate"
 
@@ -31,7 +32,6 @@ import (
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/core/loadbalance"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
@@ -152,7 +152,7 @@ func (sf *HTTP) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return errors.New("cert file and key file required")
 		}
-		if sf.cfg.tlsConfig.Cert, sf.cfg.tlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
+		if sf.cfg.tlsConfig.Cert, sf.cfg.tlsConfig.Key, err = extcert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
 			return err
 		}
 		if sf.cfg.CaCertFile != "" {

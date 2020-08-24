@@ -10,7 +10,7 @@ import (
 	"github.com/thinkgos/go-socks5"
 
 	"github.com/thinkgos/go-core-package/lib/encrypt"
-	"github.com/thinkgos/jocasta/lib/cert"
+	"github.com/thinkgos/jocasta/pkg/cert"
 )
 
 func TestTCP_Forward_Direct(t *testing.T) {

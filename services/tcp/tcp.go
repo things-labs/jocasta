@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/thinkgos/go-core-package/extcert"
 	"github.com/thinkgos/strext"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
@@ -22,7 +23,6 @@ import (
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
@@ -126,11 +126,11 @@ func (sf *TCP) inspectConfig() (err error) {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return errors.New("cert file and key file required")
 		}
-		if sf.cfg.tlsConfig.Cert, sf.cfg.tlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
+		if sf.cfg.tlsConfig.Cert, sf.cfg.tlsConfig.Key, err = extcert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile); err != nil {
 			return err
 		}
 		if sf.cfg.CaCertFile != "" {
-			if sf.cfg.tlsConfig.CaCert, err = cert.LoadCrt(sf.cfg.CaCertFile); err != nil {
+			if sf.cfg.tlsConfig.CaCert, err = extcert.LoadCrt(sf.cfg.CaCertFile); err != nil {
 				return fmt.Errorf("read ca file %+v", err)
 			}
 		}

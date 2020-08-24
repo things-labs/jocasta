@@ -15,6 +15,7 @@ import (
 
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/thinkgos/go-core-package/extbase64"
+	"github.com/thinkgos/go-core-package/extcert"
 	"github.com/thinkgos/go-core-package/extnet/connection/cbuffered"
 	"github.com/thinkgos/go-core-package/extnet/connection/ccrypt"
 	"github.com/thinkgos/go-core-package/extnet/connection/ciol"
@@ -29,7 +30,6 @@ import (
 	"github.com/thinkgos/jocasta/core/loadbalance"
 	"github.com/thinkgos/jocasta/core/socks5"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/cert"
 	"github.com/thinkgos/jocasta/lib/extnet"
 	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
@@ -135,7 +135,7 @@ func (sf *SPS) InspectConfig() (err error) {
 	}
 	if sf.cfg.ParentType == "tls" || sf.cfg.LocalType == "tls" {
 		if !sf.cfg.ParentTLSSingle {
-			sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = cert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile)
+			sf.cfg.tcpTlsConfig.Cert, sf.cfg.tcpTlsConfig.Key, err = extcert.LoadPair(sf.cfg.CertFile, sf.cfg.KeyFile)
 			if err != nil {
 				return
 			}

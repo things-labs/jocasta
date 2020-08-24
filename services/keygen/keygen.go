@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/thinkgos/go-core-package/extcert"
 	"github.com/thinkgos/go-core-package/extrand"
 
-	"github.com/thinkgos/jocasta/lib/cert"
+	"github.com/thinkgos/jocasta/pkg/cert"
 	"github.com/thinkgos/jocasta/services"
 )
 
@@ -60,7 +61,7 @@ func (sf *Keygen) Start() error {
 	if !sf.cfg.Sign {
 		return cert.CreateCAFile(sf.cfg.CaFilePrefix, config)
 	}
-	caCert, caKey, err := cert.ParseCrtAndKeyFile(
+	caCert, caKey, err := extcert.ParseCrtAndKeyFile(
 		sf.cfg.CaFilePrefix+cert.CertFileSuffix,
 		sf.cfg.CaFilePrefix+cert.KeyFileSuffix,
 	)

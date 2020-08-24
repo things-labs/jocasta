@@ -11,7 +11,7 @@ import (
 
 	"github.com/thinkgos/go-core-package/lib/encrypt"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/cert"
+	"github.com/thinkgos/jocasta/pkg/cert"
 )
 
 func Test_InvalidProtocol(t *testing.T) {
