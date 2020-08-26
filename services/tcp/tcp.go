@@ -13,19 +13,19 @@ import (
 	"time"
 
 	"github.com/thinkgos/go-core-package/extcert"
+	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/go-core-package/lib/encrypt"
+	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/strext"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
-
-	"github.com/thinkgos/go-core-package/lib/encrypt"
 
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
+	"github.com/thinkgos/jocasta/pkg/enet"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 )
@@ -74,7 +74,7 @@ type connItem struct {
 
 type TCP struct {
 	cfg     Config
-	channel cs.Server
+	channel net.Listener
 	// parent type = "udp", udp -> udp绑定传输
 	// src地址对udp连接映射
 	// parent type != "udp", udp -> net.conn 其它的绑定传输
@@ -171,21 +171,23 @@ func (sf *TCP) Start() (err error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sword.GoPool,
-		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
+		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.LocalCompress)},
 		Handler:     cs.HandlerFunc(sf.handler),
 	}
-	channel, errChan := srv.RunListenAndServe()
-	if err = <-errChan; err != nil {
+	ln, err := srv.Listen()
+	if err != nil {
 		return err
 	}
-	sf.channel = channel
+
+	sword.Go(func() { srv.Server(ln) })
+	sf.channel = ln
 
 	if sf.cfg.ParentType == "udp" {
 		sword.Go(func() { sf.userConns.Watch(sf.ctx) })
 	}
 
 	sf.log.Infof("[ TCP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)
-	sf.log.Infof("[ TCP ] use proxy %s on %s", sf.cfg.LocalType, sf.channel.LocalAddr())
+	sf.log.Infof("[ TCP ] use proxy %s on %s", sf.cfg.LocalType, sf.channel.Addr().String())
 	return
 }
 
@@ -320,7 +322,7 @@ func (sf *TCP) proxyStream2UDP(inConn net.Conn) {
 						return
 					}
 					atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-					err = extnet.WrapWriteTimeout(item.conn, sf.cfg.Timeout, func(c net.Conn) error {
+					err = enet.WrapWriteTimeout(item.conn, sf.cfg.Timeout, func(c net.Conn) error {
 						as, err := captain.ParseAddrSpec(item.srcAddr.String())
 						if err != nil {
 							return err
@@ -372,7 +374,7 @@ func (sf *TCP) dialParent(address string) (net.Conn, error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:   sf.proxyURL,
 		},
-		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
+		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
 	}
 	return d.Dial("tcp", address)
 }

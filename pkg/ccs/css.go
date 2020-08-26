@@ -8,8 +8,10 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/go-core-package/gopool"
+
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/gopool"
 )
 
 // Config config
@@ -28,7 +30,7 @@ type Config struct {
 type Dialer struct {
 	Protocol    string
 	Timeout     time.Duration
-	AfterChains cs.AdornConnsChain
+	AfterChains extnet.AdornConnsChain
 	Config
 }
 
@@ -39,8 +41,8 @@ func (sf *Dialer) Dial(network, addr string) (net.Conn, error) {
 
 // DialContext connects to the address on the named network using the provided context.
 func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
-	var d cs.ContextDialer
-	var forward cs.Dialer
+	var d extnet.ContextDialer
+	var forward extnet.Dialer
 
 	if sf.ProxyURL != nil {
 		switch sf.ProxyURL.Scheme {
@@ -63,7 +65,7 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 
 	switch sf.Protocol {
 	case "tcp":
-		d = &cs.TCPDialer{
+		d = &extnet.Client{
 			Timeout:          sf.Timeout,
 			AfterAdornChains: sf.AfterChains,
 			Forward:          forward,
@@ -73,9 +75,9 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 		if err != nil {
 			return nil, err
 		}
-		d = &cs.TCPDialer{
+		d = &extnet.Client{
 			Timeout:          sf.Timeout,
-			BaseAdorn:        cs.BaseTLSAdornClient(tlsConfig),
+			BaseAdorn:        extnet.BaseAdornTLSClient(tlsConfig),
 			AfterAdornChains: sf.AfterChains,
 			Forward:          forward,
 		}
@@ -83,14 +85,14 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 		if ok := sf.StcpConfig.Valid(); !ok {
 			return nil, errors.New("invalid stcp config")
 		}
-		d = &cs.TCPDialer{
+		d = &extnet.Client{
 			Timeout:          sf.Timeout,
-			BaseAdorn:        cs.BaseStcpAdorn(sf.StcpConfig.Method, sf.StcpConfig.Password),
+			BaseAdorn:        extnet.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password),
 			AfterAdornChains: sf.AfterChains,
 			Forward:          forward,
 		}
 	case "kcp":
-		d = &cs.KCPDialer{
+		d = &cs.KCPClient{
 			Config:      sf.KcpConfig,
 			AfterChains: sf.AfterChains,
 		}
@@ -107,69 +109,46 @@ type Server struct {
 	Addr     string
 	Config
 	GoPool      gopool.Pool
-	AfterChains cs.AdornConnsChain
+	AfterChains extnet.AdornConnsChain
 	Handler     cs.Handler
-
-	status chan error
 }
 
 // RunListenAndServe run listen and server no-block, return error chan indicate server is run sucess or failed
-func (sf *Server) RunListenAndServe() (cs.Server, <-chan error) {
-	var srv cs.Server
-
-	sf.status = make(chan error, 1)
+func (sf *Server) Listen() (net.Listener, error) {
 	switch sf.Protocol {
 	case "tcp":
-		srv = &cs.TCPServer{
-			Addr:        sf.Addr,
-			AfterChains: sf.AfterChains,
-			Handler:     sf.Handler,
-			Status:      sf.status,
-			GoPool:      sf.GoPool,
-		}
+		return extnet.ListenWith("tcp", sf.Addr, nil, sf.AfterChains...)
 	case "tls":
 		tlsConfig, err := sf.TLSConfig.ServerConfig()
 		if err != nil {
-			sf.status <- err
-			return nil, sf.status
+			return nil, err
 		}
-		srv = &cs.TCPServer{
-			Addr:          sf.Addr,
-			BaseAdornConn: cs.BaseTLSAdornServer(tlsConfig),
-			AfterChains:   sf.AfterChains,
-			Handler:       sf.Handler,
-			Status:        sf.status,
-			GoPool:        sf.GoPool,
-		}
+		return extnet.ListenWith("tcp", sf.Addr, extnet.BaseAdornTLSServer(tlsConfig), sf.AfterChains...)
 	case "stcp":
 		if ok := sf.StcpConfig.Valid(); !ok {
-			err := errors.New("invalid stcp config")
-			sf.status <- err
-			return nil, sf.status
+			return nil, errors.New("invalid stcp config")
 		}
-		srv = &cs.TCPServer{
-			Addr:          sf.Addr,
-			BaseAdornConn: cs.BaseStcpAdorn(sf.StcpConfig.Method, sf.StcpConfig.Password),
-			AfterChains:   sf.AfterChains,
-			Handler:       sf.Handler,
-			Status:        sf.status,
-			GoPool:        sf.GoPool,
-		}
+		return extnet.ListenWith("tcp", sf.Addr, extnet.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password), sf.AfterChains...)
 	case "kcp":
-		srv = &cs.KCPServer{
-			Addr:        sf.Addr,
-			Config:      sf.KcpConfig,
-			AfterChains: sf.AfterChains,
-			Handler:     sf.Handler,
-			Status:      sf.status,
-			GoPool:      sf.GoPool,
-		}
+		return cs.KCPListen("", sf.Addr, sf.KcpConfig, sf.AfterChains...)
 	default:
-		sf.status <- fmt.Errorf("not support protocol: %s", sf.Protocol)
-		return nil, sf.status
+		return nil, fmt.Errorf("not support protocol: %s", sf.Protocol)
 	}
+}
 
-	gopool.Go(sf.GoPool, func() { _ = srv.ListenAndServe() })
+func (sf *Server) RunServer(ln net.Listener) {
+	gopool.Go(sf.GoPool, func() { sf.Server(ln) })
+}
 
-	return srv, sf.status
+func (sf *Server) Server(ln net.Listener) {
+	defer ln.Close()
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		gopool.Go(sf.GoPool, func() {
+			sf.Handler.ServerConn(conn)
+		})
+	}
 }

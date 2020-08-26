@@ -6,9 +6,9 @@ import (
 	"net"
 	"time"
 
+	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/go-core-package/gopool"
 	"github.com/thinkgos/go-core-package/lib/bpool"
-	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/gopool"
 )
 
 // Option for Forward
@@ -17,9 +17,7 @@ type Option func(c *Forward)
 // WithGPool with gpool.Pool
 func WithGPool(pool gopool.Pool) Option {
 	return func(c *Forward) {
-		if pool != nil {
-			c.gPool = pool
-		}
+		c.gPool = pool
 	}
 }
 
@@ -44,8 +42,8 @@ func New(size int, opts ...Option) *Forward {
 func (sf *Forward) Proxy(rw1, rw2 io.ReadWriter) (err error) {
 	ech1 := make(chan error, 1)
 	ech2 := make(chan error, 1)
-	sf.goFunc(func() { ech1 <- sf.Copy(rw1, rw2) })
-	sf.goFunc(func() { ech2 <- sf.Copy(rw2, rw1) })
+	gopool.Go(sf.gPool, func() { ech1 <- sf.Copy(rw1, rw2) })
+	gopool.Go(sf.gPool, func() { ech2 <- sf.Copy(rw2, rw1) })
 	select {
 	case err = <-ech1:
 	case err = <-ech2:
@@ -86,13 +84,5 @@ func (sf *Forward) RunUDPCopy(dst, src *net.UDPConn, dstAddr net.Addr, readTimeo
 			}
 			continue
 		}
-	}
-}
-
-func (sf Forward) goFunc(f func()) {
-	if sf.gPool != nil {
-		sf.gPool.Go(f)
-	} else {
-		go f()
 	}
 }

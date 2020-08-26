@@ -16,9 +16,11 @@ import (
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/thinkgos/go-core-package/extbase64"
 	"github.com/thinkgos/go-core-package/extcert"
+	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/thinkgos/go-core-package/extnet/connection/cbuffered"
 	"github.com/thinkgos/go-core-package/extnet/connection/ccrypt"
 	"github.com/thinkgos/go-core-package/extnet/connection/ciol"
+	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/meter"
 	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
@@ -30,9 +32,8 @@ import (
 	"github.com/thinkgos/jocasta/core/loadbalance"
 	"github.com/thinkgos/jocasta/core/socks5"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
+	"github.com/thinkgos/jocasta/pkg/enet"
 	"github.com/thinkgos/jocasta/pkg/httpc"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
@@ -92,7 +93,7 @@ type SPS struct {
 	cfg                   Config
 	domainResolver        *idns.Resolver
 	basicAuthCenter       *basicAuth.Center
-	serverChannels        []cs.Server
+	serverChannels        []net.Listener
 	userConns             cmap.ConcurrentMap
 	localCipher           *shadowsocks.Cipher
 	parentCipher          *shadowsocks.Cipher
@@ -111,7 +112,7 @@ var _ services.Service = (*SPS)(nil)
 func New(log logger.Logger, cfg Config) *SPS {
 	return &SPS{
 		cfg:                   cfg,
-		serverChannels:        make([]cs.Server, 0),
+		serverChannels:        make([]net.Listener, 0),
 		userConns:             cmap.New(),
 		udpRelatedPacketConns: cmap.New(),
 		parentAuthData:        &sync.Map{},
@@ -294,14 +295,17 @@ func (sf *SPS) Start() (err error) {
 					KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 				},
 				GoPool:      sword.GoPool,
-				AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
+				AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.LocalCompress)},
 				Handler:     cs.HandlerFunc(sf.handle),
 			}
 
-			sc, errChan := srv.RunListenAndServe()
-			if err = <-errChan; err != nil {
-				return
+			sc, err := srv.Listen()
+			if err != nil {
+				return err
 			}
+
+			sword.Go(func() { srv.Server(sc) })
+
 			sf.serverChannels = append(sf.serverChannels, sc)
 			if sf.cfg.ParentServiceType == "socks" {
 				err = sf.RunSSUDP(addr)
@@ -309,9 +313,9 @@ func (sf *SPS) Start() (err error) {
 				sf.log.Warnf("warn : udp only for socks parent ")
 			}
 			if err != nil {
-				return
+				return err
 			}
-			sf.log.Infof("%s http(s)+socks+ss proxy on %s", sf.cfg.LocalType, sc.LocalAddr())
+			sf.log.Infof("%s http(s)+socks+ss proxy on %s", sf.cfg.LocalType, sc.Addr().String())
 		}
 	}
 	return
@@ -384,7 +388,7 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 	var auth = proxy.Auth{}
 	var forwardBytes []byte
 
-	if extnet.IsSocks5(h) {
+	if enet.IsSocks5(h) {
 		if sf.cfg.DisableSocks5 {
 			return
 		}
@@ -400,13 +404,13 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 			sf.proxyUDP(inConn, serverConn)
 			return
 		}
-	} else if extnet.IsHTTP(h) || isSNI != "" {
+	} else if enet.IsHTTP(h) || isSNI != "" {
 		if sf.cfg.DisableHTTP {
 			return
 		}
 		//http
 		var request httpc.Request
-		err = extnet.WrapTimeout(inConn, sf.cfg.Timeout, func(c net.Conn) (err1 error) {
+		err = enet.WrapTimeout(inConn, sf.cfg.Timeout, func(c net.Conn) (err1 error) {
 			request, err1 = httpc.New(inConn, 1024,
 				httpc.WithBasicAuth(sf.basicAuthCenter),
 				httpc.WithLogger(sf.log),
@@ -442,7 +446,7 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 			return
 		}
 		var ssConn *shadowsocks.Conn
-		err = extnet.WrapTimeout(inConn, time.Second*5, func(c net.Conn) error {
+		err = enet.WrapTimeout(inConn, time.Second*5, func(c net.Conn) error {
 			var err error
 			ssConn = shadowsocks.New(inConn, sf.localCipher.Clone())
 			address, err = shadowsocks.ParseRequest(ssConn)
@@ -477,7 +481,7 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 	}
 	ParentAuth := sf.getParentAuth(lbAddr)
 	if ParentAuth != "" || sf.cfg.ParentSSKey != "" || sf.basicAuthCenter != nil {
-		forwardBytes = extnet.RemoveProxyHeaders(forwardBytes)
+		forwardBytes = enet.RemoveProxyHeaders(forwardBytes)
 	}
 
 	//ask parent for connect to target address
@@ -516,13 +520,13 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 		if isHTTPS {
 			pb.Write([]byte("\r\n"))
 		} else {
-			forwardBytes = extnet.InsertProxyHeaders(forwardBytes, pb.String())
+			forwardBytes = enet.InsertProxyHeaders(forwardBytes, pb.String())
 			pb.Reset()
 			pb.Write(forwardBytes)
 			forwardBytes = nil
 		}
 
-		err = extnet.WrapWriteTimeout(outConn, sf.cfg.Timeout, func(c net.Conn) error {
+		err = enet.WrapWriteTimeout(outConn, sf.cfg.Timeout, func(c net.Conn) error {
 			_, err := c.Write(pb.Bytes())
 			return err
 		})
@@ -534,7 +538,7 @@ func (sf *SPS) proxyTCP(inConn net.Conn) (err error) {
 
 		if isHTTPS {
 			reply := make([]byte, 1024)
-			err = extnet.WrapReadTimeout(outConn, sf.cfg.Timeout, func(c net.Conn) error {
+			err = enet.WrapReadTimeout(outConn, sf.cfg.Timeout, func(c net.Conn) error {
 				_, err := c.Read(reply)
 				return err
 			})
@@ -669,7 +673,7 @@ func (sf *SPS) dialParent(address string) (net.Conn, error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:   sf.proxyURL,
 		},
-		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
+		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
 	}
 	conn, err := d.Dial("tcp", address)
 	if err != nil {

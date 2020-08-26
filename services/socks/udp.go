@@ -10,13 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/thinkgos/go-core-package/extnet"
 	sockv5 "github.com/thinkgos/go-socks5"
 	"github.com/thinkgos/go-socks5/statute"
 	"golang.org/x/net/proxy"
 
 	"github.com/thinkgos/jocasta/core/socks5"
-	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/outil"
+	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 )
 

@@ -13,8 +13,8 @@ import (
 
 	cmap "github.com/orcaman/concurrent-map"
 
-	"github.com/thinkgos/jocasta/lib/gopool"
-	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/go-core-package/gopool"
+	"github.com/thinkgos/go-core-package/lib/logger"
 )
 
 // 默认存活探测成功,失败阀值,3次

@@ -19,8 +19,10 @@ import (
 	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 
+	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/thinkgos/go-core-package/extnet/connection/ccrypt"
 	"github.com/thinkgos/go-core-package/extnet/connection/ciol"
+	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/go-socks5"
 	"github.com/thinkgos/go-socks5/statute"
 	"github.com/thinkgos/meter"
@@ -31,9 +33,8 @@ import (
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/core/loadbalance"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
+	"github.com/thinkgos/jocasta/pkg/enet"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 )
@@ -92,7 +93,7 @@ type Config struct {
 
 type Socks struct {
 	cfg                   Config
-	channel               cs.Server
+	channel               net.Listener
 	socks5Srv             *socks5.Server
 	filters               *filter.Filter
 	basicAuthCenter       *basicAuth.Center
@@ -281,7 +282,7 @@ func (sf *Socks) initService() (err error) {
 						sf.sshClient.Store(sshClient)
 					}
 				} else {
-					_ = extnet.WrapWriteTimeout(conn, sf.cfg.Timeout, func(c net.Conn) error {
+					_ = enet.WrapWriteTimeout(conn, sf.cfg.Timeout, func(c net.Conn) error {
 						_, err := c.Write([]byte{0})
 						return err
 					})
@@ -332,20 +333,21 @@ func (sf *Socks) Start() (err error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sword.GoPool,
-		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
+		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.LocalCompress)},
 		Handler:     cs.HandlerFunc(sf.handle),
 	}
 
-	var errChan <-chan error
-	sf.channel, errChan = srv.RunListenAndServe()
-	if err = <-errChan; err != nil {
+	sf.channel, err = srv.Listen()
+	if err != nil {
 		return
 	}
+
+	sword.Go(func() { srv.Server(sf.channel) })
 
 	if len(sf.cfg.Parent) > 0 {
 		sf.log.Infof("[ Socks ] use parent %s < %v [ %s ] >", sf.cfg.ParentType, sf.cfg.Parent, strings.ToUpper(sf.cfg.LbConfig.Method))
 	}
-	sf.log.Infof("[ Socks ] use proxy %s on %s", sf.cfg.LocalType, sf.channel.LocalAddr())
+	sf.log.Infof("[ Socks ] use proxy %s on %s", sf.cfg.LocalType, sf.channel.Addr().String())
 	return
 }
 
@@ -563,7 +565,7 @@ func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
 				StcpConfig: sf.cfg.STCPConfig,
 				KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			},
-			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
+			AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
 		}
 		outConn, err = d.Dial("tcp", targetAddr)
 	case "ssh":

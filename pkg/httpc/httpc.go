@@ -10,10 +10,10 @@ import (
 
 	"github.com/thinkgos/go-core-package/extbase64"
 
+	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/jocasta/connection/sni"
 	"github.com/thinkgos/jocasta/core/basicAuth"
-	"github.com/thinkgos/jocasta/lib/logger"
-	"github.com/thinkgos/jocasta/lib/outil"
+	"github.com/thinkgos/jocasta/pkg/outil"
 )
 
 type Request struct {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/thinkgos/jocasta/lib/gopool"
-	"github.com/thinkgos/jocasta/lib/logger"
+	"github.com/thinkgos/go-core-package/gopool"
+	"github.com/thinkgos/go-core-package/lib/logger"
 )
 
 // 选项

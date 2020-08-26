@@ -21,8 +21,10 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/time/rate"
 
+	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/thinkgos/go-core-package/extnet/connection/ccrypt"
 	"github.com/thinkgos/go-core-package/extnet/connection/ciol"
+	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/go-core-package/lib/ternary"
 	"github.com/thinkgos/meter"
 	"github.com/thinkgos/strext"
@@ -32,9 +34,8 @@ import (
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/core/loadbalance"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
+	"github.com/thinkgos/jocasta/pkg/enet"
 	"github.com/thinkgos/jocasta/pkg/httpc"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
@@ -98,7 +99,7 @@ type Config struct {
 
 type HTTP struct {
 	cfg             Config
-	channels        []cs.Server
+	channels        []net.Listener
 	filters         *filter.Filter
 	basicAuthCenter *basicAuth.Center
 	lb              *loadbalance.Balanced
@@ -116,7 +117,7 @@ var _ services.Service = (*HTTP)(nil)
 func New(log logger.Logger, cfg Config) *HTTP {
 	return &HTTP{
 		cfg:       cfg,
-		channels:  make([]cs.Server, 0),
+		channels:  make([]net.Listener, 0),
 		userConns: cmap.New(),
 		log:       log,
 	}
@@ -292,7 +293,7 @@ func (sf *HTTP) InitService() (err error) {
 						sf.sshClient.Store(sshClient)
 					}
 				} else {
-					_ = extnet.WrapWriteTimeout(conn, sf.cfg.Timeout, func(c net.Conn) error {
+					_ = enet.WrapWriteTimeout(conn, sf.cfg.Timeout, func(c net.Conn) error {
 						_, err := c.Write([]byte{0})
 						return err
 					})
@@ -338,15 +339,16 @@ func (sf *HTTP) Start() (err error) {
 				KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			},
 			GoPool:      sword.GoPool,
-			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.LocalCompress)},
+			AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.LocalCompress)},
 			Handler:     cs.HandlerFunc(sf.handle),
 		}
-		sc, errChan := srv.RunListenAndServe()
-		if err = <-errChan; err != nil {
+		sc, err := srv.Listen()
+		if err != nil {
 			return err
 		}
+		sword.Go(func() { srv.Server(sc) })
 		sf.channels = append(sf.channels, sc)
-		sf.log.Infof("use proxy %s on %s", sf.cfg.LocalType, sc.LocalAddr())
+		sf.log.Infof("use proxy %s on %s", sf.cfg.LocalType, sc.Addr().String())
 	}
 	if len(sf.cfg.Parent) > 0 {
 		sf.log.Infof("use parent %s < %v [ %s ] >", sf.cfg.ParentType, sf.cfg.Parent, strings.ToUpper(sf.cfg.LbConfig.Method))
@@ -446,7 +448,7 @@ func (sf *HTTP) handle(inConn net.Conn) {
 		targetConn.SetDeadline(time.Now().Add(sf.cfg.Timeout))
 		//直连目标或上级非代理或非SNI,,清理HTTP头部的代理头信息
 		if (!useProxy || sf.cfg.ParentType == "ssh") && !req.IsSNI {
-			_, err = targetConn.Write(extnet.RemoveProxyHeaders(req.RawHeader))
+			_, err = targetConn.Write(enet.RemoveProxyHeaders(req.RawHeader))
 		} else {
 			_, err = targetConn.Write(req.RawHeader)
 		}
@@ -547,7 +549,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 				KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 				ProxyURL:   sf.proxyURL,
 			},
-			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
+			AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
 		}
 		outConn, err = d.Dial("tcp", address)
 	case "ssh":

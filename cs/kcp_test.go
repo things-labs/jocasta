@@ -1,11 +1,11 @@
 package cs
 
 import (
-	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/thinkgos/go-core-package/extnet"
 )
 
 func TestKcp(t *testing.T) {
@@ -41,35 +41,37 @@ func TestKcp(t *testing.T) {
 				require.NoError(t, err)
 
 				// server
-				srv := &KCPServer{
-					Addr:        "127.0.0.1:0",
-					Config:      config,
-					Status:      make(chan error, 1),
-					AfterChains: AdornConnsChain{AdornCsnappy(compress)},
-					Handler: HandlerFunc(func(inconn net.Conn) {
-						buf := make([]byte, 20)
-						n, err := inconn.Read(buf)
-						if !assert.NoError(t, err) {
+				ln, err := KCPListen("", "127.0.0.1:0", config, extnet.AdornSnappy(compress))
+				require.NoError(t, err)
+				defer ln.Close()
+				go func() {
+					for {
+						conn, err := ln.Accept()
+						if err != nil {
 							return
 						}
-						assert.Equal(t, "ping", string(buf[:n]))
-						_, err = inconn.Write([]byte("pong"))
-						if !assert.NoError(t, err) {
-							return
-						}
-					}),
-				}
-				// start server
-				go func() { _ = srv.ListenAndServe() }()
-				require.NoError(t, <-srv.Status)
-				defer srv.Close()
+						go func() {
+							buf := make([]byte, 20)
+							n, err := conn.Read(buf)
+							if !assert.NoError(t, err) {
+								return
+							}
+							assert.Equal(t, "ping", string(buf[:n]))
+							_, err = conn.Write([]byte("pong"))
+							if !assert.NoError(t, err) {
+								return
+							}
+						}()
+
+					}
+				}()
 
 				// client
-				d := &KCPDialer{
+				d := &KCPClient{
 					Config:      config,
-					AfterChains: AdornConnsChain{AdornCsnappy(compress)},
+					AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 				}
-				cli, err := d.Dial("", srv.LocalAddr())
+				cli, err := d.Dial("", ln.Addr().String())
 				require.NoError(t, err)
 				defer cli.Close()
 

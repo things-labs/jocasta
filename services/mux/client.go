@@ -13,13 +13,13 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/thinkgos/go-core-package/extcert"
+	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/pkg/through"
@@ -393,7 +393,7 @@ func (sf *Client) dialParent(address string) (net.Conn, error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:   sf.proxyURL,
 		},
-		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.Compress)},
+		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.Compress)},
 	}
 	return d.Dial("tcp", address)
 }

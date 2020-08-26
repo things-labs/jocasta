@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/thinkgos/go-core-package/extcert"
+	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/thinkgos/go-core-package/lib/encrypt"
+	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/strext"
 	"golang.org/x/sync/singleflight"
 
@@ -18,9 +20,8 @@ import (
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
+	"github.com/thinkgos/jocasta/pkg/enet"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 )
@@ -59,7 +60,7 @@ type connItem struct {
 
 type UDP struct {
 	cfg     Config
-	channel *cs.UDPServer
+	udpConn *net.UDPConn
 	// parent type = "udp", udp -> udp绑定传输
 	// src地址对udp连接映射
 	// parent type != "udp", udp -> 其它的绑定传输
@@ -133,22 +134,38 @@ func (sf *UDP) Start() (err error) {
 	if err = sf.inspectConfig(); err != nil {
 		return
 	}
-
-	channel := &cs.UDPServer{
-		Addr:    sf.cfg.Local,
-		Status:  make(chan error, 1),
-		Handler: sf.handle,
-		GoPool:  sword.GoPool,
-	}
-	go channel.ListenAndServe()
-	if err = <-channel.Status; err != nil {
+	addr, err := net.ResolveUDPAddr("udp", sf.cfg.Local)
+	if err != nil {
 		return err
 	}
-	sf.channel = channel
+	sf.udpConn, err = net.ListenUDP("udp", addr)
+	if err != nil {
+		return err
+	}
+	sword.Go(
+		func() {
+			defer sf.udpConn.Close()
+			for {
+				buf := make([]byte, 2048)
+				n, srcAddr, err := sf.udpConn.ReadFromUDP(buf)
+				if err != nil {
+					return
+				}
+				data := buf[0:n]
+				sword.Go(func() {
+					sf.handle(sf.udpConn, cs.Message{
+						LocalAddr: addr,
+						SrcAddr:   srcAddr,
+						Data:      data,
+					})
+				})
+			}
+		},
+	)
 
 	sword.Go(func() { sf.conns.Watch(sf.ctx) })
 	sf.log.Infof("[ UDP ] use parent %s< %s >", sf.cfg.Parent, sf.cfg.ParentType)
-	sf.log.Infof("[ UDP ] use proxy udp on %s", sf.channel.LocalAddr())
+	sf.log.Infof("[ UDP ] use proxy udp on %s", sf.udpConn.LocalAddr())
 	return
 }
 
@@ -156,8 +173,8 @@ func (sf *UDP) Stop() {
 	if sf.cancel != nil {
 		sf.cancel()
 	}
-	if sf.channel != nil {
-		sf.channel.Close()
+	if sf.udpConn != nil {
+		sf.udpConn.Close()
 	}
 	for _, c := range sf.conns.Items() {
 		c.(*connItem).targetConn.Close()
@@ -214,7 +231,7 @@ func (sf *UDP) proxyUdp2Stream(_ *net.UDPConn, msg cs.Message) {
 					return
 				}
 				atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-				_, err = sf.channel.WriteToUDP(da.Data, item.srcAddr)
+				_, err = sf.udpConn.WriteToUDP(da.Data, item.srcAddr)
 				if err != nil {
 					sf.log.Errorf("[ UDP ] udp conn write to local conn fail, %s ", err)
 				}
@@ -230,7 +247,7 @@ func (sf *UDP) proxyUdp2Stream(_ *net.UDPConn, msg cs.Message) {
 	// parent ---> src
 	item := itm.(*connItem)
 	atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-	err = extnet.WrapWriteTimeout(item.targetConn, sf.cfg.Timeout, func(c net.Conn) error {
+	err = enet.WrapWriteTimeout(item.targetConn, sf.cfg.Timeout, func(c net.Conn) error {
 		as, err := captain.ParseAddrSpec(srcAddr)
 		if err != nil {
 			return err
@@ -298,7 +315,7 @@ func (sf *UDP) proxyUdp2Udp(_ *net.UDPConn, msg cs.Message) {
 					return
 				}
 				atomic.StoreInt64(&item.lastActiveTime, time.Now().Unix())
-				_, err = sf.channel.WriteToUDP(buf[:n], item.srcAddr)
+				_, err = sf.udpConn.WriteToUDP(buf[:n], item.srcAddr)
 				if err != nil {
 					sf.log.Warnf("[ UDP ] udp conn write to local conn fail, %s ", err)
 					return
@@ -328,7 +345,7 @@ func (sf *UDP) dialParent(address string) (net.Conn, error) {
 			StcpConfig: sf.cfg.STCPConfig,
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
-		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.ParentCompress)},
+		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
 	}
 	return d.Dial("tcp", address)
 }

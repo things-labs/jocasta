@@ -4,22 +4,23 @@ import (
 	"context"
 	"net"
 
+	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/xtaci/kcp-go/v5"
 )
 
-// KCPDialer KCP client dialer
-type KCPDialer struct {
+// KCPClient KCP client dialer
+type KCPClient struct {
 	Config      KcpConfig
-	AfterChains AdornConnsChain
+	AfterChains extnet.AdornConnsChain
 }
 
 // Dial connects to the address on the named network.
-func (sf *KCPDialer) Dial(network, addr string) (net.Conn, error) {
+func (sf *KCPClient) Dial(network, addr string) (net.Conn, error) {
 	return sf.DialContext(context.Background(), network, addr)
 }
 
 // DialContext connects to the address on the named network using the provided context.
-func (sf *KCPDialer) DialContext(_ context.Context, _, addr string) (net.Conn, error) {
+func (sf *KCPClient) DialContext(_ context.Context, _, addr string) (net.Conn, error) {
 	conn, err := kcp.DialWithOptions(addr, sf.Config.Block, sf.Config.DataShard, sf.Config.ParityShard)
 	if err != nil {
 		return nil, err

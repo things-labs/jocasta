@@ -5,9 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"net"
 
-	"github.com/thinkgos/go-core-package/extnet/connection/cencrypt"
 	"github.com/thinkgos/go-core-package/lib/encrypt"
 )
 
@@ -23,17 +21,6 @@ func (sf StcpConfig) Valid() bool {
 	return err == nil
 }
 
-// BaseStcpAdorn base adorn encrypt with method and password
-func BaseStcpAdorn(method, password string) func(conn net.Conn) net.Conn {
-	return func(conn net.Conn) net.Conn {
-		cip, err := encrypt.NewCipher(method, password)
-		if err != nil {
-			panic("encrypt method should be valid")
-		}
-		return cencrypt.New(conn, cip)
-	}
-}
-
 // TLSConfig tcp tls config
 // Single == true,  单向认证
 //      客户端必须有提供ca证书
@@ -46,20 +33,6 @@ type TLSConfig struct {
 	Cert   []byte
 	Key    []byte
 	Single bool
-}
-
-// BaseTLSAdornClient base adorn tls client
-func BaseTLSAdornClient(conf *tls.Config) func(conn net.Conn) net.Conn {
-	return func(conn net.Conn) net.Conn {
-		return tls.Client(conn, conf)
-	}
-}
-
-// BaseTLSAdornServer base adorn tls server
-func BaseTLSAdornServer(conf *tls.Config) func(conn net.Conn) net.Conn {
-	return func(conn net.Conn) net.Conn {
-		return tls.Server(conn, conf)
-	}
 }
 
 // ClientConfig client tls config

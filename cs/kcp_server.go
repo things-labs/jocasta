@@ -2,88 +2,57 @@ package cs
 
 import (
 	"net"
-	"sync"
 
 	"github.com/xtaci/kcp-go/v5"
 	"go.uber.org/multierr"
 
-	"github.com/thinkgos/jocasta/lib/gopool"
+	"github.com/thinkgos/go-core-package/extnet"
 )
 
-// KCPServer 传输,可选snappy压缩
+// KCPListen 传输,可选snappy压缩
 // TODO: BUG 当对端关闭时,连接并未关闭,UDP无状态连接的原因
-type KCPServer struct {
-	Addr   string
-	Config KcpConfig
-
-	Status      chan error
-	GoPool      gopool.Pool
-	AfterChains AdornConnsChain
-	Handler     Handler
-
-	mu sync.Mutex
-	ln net.Listener
+type kcpListen struct {
+	net.Listener
+	Config      KcpConfig
+	AfterChains extnet.AdornConnsChain
 }
 
 // ListenAndServe listen and server
-func (sf *KCPServer) ListenAndServe() error {
-	ln, err := kcp.ListenWithOptions(sf.Addr, sf.Config.Block, sf.Config.DataShard, sf.Config.ParityShard)
+func KCPListen(_, addr string, config KcpConfig, AfterChains ...extnet.AdornConn) (net.Listener, error) {
+	ln, err := kcp.ListenWithOptions(addr, config.Block, config.DataShard, config.ParityShard)
 	if err != nil {
-		setStatus(sf.Status, err)
-		return err
+		return nil, err
 	}
-	defer ln.Close() // nolint: errcheck
 	err = multierr.Combine(
-		ln.SetDSCP(sf.Config.DSCP),
-		ln.SetReadBuffer(sf.Config.SockBuf),
-		ln.SetWriteBuffer(sf.Config.SockBuf),
+		ln.SetDSCP(config.DSCP),
+		ln.SetReadBuffer(config.SockBuf),
+		ln.SetWriteBuffer(config.SockBuf),
 	)
 	if err != nil {
-		setStatus(sf.Status, err)
-		return err
+		return nil, err
 	}
-	sf.mu.Lock()
-	sf.ln = ln
-	sf.mu.Unlock()
-	setStatus(sf.Status, nil)
-	for {
-		conn, err := ln.AcceptKCP()
-		if err != nil {
-			return err
-		}
-		gopool.Go(sf.GoPool, func() {
-			conn.SetStreamMode(true)
-			conn.SetWriteDelay(true)
-			conn.SetNoDelay(sf.Config.NoDelay, sf.Config.Interval, sf.Config.Resend, sf.Config.NoCongestion)
-			conn.SetMtu(sf.Config.MTU)
-			conn.SetWindowSize(sf.Config.SndWnd, sf.Config.RcvWnd)
-			conn.SetACKNoDelay(sf.Config.AckNodelay)
-
-			var c net.Conn = conn
-			for _, chain := range sf.AfterChains {
-				c = chain(c)
-			}
-			sf.Handler.ServerConn(c)
-		})
-	}
+	return &kcpListen{
+		ln,
+		config,
+		AfterChains,
+	}, nil
 }
 
-// LocalAddr return address
-func (sf *KCPServer) LocalAddr() (addr string) {
-	sf.mu.Lock()
-	if sf.ln != nil {
-		addr = sf.ln.Addr().String()
+func (sf *kcpListen) Accept() (net.Conn, error) {
+	conn, err := sf.Listener.(*kcp.Listener).AcceptKCP()
+	if err != nil {
+		return nil, err
 	}
-	sf.mu.Unlock()
-	return
-}
+	conn.SetStreamMode(true)
+	conn.SetWriteDelay(true)
+	conn.SetNoDelay(sf.Config.NoDelay, sf.Config.Interval, sf.Config.Resend, sf.Config.NoCongestion)
+	conn.SetMtu(sf.Config.MTU)
+	conn.SetWindowSize(sf.Config.SndWnd, sf.Config.RcvWnd)
+	conn.SetACKNoDelay(sf.Config.AckNodelay)
 
-// Close close kcp
-func (sf *KCPServer) Close() (err error) {
-	sf.mu.Lock()
-	if sf.ln != nil {
-		err = sf.ln.Close()
+	var c net.Conn = conn
+	for _, chain := range sf.AfterChains {
+		c = chain(c)
 	}
-	sf.mu.Unlock()
-	return
+	return c, nil
 }

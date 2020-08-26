@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/thinkgos/jocasta/core/socks5"
-	"github.com/thinkgos/jocasta/lib/outil"
+	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 )
 

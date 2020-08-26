@@ -13,7 +13,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.4.1
 	github.com/rs/xid v1.2.1
 	github.com/stretchr/testify v1.6.1
-	github.com/thinkgos/go-core-package v0.0.3
+	github.com/thinkgos/go-core-package v0.0.7
 	github.com/thinkgos/go-socks5 v0.2.2
 	github.com/thinkgos/meter v0.0.5
 	github.com/thinkgos/strext v0.3.2
@@ -25,6 +25,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 	golang.org/x/net v0.0.0-20200822124328-c89045814202
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	golang.org/x/sys v0.0.0-20200824131525-c12d262b63d8 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	golang.org/x/tools v0.0.0-20200823205832-c024452afbcd // indirect
 	google.golang.org/protobuf v1.25.0

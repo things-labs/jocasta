@@ -16,13 +16,14 @@ import (
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/go-core-package/extcert"
+	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/go-core-package/lib/logger"
+
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/extnet"
-	"github.com/thinkgos/jocasta/lib/logger"
-	"github.com/thinkgos/jocasta/lib/outil"
 	"github.com/thinkgos/jocasta/pkg/ccs"
+	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/pkg/through"
 	"github.com/thinkgos/jocasta/pkg/through/ddt"
@@ -74,7 +75,7 @@ type UDPConnItem struct {
 type Server struct {
 	id       string
 	cfg      ServerConfig
-	channel  cs.Server
+	listener interface{} //net.Listener
 	sessions *smux.Session
 	udpConns *connection.Manager // 本地udp地址 -> 远端连接 映射
 	mu       sync.Mutex
@@ -160,38 +161,66 @@ func (sf *Server) Start() (err error) {
 		return
 	}
 
-	status := make(chan error, 1)
-	if sf.cfg.isUDP {
-		sf.channel = &cs.UDPServer{
-			Addr:    sf.cfg.local,
-			Status:  status,
-			GoPool:  sword.GoPool,
-			Handler: sf.handleUDP,
-		}
-	} else {
-		sf.channel = &cs.TCPServer{
-			Addr:        sf.cfg.local,
-			Status:      status,
-			GoPool:      sword.GoPool,
-			AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(false)},
-			Handler:     cs.HandlerFunc(sf.handleTCP),
-		}
-	}
-	sword.Go(func() { _ = sf.channel.ListenAndServe() })
-
-	if err = <-status; err != nil {
-		return
-	}
-
-	time.Sleep(time.Millisecond * 100)
+	var localhostAddr string
 
 	if sf.cfg.isUDP {
+		addr, err := net.ResolveUDPAddr("udp", sf.cfg.local)
+		if err != nil {
+			return err
+		}
+		var udpConn *net.UDPConn
+		udpConn, err = net.ListenUDP("udp", addr)
+		if err != nil {
+			return err
+		}
+		sword.Go(
+			func() {
+				defer udpConn.Close()
+				for {
+					buf := make([]byte, 2048)
+					n, srcAddr, err := udpConn.ReadFromUDP(buf)
+					if err != nil {
+						return
+					}
+					data := buf[0:n]
+					sword.Go(func() {
+						sf.handleUDP(udpConn, cs.Message{
+							LocalAddr: addr,
+							SrcAddr:   srcAddr,
+							Data:      data,
+						})
+					})
+				}
+			},
+		)
+		sf.listener = udpConn
 		sword.Go(func() {
 			sf.udpConns.Watch(sf.ctx)
 		})
+		localhostAddr = udpConn.LocalAddr().String()
+	} else {
+		ln, err := extnet.Listen("tcp", sf.cfg.local, extnet.AdornSnappy(false))
+		if err != nil {
+			return err
+		}
+		sword.Go(func() {
+			defer ln.Close()
+			for {
+				conn, err := ln.Accept()
+				if err != nil {
+					return
+				}
+				sword.Go(func() {
+					sf.handleTCP(conn)
+				})
+			}
+		})
+		sf.listener = ln
+		localhostAddr = ln.Addr().String()
 	}
+
 	sf.log.Infof("use %s parent %s", sf.cfg.ParentType, sf.cfg.Parent)
-	sf.log.Infof("server on %s", sf.channel.LocalAddr())
+	sf.log.Infof("server on %s", localhostAddr)
 	return
 }
 
@@ -202,8 +231,10 @@ func (sf *Server) Stop() {
 	if sf.sessions != nil {
 		sf.sessions.Close()
 	}
-	if sf.channel != nil {
-		sf.channel.Close()
+	if sf.listener != nil {
+		if c, ok := sf.listener.(io.Closer); ok {
+			c.Close()
+		}
 	}
 	sf.log.Infof("node server stopped")
 }
@@ -327,7 +358,7 @@ func (sf *Server) dialParent() (net.Conn, error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:   sf.proxyURL,
 		},
-		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.Compress)},
+		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.Compress)},
 	}
 	return d.Dial("tcp", sf.cfg.Parent)
 }
@@ -361,7 +392,7 @@ func (sf *Server) runUDPReceive(key, id string) {
 		}
 		atomic.StoreInt64(&udpConnItem.lastActiveTime, time.Now().Unix())
 		sword.Go(func() {
-			sf.channel.(*cs.UDPServer).WriteToUDP(da.Data, udpConnItem.srcAddr)
+			sf.listener.(*net.UDPConn).WriteToUDP(da.Data, udpConnItem.srcAddr)
 		})
 	}
 }

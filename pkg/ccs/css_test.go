@@ -7,22 +7,23 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/thinkgos/go-core-package/extcert"
+	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/thinkgos/go-socks5"
 
 	"github.com/thinkgos/go-core-package/lib/encrypt"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/pkg/cert"
 )
 
 func Test_InvalidProtocol(t *testing.T) {
 	// server
 	srv := &Server{Protocol: "invalid"}
-	_, errChan := srv.RunListenAndServe()
-	require.Error(t, <-errChan)
+	_, err := srv.Listen()
+	require.Error(t, err)
 
 	// client
 	d := &Dialer{Protocol: "invalid", Timeout: time.Second}
-	_, err := d.Dial("tcp", ":")
+	_, err = d.Dial("tcp", ":")
 	require.Error(t, err)
 }
 
@@ -31,13 +32,10 @@ func Test_TCP_Forward_Direct(t *testing.T) {
 		func() {
 			// server
 			srv := &Server{
-				Protocol: "tcp",
-				Addr:     "127.0.0.1:0",
-				Config:   Config{},
-				status:   make(chan error, 1),
-				AfterChains: cs.AdornConnsChain{
-					cs.AdornCsnappy(compress),
-				},
+				Protocol:    "tcp",
+				Addr:        "127.0.0.1:0",
+				Config:      Config{},
+				AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 				Handler: cs.HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -51,20 +49,22 @@ func Test_TCP_Forward_Direct(t *testing.T) {
 					}
 				}),
 			}
-			channel, errChan := srv.RunListenAndServe()
-			require.NoError(t, <-errChan)
-			defer channel.Close()
+
+			ln, err := srv.Listen()
+			require.NoError(t, err)
+			defer ln.Close()
+			go srv.Server(ln)
 
 			// client
 			d := &Dialer{
 				Protocol: "tcp",
 				Timeout:  time.Second,
 				Config:   Config{},
-				AfterChains: cs.AdornConnsChain{
-					cs.AdornCsnappy(compress),
+				AfterChains: extnet.AdornConnsChain{
+					extnet.AdornSnappy(compress),
 				},
 			}
-			cli, err := d.Dial("tcp", channel.LocalAddr())
+			cli, err := d.Dial("tcp", ln.Addr().String())
 			require.NoError(t, err)
 			defer cli.Close()
 
@@ -84,13 +84,10 @@ func Test_TCP_Forward_socks5(t *testing.T) {
 		func() {
 			// server
 			srv := &Server{
-				Protocol: "tcp",
-				Addr:     "127.0.0.1:0",
-				Config:   Config{},
-				status:   make(chan error, 1),
-				AfterChains: cs.AdornConnsChain{
-					cs.AdornCsnappy(compress),
-				},
+				Protocol:    "tcp",
+				Addr:        "127.0.0.1:0",
+				Config:      Config{},
+				AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 				Handler: cs.HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -104,9 +101,12 @@ func Test_TCP_Forward_socks5(t *testing.T) {
 					}
 				}),
 			}
-			channel, errChan := srv.RunListenAndServe()
-			require.NoError(t, <-errChan)
-			defer channel.Close()
+
+			ln, err := srv.Listen()
+			require.NoError(t, err)
+			defer ln.Close()
+
+			go srv.Server(ln)
 
 			// start socks5 proxy server
 			cator := &socks5.UserPassAuthenticator{Credentials: socks5.StaticCredentials{"user": "password"}}
@@ -139,11 +139,11 @@ func Test_TCP_Forward_socks5(t *testing.T) {
 				Protocol: "tcp",
 				Timeout:  time.Second,
 				Config:   Config{ProxyURL: pURL},
-				AfterChains: cs.AdornConnsChain{
-					cs.AdornCsnappy(compress),
+				AfterChains: extnet.AdornConnsChain{
+					extnet.AdornSnappy(compress),
 				},
 			}
-			conn, err := d.Dial("tcp", channel.LocalAddr())
+			conn, err := d.Dial("tcp", ln.Addr().String())
 			require.NoError(t, err)
 			defer conn.Close() // nolint: errcheck
 			_, err = conn.Write([]byte("ping"))
@@ -174,8 +174,8 @@ func Test_Stcp_Forward_Direct(t *testing.T) {
 					Protocol: "stcp",
 					Addr:     "127.0.0.1:0",
 					Config:   config,
-					AfterChains: cs.AdornConnsChain{
-						cs.AdornCsnappy(compress),
+					AfterChains: extnet.AdornConnsChain{
+						extnet.AdornSnappy(compress),
 					},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 512)
@@ -190,20 +190,21 @@ func Test_Stcp_Forward_Direct(t *testing.T) {
 						}
 					}),
 				}
-				channel, errChan := srv.RunListenAndServe()
-				require.NoError(t, <-errChan)
-				defer channel.Close()
+				ln, err := srv.Listen()
+				require.NoError(t, err)
+				defer ln.Close()
+				go srv.Server(ln)
 
 				// client
 				d := &Dialer{
 					Protocol: "stcp",
 					Timeout:  time.Second,
 					Config:   config,
-					AfterChains: cs.AdornConnsChain{
-						cs.AdornCsnappy(compress),
+					AfterChains: extnet.AdornConnsChain{
+						extnet.AdornSnappy(compress),
 					},
 				}
-				cli, err := d.Dial("tcp", channel.LocalAddr())
+				cli, err := d.Dial("tcp", ln.Addr().String())
 				require.NoError(t, err)
 				defer cli.Close()
 
@@ -234,8 +235,8 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 					Protocol: "stcp",
 					Addr:     "127.0.0.1:0",
 					Config:   config,
-					AfterChains: cs.AdornConnsChain{
-						cs.AdornCsnappy(compress),
+					AfterChains: extnet.AdornConnsChain{
+						extnet.AdornSnappy(compress),
 					},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
@@ -250,9 +251,10 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 						}
 					}),
 				}
-				channel, errChan := srv.RunListenAndServe()
-				require.NoError(t, <-errChan)
-				defer channel.Close()
+				ln, err := srv.Listen()
+				require.NoError(t, err)
+				defer ln.Close()
+				go srv.Server(ln)
 
 				// start socks5 proxy server
 				cator := &socks5.UserPassAuthenticator{Credentials: socks5.StaticCredentials{"user": "password"}}
@@ -282,11 +284,11 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 					Protocol: "stcp",
 					Timeout:  time.Second,
 					Config:   config,
-					AfterChains: cs.AdornConnsChain{
-						cs.AdornCsnappy(compress),
+					AfterChains: extnet.AdornConnsChain{
+						extnet.AdornSnappy(compress),
 					},
 				}
-				conn, err := d.Dial("tcp", channel.LocalAddr())
+				conn, err := d.Dial("tcp", ln.Addr().String())
 				require.NoError(t, err)
 				defer conn.Close() // nolint: errcheck
 				_, err = conn.Write([]byte("ping"))
@@ -305,9 +307,9 @@ var base64Key = `base64://LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQk
 var base64Crt = `base64://LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURzVENDQXBtZ0F3SUJBZ0lJT0FjRXUzdE5mQU13RFFZSktvWklodmNOQVFFTEJRQXdYREVMTUFrR0ExVUUKQmhNQ1FVd3hDVEFIQmdOVkJBZ1RBREVKTUFjR0ExVUVCeE1BTVJFd0R3WURWUVFLRXdoMWFuSnhaaTV0ZWpFUgpNQThHQTFVRUN4TUlkV3B5Y1dZdWJYb3hFVEFQQmdOVkJBTVRDSFZxY25GbUxtMTZNQ0FYRFRJd01EZ3lNREEwCk5UWXdNVm9ZRHpJeE1qQXdOekkzTURVMU5qQXhXakJjTVFzd0NRWURWUVFHRXdKVFRERUpNQWNHQTFVRUNCTUEKTVFrd0J3WURWUVFIRXdBeEVUQVBCZ05WQkFvVENIZGhaR2szTG0xNE1SRXdEd1lEVlFRTEV3aDNZV1JwTnk1dAplREVSTUE4R0ExVUVBeE1JZDJGa2FUY3ViWGd3Z2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLCkFvSUJBUUN1SzhVc1ZBUHZiK3ppM1FhZDkzK3pUVmxlNU1QM2RVYmk0RWxEcVQ1bzM2NmtPWEJ1UzhDL0VlekIKMW1xSkNyU3hrZ2ZRVU41VXcvc1ZXOG5oT0dQUkdXSnI5V1owSnQ2N0JyRW5SQkM3dCtWblFHcVJOQ3dqb2I3RApXZzJDbDY0cmltUXByN1FWZmxMODZRdnNEOEFMR1FZdE1kamF3ZXhUb1JCNmwwOGlvWVJOSDd6NG9leHBKWUVUCjB3ZmpzdTQyRTIxUzVIYWIrOWFRTTFtRExiMk9tNUdWc3RPaHhyS0d0MmZaRmI4ZUlrWGJQMEplNVcybnVhbEoKMDQ5UFdvT0RPTE1uTXlxc0NWZU5HKzl5bmY0NWlxSDlCeHg2QTk3aVNVK2xMQzhFdVl2SVlnbnB2K05ISCtTNApWR3BTTTlrcXhNcmhkSSttUzR0RWozNGlpd0tKQWdNQkFBR2pkVEJ6TUE0R0ExVWREd0VCL3dRRUF3SUVrREFkCkJnTlZIU1VFRmpBVUJnZ3JCZ0VGQlFjREFRWUlLd1lCQlFVSEF3SXdEQVlEVlIwVEFRSC9CQUl3QURBZkJnTlYKSFNNRUdEQVdnQlRpb2RzcHRPY1Y3alB1MUtWWHpuN3VPM2hwMGpBVEJnTlZIUkVFRERBS2dnaDNZV1JwTnk1dAplREFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBWTJidlQwYmEwbi9Oc0pmcThjbUdZazc1WnQxRFZMeExTaXVLClJWTHBHQ1FZS2FsaGFjSUIxaDMwam1SZmlPaG90WHA5d3BpWUI5T1NZWUk1UFdpcnROalFtbFprUGZkYWFPbXQKMXZjUk0yZ1hrcUlUTW1vVHFQOFlLeDRxTm9rTzM2OFB0K3hmTXNIdEgyQlJQaHNpblZSZmxLS2NHYmowNzlhegpVR25nU1lVWldpS1piT0twbkttaXVlUnFuMm5rMG5wZnJDaWhDN3N6ejBNMjNCLy9BZUk4czNmNERwaEZ2bTJECmFGM0FYR3Jrd3FjTXhPZTVwS3lhQk9FWC91ZWFkNk85Rnk3R2JQbzlIaDdvcWpyU0szZ216VFErSVZ2L3MxcXoKV0N0dlBRenk4MU1RM0o0aFU1RUFMSzFhVW1CcVBpS3NvUEM2b1dqSSswUDFIVE9NM1E9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==`
 
 func TestTcpTls_Forward_Direct(t *testing.T) {
-	caCrt, err := cert.LoadCrt(base64CaCrt)
+	caCrt, err := extcert.LoadCrt(base64CaCrt)
 	require.NoError(t, err)
-	crt, key, err := cert.LoadPair(base64Crt, base64Key)
+	crt, key, err := extcert.LoadPair(base64Crt, base64Key)
 	require.NoError(t, err)
 
 	for _, compress := range []bool{true, false} {
@@ -324,8 +326,7 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 						Single: single,
 					},
 				},
-				status:      make(chan error, 1),
-				AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(compress)},
+				AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 				Handler: cs.HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -339,10 +340,10 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 					}
 				}),
 			}
-			channel, errChan := srv.RunListenAndServe()
-			require.NoError(t, <-errChan)
-			defer channel.Close()
-
+			ln, err := srv.Listen()
+			require.NoError(t, err)
+			defer ln.Close()
+			go srv.Server(ln)
 			// client
 			d := &Dialer{
 				Protocol: "tls",
@@ -355,10 +356,10 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 						Single: single,
 					},
 				},
-				AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(compress)},
+				AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 			}
 
-			cli, err := d.Dial("tcp", channel.LocalAddr())
+			cli, err := d.Dial("tcp", ln.Addr().String())
 			require.NoError(t, err)
 			defer cli.Close()
 
@@ -373,9 +374,9 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 }
 
 func TestTcpTls_Forward_socks5(t *testing.T) {
-	caCrt, err := cert.LoadCrt(base64CaCrt)
+	caCrt, err := extcert.LoadCrt(base64CaCrt)
 	require.NoError(t, err)
-	crt, key, err := cert.LoadPair(base64Crt, base64Key)
+	crt, key, err := extcert.LoadPair(base64Crt, base64Key)
 	require.NoError(t, err)
 
 	for _, compress := range []bool{true, false} {
@@ -392,8 +393,7 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 							Single: single,
 						},
 					},
-					status:      make(chan error, 1),
-					AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(compress)},
+					AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -407,10 +407,10 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 						}
 					}),
 				}
-				channel, errChan := srv.RunListenAndServe()
-				require.NoError(t, <-errChan)
-				defer channel.Close()
-
+				ln, err := srv.Listen()
+				require.NoError(t, err)
+				defer ln.Close()
+				go srv.Server(ln)
 				// start socks5 proxy server
 				cator := &socks5.UserPassAuthenticator{Credentials: socks5.StaticCredentials{"user": "password"}}
 				proxySrv := socks5.NewServer(
@@ -446,10 +446,10 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 						},
 						ProxyURL: pURL,
 					},
-					AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(compress)},
+					AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 				}
 
-				conn, err := d.Dial("tcp", channel.LocalAddr())
+				conn, err := d.Dial("tcp", ln.Addr().String())
 				require.NoError(t, err)
 				defer conn.Close() // nolint: errcheck
 				_, err = conn.Write([]byte("ping"))
@@ -492,8 +492,7 @@ func TestKcp(t *testing.T) {
 					Protocol:    "kcp",
 					Addr:        "127.0.0.1:0",
 					Config:      Config{KcpConfig: config},
-					status:      make(chan error, 1),
-					AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(compress)},
+					AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -507,18 +506,18 @@ func TestKcp(t *testing.T) {
 						}
 					}),
 				}
-				channel, errChan := srv.RunListenAndServe()
-				require.NoError(t, <-errChan)
-				defer channel.Close()
-
+				ln, err := srv.Listen()
+				require.NoError(t, err)
+				defer ln.Close()
+				go srv.Server(ln)
 				// client
 				d := &Dialer{
 					Protocol:    "kcp",
 					Timeout:     time.Second,
-					AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(compress)},
+					AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 					Config:      Config{KcpConfig: config},
 				}
-				cli, err := d.Dial("tcp", channel.LocalAddr())
+				cli, err := d.Dial("tcp", ln.Addr().String())
 				require.NoError(t, err)
 				defer cli.Close()
 

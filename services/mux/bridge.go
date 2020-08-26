@@ -13,14 +13,15 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/thinkgos/go-core-package/extcert"
+	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/thinkgos/go-core-package/lib/encrypt"
+	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/strext"
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/jocasta/lib/logger"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/pkg/through"
@@ -49,7 +50,7 @@ type BridgeConfig struct {
 
 type Bridge struct {
 	cfg           BridgeConfig
-	channel       cs.Server
+	channel       net.Listener
 	clientSession *connection.Manager // sk ---> session映射
 	serverSession cmap.ConcurrentMap  // addr ---> session映射
 	cancel        context.CancelFunc
@@ -130,16 +131,18 @@ func (sf *Bridge) Start() (err error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sword.GoPool,
-		AfterChains: cs.AdornConnsChain{cs.AdornCsnappy(sf.cfg.Compress)},
+		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.Compress)},
 		Handler:     cs.HandlerFunc(sf.handler),
 	}
-	var errChan <-chan error
-	sf.channel, errChan = srv.RunListenAndServe()
-	if err = <-errChan; err != nil {
+
+	sf.channel, err = srv.Listen()
+	if err != nil {
 		return
 	}
+
+	sword.Go(func() { srv.Server(sf.channel) })
 	sword.Go(func() { sf.clientSession.Watch(sf.ctx) })
-	sf.log.Infof("[ Bridge ] use bridge %s on %s", sf.cfg.LocalType, sf.channel.LocalAddr())
+	sf.log.Infof("[ Bridge ] use bridge %s on %s", sf.cfg.LocalType, sf.channel.Addr().String())
 	return
 }
 
