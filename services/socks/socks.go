@@ -35,6 +35,7 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/enet"
+	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 )
@@ -254,7 +255,7 @@ func (sf *Socks) initService() (err error) {
 	}
 	// init ssh connect
 	if sf.cfg.ParentType == "ssh" {
-		sshClient, err := sf.dialSSH(sf.resolve(sf.lb.Select("")))
+		sshClient, err := sf.dialSSH(outil.Resolve(sf.domainResolver, sf.lb.Select("")))
 		if err != nil {
 			return fmt.Errorf("dial ssh fail, %s", err)
 		}
@@ -269,7 +270,7 @@ func (sf *Socks) initService() (err error) {
 
 			//循环检查ssh网络连通性
 			for {
-				address := sf.resolve(sf.lb.Select(""))
+				address := outil.Resolve(sf.domainResolver, sf.lb.Select(""))
 				conn, err := net.DialTimeout("tcp", address, sf.cfg.Timeout*2)
 				if err != nil {
 					sf.sshClient.Load().(*ssh.Client).Close()
@@ -489,7 +490,7 @@ func (sf *Socks) dialForTcp(ctx context.Context, request *socks5.Request) (conn 
 			return err
 		}, boff)
 	} else {
-		conn, err = sf.dialDirect(sf.resolve(targetAddr), localAddr)
+		conn, err = sf.dialDirect(outil.Resolve(sf.domainResolver, targetAddr), localAddr)
 	}
 	if err != nil {
 		sf.log.Warnf("[ Socks ] dial conn fail, %v", err)
@@ -518,7 +519,7 @@ func (sf *Socks) IsDeadLoop(inLocalAddr string, outAddr string) bool {
 	if inPort == outPort {
 		var outIPs []net.IP
 		if sf.cfg.DNSConfig.Addr != "" {
-			outIPs = []net.IP{net.ParseIP(sf.resolve(outDomain))}
+			outIPs = []net.IP{net.ParseIP(outil.Resolve(sf.domainResolver, outDomain))}
 		} else {
 			outIPs, err = net.LookupIP(outDomain)
 		}
@@ -544,14 +545,6 @@ func (sf *Socks) IsDeadLoop(inLocalAddr string, outAddr string) bool {
 		}
 	}
 	return false
-}
-
-// 解析domain
-func (sf *Socks) resolve(address string) string {
-	if sf.domainResolver != nil {
-		return sf.domainResolver.MustResolve(address)
-	}
-	return address
 }
 
 func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
@@ -648,7 +641,7 @@ func (sf *Socks) isUseProxy(addr string) bool {
 			}
 			useProxy, isInMap, _, _ := sf.filters.IsProxy(addr)
 			if !isInMap {
-				sf.filters.Add(addr, sf.resolve(addr))
+				sf.filters.Add(addr, outil.Resolve(sf.domainResolver, addr))
 			}
 			return useProxy
 		}

@@ -22,6 +22,7 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/enet"
+	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 )
@@ -201,7 +202,7 @@ func (sf *UDP) proxyUdp2Stream(_ *net.UDPConn, msg cs.Message) {
 			return v, nil
 		}
 
-		targetConn, err := sf.dialParent(sf.resolve(sf.cfg.Parent))
+		targetConn, err := sf.dialParent(outil.Resolve(sf.dnsResolver, sf.cfg.Parent))
 		if err != nil {
 			sf.log.Errorf("[ UDP ] connect to stream parent< %s > fail, %s", sf.cfg.Parent, err)
 			return nil, err
@@ -348,12 +349,4 @@ func (sf *UDP) dialParent(address string) (net.Conn, error) {
 		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
 	}
 	return d.Dial("tcp", address)
-}
-
-// 解析domain
-func (sf *UDP) resolve(address string) string {
-	if sf.dnsResolver != nil {
-		return sf.dnsResolver.MustResolve(address)
-	}
-	return address
 }

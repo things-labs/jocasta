@@ -41,7 +41,7 @@ func TestKcp(t *testing.T) {
 				require.NoError(t, err)
 
 				// server
-				ln, err := KCPListen("", "127.0.0.1:0", config, extnet.AdornSnappy(compress))
+				ln, err := ListenKCP("", "127.0.0.1:0", config, extnet.AdornSnappy(compress))
 				require.NoError(t, err)
 				defer ln.Close()
 				go func() {

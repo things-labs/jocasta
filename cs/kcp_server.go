@@ -3,22 +3,21 @@ package cs
 import (
 	"net"
 
+	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/xtaci/kcp-go/v5"
 	"go.uber.org/multierr"
-
-	"github.com/thinkgos/go-core-package/extnet"
 )
 
-// KCPListen 传输,可选snappy压缩
+// ListenKCP 传输,可选snappy压缩
 // TODO: BUG 当对端关闭时,连接并未关闭,UDP无状态连接的原因
 type kcpListen struct {
 	net.Listener
-	Config      KcpConfig
-	AfterChains extnet.AdornConnsChain
+	config      KcpConfig
+	afterChains extnet.AdornConnsChain
 }
 
-// ListenAndServe listen and server
-func KCPListen(_, addr string, config KcpConfig, AfterChains ...extnet.AdornConn) (net.Listener, error) {
+// ListenKCP listen
+func ListenKCP(_, addr string, config KcpConfig, AfterChains ...extnet.AdornConn) (net.Listener, error) {
 	ln, err := kcp.ListenWithOptions(addr, config.Block, config.DataShard, config.ParityShard)
 	if err != nil {
 		return nil, err
@@ -45,13 +44,13 @@ func (sf *kcpListen) Accept() (net.Conn, error) {
 	}
 	conn.SetStreamMode(true)
 	conn.SetWriteDelay(true)
-	conn.SetNoDelay(sf.Config.NoDelay, sf.Config.Interval, sf.Config.Resend, sf.Config.NoCongestion)
-	conn.SetMtu(sf.Config.MTU)
-	conn.SetWindowSize(sf.Config.SndWnd, sf.Config.RcvWnd)
-	conn.SetACKNoDelay(sf.Config.AckNodelay)
+	conn.SetNoDelay(sf.config.NoDelay, sf.config.Interval, sf.config.Resend, sf.config.NoCongestion)
+	conn.SetMtu(sf.config.MTU)
+	conn.SetWindowSize(sf.config.SndWnd, sf.config.RcvWnd)
+	conn.SetACKNoDelay(sf.config.AckNodelay)
 
 	var c net.Conn = conn
-	for _, chain := range sf.AfterChains {
+	for _, chain := range sf.afterChains {
 		c = chain(c)
 	}
 	return c, nil

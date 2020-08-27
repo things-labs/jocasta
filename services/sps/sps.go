@@ -656,13 +656,6 @@ func (sf *SPS) buildRequest(address string) (buf []byte, err error) {
 	return
 }
 
-func (sf *SPS) resolve(address string) string {
-	if sf.domainResolver != nil {
-		return sf.domainResolver.MustResolve(address)
-	}
-	return address
-}
-
 func (sf *SPS) dialParent(address string) (net.Conn, error) {
 	d := ccs.Dialer{
 		Protocol: sf.cfg.ParentType,

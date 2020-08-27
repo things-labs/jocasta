@@ -99,7 +99,6 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 	default:
 		return nil, fmt.Errorf("protocol support one of <tcp|tls|stcp|kcp> but give <%s>", sf.Protocol)
 	}
-
 	return d.DialContext(ctx, network, addr)
 }
 
@@ -130,25 +129,22 @@ func (sf *Server) Listen() (net.Listener, error) {
 		}
 		return extnet.ListenWith("tcp", sf.Addr, extnet.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password), sf.AfterChains...)
 	case "kcp":
-		return cs.KCPListen("", sf.Addr, sf.KcpConfig, sf.AfterChains...)
+		return cs.ListenKCP("", sf.Addr, sf.KcpConfig, sf.AfterChains...)
 	default:
 		return nil, fmt.Errorf("not support protocol: %s", sf.Protocol)
 	}
 }
 
-func (sf *Server) RunServer(ln net.Listener) {
-	gopool.Go(sf.GoPool, func() { sf.Server(ln) })
-}
-
 func (sf *Server) Server(ln net.Listener) {
 	defer ln.Close()
+	if sf.Handler == nil {
+		sf.Handler = new(cs.NopHandler)
+	}
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			return
 		}
-		gopool.Go(sf.GoPool, func() {
-			sf.Handler.ServerConn(conn)
-		})
+		gopool.Go(sf.GoPool, func() { sf.Handler.ServerConn(conn) })
 	}
 }

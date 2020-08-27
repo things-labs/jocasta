@@ -26,6 +26,7 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/enet"
+	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 )
@@ -228,7 +229,7 @@ func (sf *TCP) handler(inConn net.Conn) {
 }
 
 func (sf *TCP) proxyStream2Stream(inConn net.Conn) {
-	targetConn, err := sf.dialParent(sf.resolve(sf.cfg.Parent))
+	targetConn, err := sf.dialParent(outil.Resolve(sf.dnsResolver, sf.cfg.Parent))
 	if err != nil {
 		sf.log.Errorf("[ TCP ] dial parent %s, %s", sf.cfg.Parent, err)
 		return
@@ -377,12 +378,4 @@ func (sf *TCP) dialParent(address string) (net.Conn, error) {
 		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
 	}
 	return d.Dial("tcp", address)
-}
-
-// 解析domain
-func (sf *TCP) resolve(address string) string {
-	if sf.dnsResolver != nil {
-		return sf.dnsResolver.MustResolve(address)
-	}
-	return address
 }

@@ -1,5 +1,9 @@
 package outil
 
+import (
+	"github.com/thinkgos/jocasta/core/idns"
+)
+
 // SubStr sub string
 func SubStr(str string, start, length int) string {
 	if len(str) == 0 {
@@ -30,4 +34,12 @@ func SubBytes(b []byte, start, length int) []byte {
 		end = len(b)
 	}
 	return b[start:end]
+}
+
+// Resolve 解析domain, if dnsResolver is nil,return input
+func Resolve(dnsResolver *idns.Resolver, address string) string {
+	if dnsResolver != nil {
+		return dnsResolver.MustResolve(address)
+	}
+	return address
 }

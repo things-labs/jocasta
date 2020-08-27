@@ -37,6 +37,7 @@ import (
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/enet"
 	"github.com/thinkgos/jocasta/pkg/httpc"
+	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 )
@@ -262,7 +263,7 @@ func (sf *HTTP) InitService() (err error) {
 	}
 
 	if sf.cfg.ParentType == "ssh" {
-		sshClient, err := sf.dialSSH(sf.resolve(sf.lb.Select("")))
+		sshClient, err := sf.dialSSH(outil.Resolve(sf.domainResolver, sf.lb.Select("")))
 		if err != nil {
 			return fmt.Errorf("dial ssh fail, %s", err)
 		}
@@ -280,7 +281,7 @@ func (sf *HTTP) InitService() (err error) {
 
 			//循环检查ssh网络连通性
 			for {
-				address := sf.resolve(sf.lb.Select(""))
+				address := outil.Resolve(sf.domainResolver, sf.lb.Select(""))
 				conn, err := net.DialTimeout("tcp", address, sf.cfg.Timeout*2)
 				if err != nil {
 					sf.sshClient.Load().(*ssh.Client).Close()
@@ -425,7 +426,7 @@ func (sf *HTTP) handle(inConn net.Conn) {
 			return er
 		}, boff)
 	} else {
-		targetConn, err = sf.dialDirect(sf.resolve(targetDomainAddr), localAddr)
+		targetConn, err = sf.dialDirect(outil.Resolve(sf.domainResolver, targetDomainAddr), localAddr)
 	}
 	if err != nil {
 		sf.log.Errorf("dial conn failed, %v", err)
@@ -501,7 +502,7 @@ func (sf *HTTP) IsDeadLoop(inLocalAddr string, host string) bool {
 	if inPort == outPort {
 		var outIPs []net.IP
 		if sf.cfg.DNSConfig.Addr != "" {
-			outIPs = []net.IP{net.ParseIP(sf.resolve(outDomain))}
+			outIPs = []net.IP{net.ParseIP(outil.Resolve(sf.domainResolver, outDomain))}
 		} else {
 			outIPs, err = net.LookupIP(outDomain)
 		}
@@ -527,13 +528,6 @@ func (sf *HTTP) IsDeadLoop(inLocalAddr string, host string) bool {
 		}
 	}
 	return false
-}
-
-func (sf *HTTP) resolve(address string) string {
-	if sf.domainResolver != nil {
-		return sf.domainResolver.MustResolve(address)
-	}
-	return address
 }
 
 // dialParent 获得父级连接
@@ -599,7 +593,7 @@ func (sf *HTTP) dialDirect(addr string, localAddr string) (net.Conn, error) {
 }
 
 func (sf *HTTP) dialSSH(lAddr string) (*ssh.Client, error) {
-	return ssh.Dial("tcp", sf.resolve(lAddr), &ssh.ClientConfig{
+	return ssh.Dial("tcp", outil.Resolve(sf.domainResolver, lAddr), &ssh.ClientConfig{
 		User:    sf.cfg.SSHConfig.User,
 		Auth:    []ssh.AuthMethod{sf.cfg.sshAuthMethod},
 		Timeout: sf.cfg.Timeout,
@@ -619,7 +613,7 @@ func (sf *HTTP) isUseProxy(addr string) bool {
 		if !extnet.IsIntranet(host) {
 			useProxy, inMap, _, _ := sf.filters.IsProxy(addr)
 			if !inMap {
-				sf.filters.Add(addr, sf.resolve(addr))
+				sf.filters.Add(addr, outil.Resolve(sf.domainResolver, addr))
 			}
 			return useProxy
 		}
