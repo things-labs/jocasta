@@ -14,6 +14,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/thinkgos/go-core-package/extcert"
+	"github.com/thinkgos/go-core-package/lib/ternary"
 	"go.uber.org/atomic"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/proxy"
@@ -499,11 +500,8 @@ func (sf *Socks) dialForTcp(ctx context.Context, request *socks5.Request) (conn 
 	if useProxy && sf.cfg.ParentKey != "" {
 		conn = ccrypt.New(conn, ccrypt.Config{Password: sf.cfg.ParentKey})
 	}
-	method := "DIRECT"
-	if useProxy {
-		method = "PROXY"
-	}
-	sf.log.Infof("[ Socks ] %s use %s", targetAddr, method)
+
+	sf.log.Infof("[ Socks ] %s use %s", targetAddr, ternary.IfString(useProxy, "PROXY", "DIRECT"))
 	return conn, lbAddr, nil
 }
 
