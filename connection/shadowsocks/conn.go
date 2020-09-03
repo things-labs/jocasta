@@ -83,7 +83,7 @@ func (sf *Conn) Key() (key []byte) {
 // Read reads data from the connection.
 func (sf *Conn) Read(b []byte) (n int, err error) {
 	if sf.reader == nil {
-		iv := make([]byte, sf.info.IvLen)
+		iv := make([]byte, sf.ivLen)
 		if _, err = io.ReadFull(sf.Conn, iv); err != nil {
 			return
 		}

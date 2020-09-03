@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/thinkgos/jocasta/core/issh"
+	"github.com/thinkgos/go-core-package/extssh"
+	"golang.org/x/crypto/ssh"
+
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/internal/bytesconv"
-	"golang.org/x/crypto/ssh"
 )
 
 // FilterConfig filter config
@@ -68,9 +69,9 @@ func (sf *SSHConfig) Parse() (ssh.AuthMethod, error) {
 		return ssh.Password(sf.Password), nil
 	}
 	if sf.KeyFileSalt != "" {
-		return issh.ParsePrivateKeyFile2AuthMethod(sf.KeyFile, bytesconv.Str2Bytes(sf.KeyFileSalt))
+		return extssh.LoadPrivateKey2AuthMethod(sf.KeyFile, bytesconv.Str2Bytes(sf.KeyFileSalt))
 	}
-	return issh.ParsePrivateKeyFile2AuthMethod(sf.KeyFile)
+	return extssh.LoadPrivateKey2AuthMethod(sf.KeyFile)
 }
 
 // SKCPConfig kcp full config

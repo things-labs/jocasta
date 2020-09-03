@@ -13,7 +13,8 @@ import (
 type Cipher struct {
 	writer cipher.Stream
 	reader cipher.Stream
-	info   encrypt.CipherInfo
+	method string
+	ivLen  int
 	key    []byte // hold key
 	iv     []byte // hold iv
 }
@@ -25,14 +26,15 @@ func NewCipher(method, password string) (c *Cipher, err error) {
 	if password == "" {
 		return nil, errors.New("empty password")
 	}
-	cipInfo, ok := encrypt.GetCipherInfo(method)
+	kv, ok := encrypt.GetCipher(method)
 	if !ok {
-		return nil, errors.New("Unsupported encryption method: " + method)
+		return nil, errors.New("unsupported encryption method: " + method)
 	}
 
 	return &Cipher{
-		info: cipInfo,
-		key:  encrypt.Evp2Key(password, cipInfo.KeyLen),
+		method: method,
+		ivLen:  kv.IvLen(),
+		key:    encrypt.Evp2Key(password, kv.KeyLen()),
 	}, nil
 }
 
@@ -41,13 +43,13 @@ func (c *Cipher) initEncrypt() ([]byte, error) {
 	var err error
 
 	if c.iv == nil {
-		iv := make([]byte, c.info.IvLen)
+		iv := make([]byte, c.ivLen)
 		if _, err = io.ReadFull(rand.Reader, iv); err != nil {
 			return nil, err
 		}
 		c.iv = iv
 	}
-	c.writer, err = c.info.NewStream(c.key, c.iv, true)
+	c.writer, err = encrypt.NewStream(c.method, c.key, c.iv, true)
 	return c.iv, err
 }
 
@@ -56,7 +58,7 @@ func (c *Cipher) encrypt(dst, src []byte) {
 }
 
 func (c *Cipher) initDecrypt(iv []byte) (err error) {
-	c.reader, err = c.info.NewStream(c.key, iv, false)
+	c.reader, err = encrypt.NewStream(c.method, c.key, iv, false)
 	if err != nil {
 		return
 	}
@@ -90,16 +92,16 @@ func (c *Cipher) Encrypt(src []byte) (cipherData []byte, err error) {
 func (c *Cipher) Decrypt(input []byte) (data []byte, err error) {
 	cip := c.Clone()
 
-	if len(input) < c.info.IvLen {
+	if len(input) < c.ivLen {
 		err = errors.New("invalid input data")
 		return
 	}
-	err = cip.initDecrypt(input[:c.info.IvLen])
+	err = cip.initDecrypt(input[:c.ivLen])
 	if err != nil {
 		return
 	}
-	data = make([]byte, len(input)-c.info.IvLen)
-	cip.decrypt(data, input[c.info.IvLen:])
+	data = make([]byte, len(input)-c.ivLen)
+	cip.decrypt(data, input[c.ivLen:])
 	return
 }
 
