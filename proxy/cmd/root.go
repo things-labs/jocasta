@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/thinkgos/strext"
+	"github.com/thinkgos/go-core-package/extstr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -97,7 +97,7 @@ func preRun(cmd *cobra.Command, args []string) {
 
 	// daemon运行
 	if daemon {
-		args := strext.DeleteAll(os.Args[1:], "--daemon")
+		args := extstr.DeleteAll(os.Args[1:], "--daemon")
 		execCmd = exec.Command(execName, args...)
 		execCmd.Start()
 		// TODO: 检查相关进程是否已启动??
@@ -143,7 +143,7 @@ func postRun(cmd *cobra.Command, args []string) {
 
 	if forever {
 		go func() {
-			args := strext.DeleteAll(os.Args[1:], "--forever")
+			args := extstr.DeleteAll(os.Args[1:], "--forever")
 			for {
 				if execCmd != nil {
 					execCmd.Process.Kill()

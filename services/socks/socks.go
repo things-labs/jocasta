@@ -23,11 +23,11 @@ import (
 	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/thinkgos/go-core-package/extnet/connection/ccrypt"
 	"github.com/thinkgos/go-core-package/extnet/connection/ciol"
+	"github.com/thinkgos/go-core-package/extstr"
 	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/go-socks5"
 	"github.com/thinkgos/go-socks5/statute"
 	"github.com/thinkgos/meter"
-	"github.com/thinkgos/strext"
 
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/filter"
@@ -144,7 +144,7 @@ func (sf *Socks) inspectConfig() (err error) {
 		if sf.cfg.ParentType == "" {
 			return fmt.Errorf("parent type required for %s", sf.cfg.Parent)
 		}
-		if !strext.Contains([]string{"tcp", "tls", "stcp", "kcp", "ssh"}, sf.cfg.ParentType) {
+		if !extstr.Contains([]string{"tcp", "tls", "stcp", "kcp", "ssh"}, sf.cfg.ParentType) {
 			return fmt.Errorf("parent type suport <tcp|tls|stcp|kcp|ssh>")
 		}
 		if sf.cfg.ParentType == "ssh" {

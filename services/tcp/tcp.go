@@ -14,9 +14,9 @@ import (
 
 	"github.com/thinkgos/go-core-package/extcert"
 	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/go-core-package/extstr"
 	"github.com/thinkgos/go-core-package/lib/encrypt"
 	"github.com/thinkgos/go-core-package/lib/logger"
-	"github.com/thinkgos/strext"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 
@@ -123,7 +123,7 @@ func (sf *TCP) inspectConfig() (err error) {
 	}
 
 	// tls 证书检查
-	if strext.Contains([]string{sf.cfg.ParentType, sf.cfg.LocalType}, "tls") {
+	if extstr.Contains([]string{sf.cfg.ParentType, sf.cfg.LocalType}, "tls") {
 		if sf.cfg.CertFile == "" || sf.cfg.KeyFile == "" {
 			return errors.New("cert file and key file required")
 		}
@@ -138,8 +138,8 @@ func (sf *TCP) inspectConfig() (err error) {
 	}
 
 	// stcp 方法检查
-	if strext.Contains([]string{sf.cfg.ParentType, sf.cfg.LocalType}, "stcp") &&
-		!strext.Contains(encrypt.CipherMethods(), sf.cfg.STCPConfig.Method) {
+	if extstr.Contains([]string{sf.cfg.ParentType, sf.cfg.LocalType}, "stcp") &&
+		!extstr.Contains(encrypt.CipherMethods(), sf.cfg.STCPConfig.Method) {
 		return fmt.Errorf("stcp cipher method support one of %s", strings.Join(encrypt.CipherMethods(), ","))
 	}
 

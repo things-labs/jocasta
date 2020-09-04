@@ -24,10 +24,10 @@ import (
 	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/thinkgos/go-core-package/extnet/connection/ccrypt"
 	"github.com/thinkgos/go-core-package/extnet/connection/ciol"
+	"github.com/thinkgos/go-core-package/extstr"
 	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/go-core-package/lib/ternary"
 	"github.com/thinkgos/meter"
-	"github.com/thinkgos/strext"
 
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/filter"
@@ -133,10 +133,10 @@ func (sf *HTTP) inspectConfig() (err error) {
 		if sf.cfg.ParentType == "" {
 			return fmt.Errorf("parent type required for %s", sf.cfg.Parent)
 		}
-		if !strext.Contains([]string{"tcp", "tls", "stcp", "kcp", "ssh"}, sf.cfg.ParentType) {
+		if !extstr.Contains([]string{"tcp", "tls", "stcp", "kcp", "ssh"}, sf.cfg.ParentType) {
 			return fmt.Errorf("parent type suport <tcp|tls|stcp|kcp|ssh>")
 		}
-		if !strext.Contains(loadbalance.Methods(), sf.cfg.LbConfig.Method) {
+		if !extstr.Contains(loadbalance.Methods(), sf.cfg.LbConfig.Method) {
 			return fmt.Errorf("load balance method should be oneof <%s>", strings.Join(loadbalance.Methods(), ", "))
 		}
 
@@ -172,7 +172,7 @@ func (sf *HTTP) inspectConfig() (err error) {
 		sf.cfg.rateLimit = rate.Limit(size)
 	}
 	if sf.cfg.RawProxyURL != "" {
-		if !strext.Contains([]string{"tls", "tcp"}, sf.cfg.ParentType) {
+		if !extstr.Contains([]string{"tls", "tcp"}, sf.cfg.ParentType) {
 			return fmt.Errorf("proxyURL only support one of <tls|tcp> but %s", sf.cfg.ParentType)
 		}
 		if sf.proxyURL, err = cs.ParseProxyURL(sf.cfg.RawProxyURL); err != nil {

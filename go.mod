@@ -13,10 +13,9 @@ require (
 	github.com/panjf2000/ants/v2 v2.4.2
 	github.com/rs/xid v1.2.1
 	github.com/stretchr/testify v1.6.1
-	github.com/thinkgos/go-core-package v0.0.10
+	github.com/thinkgos/go-core-package v0.1.0
 	github.com/thinkgos/go-socks5 v0.2.2
 	github.com/thinkgos/meter v0.0.6
-	github.com/thinkgos/strext v0.3.3
 	github.com/xtaci/kcp-go/v5 v5.5.15
 	github.com/xtaci/smux v1.5.14
 	go.uber.org/atomic v1.6.0
@@ -27,7 +26,7 @@ require (
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	golang.org/x/tools v0.0.0-20200902012652-d1954cc86c82 // indirect
+	golang.org/x/tools v0.0.0-20200904140424-93eecc3576be // indirect
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 )

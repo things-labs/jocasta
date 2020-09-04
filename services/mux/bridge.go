@@ -14,9 +14,9 @@ import (
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/thinkgos/go-core-package/extcert"
 	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/go-core-package/extstr"
 	"github.com/thinkgos/go-core-package/lib/encrypt"
 	"github.com/thinkgos/go-core-package/lib/logger"
-	"github.com/thinkgos/strext"
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
@@ -103,8 +103,8 @@ func (sf *Bridge) inspectConfig() (err error) {
 	}
 
 	// stcp 方法检查
-	if strext.Contains([]string{sf.cfg.Local, sf.cfg.LocalType}, "stcp") &&
-		!strext.Contains(encrypt.CipherMethods(), sf.cfg.STCPConfig.Method) {
+	if extstr.Contains([]string{sf.cfg.Local, sf.cfg.LocalType}, "stcp") &&
+		!extstr.Contains(encrypt.CipherMethods(), sf.cfg.STCPConfig.Method) {
 		return fmt.Errorf("stcp cipher method support one of %s", strings.Join(encrypt.CipherMethods(), ","))
 	}
 
