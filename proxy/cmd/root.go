@@ -28,7 +28,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/thinkgos/go-core-package/extstr"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
@@ -89,9 +88,8 @@ func init() {
 }
 
 func preRun(cmd *cobra.Command, args []string) {
-	izap.InitLogger(izap.Config{Level: -1, Adapter: "console", Stack: true})
-	log := zap.S()
-	izap.SetLevel(zapcore.DebugLevel)
+	logger := izap.New(izap.Config{Level: "debug", Writer: "console", Stack: true})
+	izap.ReplaceGlobals(logger)
 
 	execName := os.Args[0]
 
@@ -105,7 +103,7 @@ func preRun(cmd *cobra.Command, args []string) {
 		if forever {
 			format = "%s<forever> PID[ %d ] running...\n"
 		}
-		log.Infof(format, execName, execCmd.Process.Pid)
+		izap.Sugar.Infof(format, execName, execCmd.Process.Pid)
 
 		os.Exit(0)
 	}
@@ -127,11 +125,11 @@ func preRun(cmd *cobra.Command, args []string) {
 		threadcreateProfilingFile, _ = os.Create("threadcreate.prof")
 		pprof.StartCPUProfile(cpuProfilingFile)
 		if logfile == "" {
-			log.Infof("[profiling] cpu profiling save to file : cpu.prof")
-			log.Infof("[profiling] memory profiling save to file : memory.prof")
-			log.Infof("[profiling] block profiling save to file : block.prof")
-			log.Infof("[profiling] goroutine profiling save to file : goroutine.prof")
-			log.Infof("[profiling] threadcreate profiling save to file : threadcreate.prof")
+			izap.Sugar.Infof("[profiling] cpu profiling save to file : cpu.prof")
+			izap.Sugar.Infof("[profiling] memory profiling save to file : memory.prof")
+			izap.Sugar.Infof("[profiling] block profiling save to file : block.prof")
+			izap.Sugar.Infof("[profiling] goroutine profiling save to file : goroutine.prof")
+			izap.Sugar.Infof("[profiling] threadcreate profiling save to file : threadcreate.prof")
 		}
 	}
 }
