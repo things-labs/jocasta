@@ -110,7 +110,7 @@ func preRun(cmd *cobra.Command, args []string) {
 		os.Exit(0)
 	}
 
-	//set kcp config
+	// set kcp config
 	if kcpCfg.Mode != "manual" {
 		kcpCfg.NoDelay, kcpCfg.Interval, kcpCfg.Resend, kcpCfg.NoCongestion = ccs.SKcpMode(kcpCfg.Mode)
 	}
