@@ -237,6 +237,8 @@ github.com/templexxx/xorsimd v0.4.1 h1:iUZcywbOYDRAZUasAs2eSCUW8eobuZDy0I9FJiORk
 github.com/templexxx/xorsimd v0.4.1/go.mod h1:W+ffZz8jJMH2SXwuKu9WhygqBMbFnp14G2fqEr8qaNo=
 github.com/thinkgos/go-core-package v0.1.9 h1:7zWBjZLhhepl4CbzZrc+7hXDsjslz+/It7lMyf7oEyc=
 github.com/thinkgos/go-core-package v0.1.9/go.mod h1:591t4vJXBzUyQfhGY21y9sx5JsbPyjXRTAuFU5mNpEQ=
+github.com/thinkgos/go-core-package v0.1.10 h1:ebaZyKCYNOCQv9J7T862ry8cnWheCZMHjZazk5Utrwo=
+github.com/thinkgos/go-core-package v0.1.10/go.mod h1:591t4vJXBzUyQfhGY21y9sx5JsbPyjXRTAuFU5mNpEQ=
 github.com/thinkgos/go-socks5 v0.2.2 h1:wZAbtzFes15jVdCw2iOKOzexTRHWDVOYWldBy2u2/PQ=
 github.com/thinkgos/go-socks5 v0.2.2/go.mod h1:5iine8bnDUUMdWZrCDIzUn9C2+GCC79LYxUrel1esAU=
 github.com/thinkgos/meter v0.0.9 h1:xY3aZBOX+bWB7M/sRJDuWyleTCsUzVLCaMAjafvvvmY=

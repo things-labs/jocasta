@@ -16,7 +16,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.4.3
 	github.com/rs/xid v1.2.1
 	github.com/stretchr/testify v1.6.1
-	github.com/thinkgos/go-core-package v0.1.9
+	github.com/thinkgos/go-core-package v0.1.10
 	github.com/thinkgos/go-socks5 v0.2.2
 	github.com/thinkgos/meter v0.0.9
 	github.com/xtaci/kcp-go/v5 v5.6.1
