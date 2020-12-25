@@ -11,8 +11,27 @@ go:
 
 go_import_path: github.com/thinkgos/jocasta
 
+before_install:
+  - if [[ "${GO111MODULE}" = "on" ]]; then mkdir "${HOME}/go"; export GOPATH="${HOME}/go";
+    export PATH="$GOPATH/bin:$PATH"; fi
+  - mkdir -p ~/bin/ && export PATH="~/bin/:$PATH"
+
+install:
+  - go get -u golang.org/x/lint/golint
+  - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+  - curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+
 script:
   - go get -v ./...
+  - |-
+    case $TRAVIS_OS_NAME in
+      linux|osx)
+        golint ./... | reviewdog -f=golint -reporter=github-check
+        golangci-lint run --out-format=line-number -E goimports -E misspell | reviewdog -f=golangci-lint -reporter=github-check
+        golint ./... | reviewdog -f=golint -reporter=github-pr-review
+        golangci-lint run --out-format=line-number -E goimports -E misspell | reviewdog -f=golangci-lint -reporter=github-pr-review
+        ;;
+    esac
   - go test -v -benchmem -test.bench=".*" -coverprofile=coverage.txt -covermode=atomic  ./...
 
 after_success:
@@ -23,4 +42,4 @@ after_success:
 env:
   global:
     - GO111MODULE=on
-
+    - secure: U9L6K0iNRAdyp9TDewxDx12tDClA37LJSMifaExMIKqJI6rBoictbdK1Z4HCCcjANmqKQejWBgG4UT0fjWuRX2iMRCgoVa8RyIAC8FS2nZAYTT7vvfCTP3YD/qH6y+Kq+qerVBlfdvTa86WlQ5+lkVA0H3x3QYy5JPmGs5NotgBL8PPzD6fyX5ymhhYCrx+9ESydDsrxHaTEzS2W7UVEMIFF8wgjBkFnNEEukB8hi5Bn7ek58UFstdkqq98dKJTA2/83gbWAWZkj3Iy5rpQMln5TMdPjxGIGvIVI3NrXpKGbJVdetcIVQC+YAKiQ2+f4w7eYzvJ7z3R0euK2GV36ps2gfOTbKXeAIjGtYgWg3YcAsZSyHOs7Wg4HhLRypdMDrVdZ3jNQUI19VFEHQ7WWCzoU+Xzv3VgiLL2sBsTsYWRzS5oBUJAH9OYOtAykWN4/4AyMtSPjreBRbqlUEWuhx1pUnNi1LB0yzc0/vEF8CoDQUnX+yChVFpNqoSKf1FLBiYsU/FrdDC9HxSnj1Gpn+Tn9TpRxKyb8h/5p8r8ua6IKDoOOsc/gxOwO/Jg39bvS8oRy9zBGwO+HRq8JY6Zt8Bc+S6AxKo8G/etvS8/tFe5p0XAdFAtfedM4knuQlUq2BNFaSPLwllbgOCcWb/vys3rqDFmoMS0+vg56u3ef+g4=
