@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/thinkgos/go-core-package/gopool"
-	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/jocasta/core/idns"
+	"github.com/thinkgos/x/gopool"
+	"github.com/thinkgos/x/lib/logger"
 )
 
 // Selector select the upstream interface

@@ -7,7 +7,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/x/extnet"
 	"golang.org/x/net/proxy"
 
 	"github.com/thinkgos/jocasta/core/socks5"

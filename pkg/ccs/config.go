@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/thinkgos/go-core-package/extssh"
+	"github.com/thinkgos/x/extssh"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/thinkgos/jocasta/cs"

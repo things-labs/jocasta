@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/thinkgos/go-core-package/extnet"
 	sockv5 "github.com/thinkgos/go-socks5"
 	"github.com/thinkgos/go-socks5/statute"
+	"github.com/thinkgos/x/extnet"
 	"golang.org/x/net/proxy"
 
 	"github.com/thinkgos/jocasta/core/socks5"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/x/extnet"
 	"github.com/xtaci/kcp-go/v5"
 )
 

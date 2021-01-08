@@ -6,9 +6,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/thinkgos/go-core-package/extnet"
-	"github.com/thinkgos/go-core-package/gopool"
-	"github.com/thinkgos/go-core-package/lib/bpool"
+	"github.com/thinkgos/x/extnet"
+	"github.com/thinkgos/x/gopool"
+	"github.com/thinkgos/x/lib/bpool"
 )
 
 // Option for Forward

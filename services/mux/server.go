@@ -15,9 +15,9 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/xtaci/smux"
 
-	"github.com/thinkgos/go-core-package/extcert"
-	"github.com/thinkgos/go-core-package/extnet"
-	"github.com/thinkgos/go-core-package/lib/logger"
+	"github.com/thinkgos/x/extcert"
+	"github.com/thinkgos/x/extnet"
+	"github.com/thinkgos/x/lib/logger"
 
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"

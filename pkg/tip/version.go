@@ -6,7 +6,7 @@ import (
 	"runtime"
 
 	"github.com/denisbrodbeck/machineid"
-	"github.com/thinkgos/go-core-package/builder"
+	"github.com/thinkgos/x/builder"
 )
 
 const versionTpl = `  Name:             {{.Name}}

@@ -3,7 +3,7 @@ package cs
 import (
 	"net"
 
-	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/x/extnet"
 	"github.com/xtaci/kcp-go/v5"
 	"go.uber.org/multierr"
 )

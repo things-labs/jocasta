@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/thinkgos/go-core-package/extcert"
-	"github.com/thinkgos/go-core-package/extrand"
+	"github.com/thinkgos/x/extcert"
+	"github.com/thinkgos/x/extrand"
 
 	"github.com/thinkgos/jocasta/pkg/cert"
 	"github.com/thinkgos/jocasta/services"

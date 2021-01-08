@@ -6,7 +6,7 @@ import (
 	"encoding/pem"
 	"errors"
 
-	"github.com/thinkgos/go-core-package/lib/encrypt"
+	"github.com/thinkgos/x/lib/encrypt"
 )
 
 // StcpConfig stcp config

@@ -5,7 +5,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 
-	"github.com/thinkgos/go-core-package/lib/encrypt"
+	"github.com/thinkgos/x/lib/encrypt"
 )
 
 func NewAesCFB(key []byte) (encrypt.BlockCrypt, error) {

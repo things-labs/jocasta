@@ -1,8 +1,8 @@
 package tcp
 
 import (
-	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/jocasta/core/idns"
+	"github.com/thinkgos/x/lib/logger"
 )
 
 type Option func(t *TCP)

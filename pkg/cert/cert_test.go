@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/thinkgos/go-core-package/extcert"
+	"github.com/thinkgos/x/extcert"
 )
 
 func TestGenerateCA(t *testing.T) {

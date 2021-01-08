@@ -7,12 +7,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/thinkgos/go-core-package/extcert"
-	"github.com/thinkgos/go-core-package/extnet"
 	"github.com/thinkgos/go-socks5"
+	"github.com/thinkgos/x/extcert"
+	"github.com/thinkgos/x/extnet"
 
-	"github.com/thinkgos/go-core-package/lib/encrypt"
 	"github.com/thinkgos/jocasta/cs"
+	"github.com/thinkgos/x/lib/encrypt"
 )
 
 func Test_InvalidProtocol(t *testing.T) {

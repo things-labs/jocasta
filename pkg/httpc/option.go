@@ -1,7 +1,7 @@
 package httpc
 
 import (
-	"github.com/thinkgos/go-core-package/lib/logger"
+	"github.com/thinkgos/x/lib/logger"
 
 	"github.com/thinkgos/jocasta/core/basicAuth"
 )

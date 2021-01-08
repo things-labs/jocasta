@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/thinkgos/go-core-package/lib/encrypt"
+	"github.com/thinkgos/x/lib/encrypt"
 
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"

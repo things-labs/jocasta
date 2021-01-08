@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/thinkgos/go-core-package/extcert"
-	"github.com/thinkgos/go-core-package/extnet"
-	"github.com/thinkgos/go-core-package/lib/logger"
+	"github.com/thinkgos/x/extcert"
+	"github.com/thinkgos/x/extnet"
+	"github.com/thinkgos/x/lib/logger"
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"

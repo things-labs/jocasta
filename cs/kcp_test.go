@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/thinkgos/go-core-package/extnet"
+	"github.com/thinkgos/x/extnet"
 )
 
 func TestKcp(t *testing.T) {

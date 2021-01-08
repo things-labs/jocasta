@@ -12,11 +12,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/thinkgos/go-core-package/extcert"
-	"github.com/thinkgos/go-core-package/extnet"
-	"github.com/thinkgos/go-core-package/extstr"
-	"github.com/thinkgos/go-core-package/lib/encrypt"
-	"github.com/thinkgos/go-core-package/lib/logger"
+	"github.com/thinkgos/x/extcert"
+	"github.com/thinkgos/x/extnet"
+	"github.com/thinkgos/x/extstr"
+	"github.com/thinkgos/x/lib/encrypt"
+	"github.com/thinkgos/x/lib/logger"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 

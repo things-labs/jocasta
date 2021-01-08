@@ -3,9 +3,9 @@ package loadbalance
 import (
 	"time"
 
-	"github.com/thinkgos/go-core-package/gopool"
-	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/jocasta/core/idns"
+	"github.com/thinkgos/x/gopool"
+	"github.com/thinkgos/x/lib/logger"
 )
 
 // Option 配置选项

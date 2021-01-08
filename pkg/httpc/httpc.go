@@ -8,12 +8,12 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/thinkgos/go-core-package/extbase64"
+	"github.com/thinkgos/x/extbase64"
 
-	"github.com/thinkgos/go-core-package/lib/logger"
 	"github.com/thinkgos/jocasta/connection/sni"
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/pkg/outil"
+	"github.com/thinkgos/x/lib/logger"
 )
 
 type Request struct {
