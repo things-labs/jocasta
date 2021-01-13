@@ -393,7 +393,7 @@ func (sf *Client) dialParent(address string) (net.Conn, error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:   sf.proxyURL,
 		},
-		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.Compress)},
+		AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.Compress)},
 	}
 	return d.Dial("tcp", address)
 }

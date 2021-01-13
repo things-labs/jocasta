@@ -131,7 +131,7 @@ func (sf *Bridge) Start() (err error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sword.GoPool,
-		AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.Compress)},
+		AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.Compress)},
 		Handler:     cs.HandlerFunc(sf.handler),
 	}
 

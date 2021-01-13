@@ -30,7 +30,7 @@ type Config struct {
 type Dialer struct {
 	Protocol    string
 	Timeout     time.Duration
-	AfterChains extnet.AdornConnsChain
+	AdornChains extnet.AdornConnsChain
 	Config
 }
 
@@ -66,9 +66,9 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 	switch sf.Protocol {
 	case "tcp":
 		d = &extnet.Client{
-			Timeout:          sf.Timeout,
-			AfterAdornChains: sf.AfterChains,
-			Forward:          forward,
+			Timeout:     sf.Timeout,
+			AdornChains: sf.AdornChains,
+			Forward:     forward,
 		}
 	case "tls":
 		tlsConfig, err := sf.TLSConfig.ClientConfig()
@@ -76,25 +76,23 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 			return nil, err
 		}
 		d = &extnet.Client{
-			Timeout:          sf.Timeout,
-			BaseAdorn:        extnet.BaseAdornTLSClient(tlsConfig),
-			AfterAdornChains: sf.AfterChains,
-			Forward:          forward,
+			Timeout:     sf.Timeout,
+			AdornChains: append([]extnet.AdornConn{extnet.BaseAdornTLSClient(tlsConfig)}, sf.AdornChains...),
+			Forward:     forward,
 		}
 	case "stcp":
 		if ok := sf.StcpConfig.Valid(); !ok {
 			return nil, errors.New("invalid stcp config")
 		}
 		d = &extnet.Client{
-			Timeout:          sf.Timeout,
-			BaseAdorn:        extnet.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password),
-			AfterAdornChains: sf.AfterChains,
-			Forward:          forward,
+			Timeout:     sf.Timeout,
+			AdornChains: append([]extnet.AdornConn{extnet.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password)}, sf.AdornChains...),
+			Forward:     forward,
 		}
 	case "kcp":
 		d = &cs.KCPClient{
 			Config:      sf.KcpConfig,
-			AfterChains: sf.AfterChains,
+			AfterChains: sf.AdornChains,
 		}
 	default:
 		return nil, fmt.Errorf("protocol support one of <tcp|tls|stcp|kcp> but give <%s>", sf.Protocol)
@@ -108,7 +106,7 @@ type Server struct {
 	Addr     string
 	Config
 	GoPool      gopool.Pool
-	AfterChains extnet.AdornConnsChain
+	AdornChains extnet.AdornConnsChain
 	Handler     cs.Handler
 }
 
@@ -116,20 +114,20 @@ type Server struct {
 func (sf *Server) Listen() (net.Listener, error) {
 	switch sf.Protocol {
 	case "tcp":
-		return extnet.ListenWith("tcp", sf.Addr, nil, sf.AfterChains...)
+		return extnet.Listen("tcp", sf.Addr, sf.AdornChains...)
 	case "tls":
 		tlsConfig, err := sf.TLSConfig.ServerConfig()
 		if err != nil {
 			return nil, err
 		}
-		return extnet.ListenWith("tcp", sf.Addr, extnet.BaseAdornTLSServer(tlsConfig), sf.AfterChains...)
+		return extnet.Listen("tcp", sf.Addr, append([]extnet.AdornConn{extnet.BaseAdornTLSServer(tlsConfig)}, sf.AdornChains...)...)
 	case "stcp":
 		if ok := sf.StcpConfig.Valid(); !ok {
 			return nil, errors.New("invalid stcp config")
 		}
-		return extnet.ListenWith("tcp", sf.Addr, extnet.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password), sf.AfterChains...)
+		return extnet.Listen("tcp", sf.Addr, append([]extnet.AdornConn{extnet.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password)}, sf.AdornChains...)...)
 	case "kcp":
-		return cs.ListenKCP("", sf.Addr, sf.KcpConfig, sf.AfterChains...)
+		return cs.ListenKCP("", sf.Addr, sf.KcpConfig, sf.AdornChains...)
 	default:
 		return nil, fmt.Errorf("not support protocol: %s", sf.Protocol)
 	}

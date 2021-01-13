@@ -35,7 +35,7 @@ func Test_TCP_Forward_Direct(t *testing.T) {
 				Protocol:    "tcp",
 				Addr:        "127.0.0.1:0",
 				Config:      Config{},
-				AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
+				AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 				Handler: cs.HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -60,7 +60,7 @@ func Test_TCP_Forward_Direct(t *testing.T) {
 				Protocol: "tcp",
 				Timeout:  time.Second,
 				Config:   Config{},
-				AfterChains: extnet.AdornConnsChain{
+				AdornChains: extnet.AdornConnsChain{
 					extnet.AdornSnappy(compress),
 				},
 			}
@@ -87,7 +87,7 @@ func Test_TCP_Forward_socks5(t *testing.T) {
 				Protocol:    "tcp",
 				Addr:        "127.0.0.1:0",
 				Config:      Config{},
-				AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
+				AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 				Handler: cs.HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -139,7 +139,7 @@ func Test_TCP_Forward_socks5(t *testing.T) {
 				Protocol: "tcp",
 				Timeout:  time.Second,
 				Config:   Config{ProxyURL: pURL},
-				AfterChains: extnet.AdornConnsChain{
+				AdornChains: extnet.AdornConnsChain{
 					extnet.AdornSnappy(compress),
 				},
 			}
@@ -174,7 +174,7 @@ func Test_Stcp_Forward_Direct(t *testing.T) {
 					Protocol: "stcp",
 					Addr:     "127.0.0.1:0",
 					Config:   config,
-					AfterChains: extnet.AdornConnsChain{
+					AdornChains: extnet.AdornConnsChain{
 						extnet.AdornSnappy(compress),
 					},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
@@ -200,7 +200,7 @@ func Test_Stcp_Forward_Direct(t *testing.T) {
 					Protocol: "stcp",
 					Timeout:  time.Second,
 					Config:   config,
-					AfterChains: extnet.AdornConnsChain{
+					AdornChains: extnet.AdornConnsChain{
 						extnet.AdornSnappy(compress),
 					},
 				}
@@ -235,7 +235,7 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 					Protocol: "stcp",
 					Addr:     "127.0.0.1:0",
 					Config:   config,
-					AfterChains: extnet.AdornConnsChain{
+					AdornChains: extnet.AdornConnsChain{
 						extnet.AdornSnappy(compress),
 					},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
@@ -284,7 +284,7 @@ func Test_Stcp_Forward_Socks5(t *testing.T) {
 					Protocol: "stcp",
 					Timeout:  time.Second,
 					Config:   config,
-					AfterChains: extnet.AdornConnsChain{
+					AdornChains: extnet.AdornConnsChain{
 						extnet.AdornSnappy(compress),
 					},
 				}
@@ -326,7 +326,7 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 						Single: single,
 					},
 				},
-				AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
+				AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 				Handler: cs.HandlerFunc(func(inconn net.Conn) {
 					buf := make([]byte, 20)
 					n, err := inconn.Read(buf)
@@ -356,7 +356,7 @@ func TestTcpTls_Forward_Direct(t *testing.T) {
 						Single: single,
 					},
 				},
-				AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
+				AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 			}
 
 			cli, err := d.Dial("tcp", ln.Addr().String())
@@ -393,7 +393,7 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 							Single: single,
 						},
 					},
-					AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
+					AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -446,7 +446,7 @@ func TestTcpTls_Forward_socks5(t *testing.T) {
 						},
 						ProxyURL: pURL,
 					},
-					AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
+					AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 				}
 
 				conn, err := d.Dial("tcp", ln.Addr().String())
@@ -492,7 +492,7 @@ func TestKcp(t *testing.T) {
 					Protocol:    "kcp",
 					Addr:        "127.0.0.1:0",
 					Config:      Config{KcpConfig: config},
-					AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
+					AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 					Handler: cs.HandlerFunc(func(inconn net.Conn) {
 						buf := make([]byte, 20)
 						n, err := inconn.Read(buf)
@@ -514,7 +514,7 @@ func TestKcp(t *testing.T) {
 				d := &Dialer{
 					Protocol:    "kcp",
 					Timeout:     time.Second,
-					AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
+					AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
 					Config:      Config{KcpConfig: config},
 				}
 				cli, err := d.Dial("tcp", ln.Addr().String())

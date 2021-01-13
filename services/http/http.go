@@ -340,7 +340,7 @@ func (sf *HTTP) Start() (err error) {
 				KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			},
 			GoPool:      sword.GoPool,
-			AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.LocalCompress)},
+			AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.LocalCompress)},
 			Handler:     cs.HandlerFunc(sf.handle),
 		}
 		sc, err := srv.Listen()
@@ -543,7 +543,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 				KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 				ProxyURL:   sf.proxyURL,
 			},
-			AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
+			AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
 		}
 		outConn, err = d.Dial("tcp", address)
 	case "ssh":

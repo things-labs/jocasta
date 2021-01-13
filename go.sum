@@ -110,8 +110,8 @@ github.com/thinkgos/go-socks5 v0.2.2 h1:wZAbtzFes15jVdCw2iOKOzexTRHWDVOYWldBy2u2
 github.com/thinkgos/go-socks5 v0.2.2/go.mod h1:5iine8bnDUUMdWZrCDIzUn9C2+GCC79LYxUrel1esAU=
 github.com/thinkgos/meter v0.0.9 h1:xY3aZBOX+bWB7M/sRJDuWyleTCsUzVLCaMAjafvvvmY=
 github.com/thinkgos/meter v0.0.9/go.mod h1:GYvy7pPrMiEa2WVq/7oVd7em/JYKKNo3fapoJ/fBhj4=
-github.com/thinkgos/x v0.2.0 h1:6XTgY+IuGGq2TTRVuSB3qCUOPzG3Imx/2rjo6V2Yq3U=
-github.com/thinkgos/x v0.2.0/go.mod h1:8QgwY7lWfxxhsB7u4CTUbv8RAcah7lTmWhJ0qC82fgI=
+github.com/thinkgos/x v0.2.1 h1:iaggoEc89axcMG1CagDz5hhrI7Lan2f+hlAFfia6e68=
+github.com/thinkgos/x v0.2.1/go.mod h1:8QgwY7lWfxxhsB7u4CTUbv8RAcah7lTmWhJ0qC82fgI=
 github.com/tjfoc/gmsm v1.3.2 h1:7JVkAn5bvUJ7HtU08iW6UiD+UTmJTIToHCfeFzkcCxM=
 github.com/tjfoc/gmsm v1.3.2/go.mod h1:HaUcFuY0auTiaHB9MHFGCPx5IaLhTUd2atbCFBQXn9w=
 github.com/tjfoc/gmsm v1.4.0 h1:8nbaiZG+iVdh+fXVw0DZoZZa7a4TGm3Qab+xdrdzj8s=

@@ -18,7 +18,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/thinkgos/go-socks5 v0.2.2
 	github.com/thinkgos/meter v0.0.9
-	github.com/thinkgos/x v0.2.0
+	github.com/thinkgos/x v0.2.1
 	github.com/tjfoc/gmsm v1.4.0 // indirect
 	github.com/xtaci/kcp-go/v5 v5.6.1
 	github.com/xtaci/smux v1.5.15
