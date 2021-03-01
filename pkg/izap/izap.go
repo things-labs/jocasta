@@ -29,9 +29,6 @@ type Config struct {
 	Compress   bool   `yaml:"compress" json:"compress"`     // 压缩文件,采用gzip, 默认不压缩
 }
 
-var Logger = zap.NewNop()
-var Sugar = Logger.Sugar()
-
 func New(c Config) *zap.Logger {
 	var options []zap.Option
 	var encoder zapcore.Encoder
@@ -73,17 +70,6 @@ func New(c Config) *zap.Logger {
 		)
 	}
 	return zap.New(core, options...)
-}
-
-func ReplaceGlobals(l *zap.Logger) {
-	Logger = l
-	Sugar = l.Sugar()
-	zap.ReplaceGlobals(Logger)
-}
-
-// SetLevel 设置zap默认目志等级,线程安全
-func SetLevel(l zapcore.Level) {
-	Logger.Core().Enabled(l)
 }
 
 func toLevel(level string) zapcore.Level {
