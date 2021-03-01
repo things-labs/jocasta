@@ -1,6 +1,7 @@
 package izap
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,12 +13,13 @@ import (
 
 // Config 日志配置
 type Config struct {
-	Level       string `yaml:"level" json:"level"`             // 日志等级, debug,info,warn,error,dpanic,panic,fatal 默认info
-	Format      string `yaml:"format" json:"format"`           // 编码格式: json or console 默认json
-	EncodeLevel string `yaml:"encodeLevel" json:"encodeLevel"` // 编码器类型, 默认 LowercaseLevelEncoder
-	Writer      string `yaml:"write" json:"write"`             // 输出: file,console,multi 默认 console
-	Stack       bool   `yaml:"stack" json:"stack"`             // 使能栈调试输出 , 默认false
-	Path        string `yaml:"path" json:"path"`               // 日志存放路径, 默认 empty
+	Level       string      `yaml:"level" json:"level"`             // 日志等级, debug,info,warn,error,dpanic,panic,fatal 默认info
+	Format      string      `yaml:"format" json:"format"`           // 编码格式: json or console 默认json
+	EncodeLevel string      `yaml:"encodeLevel" json:"encodeLevel"` // 编码器类型, 默认 LowercaseLevelEncoder
+	Adapter     string      `yaml:"adapter" json:"adapter"`         // 输出: file,console,multi,custom 默认 console
+	Stack       bool        `yaml:"stack" json:"stack"`             // 使能栈调试输出 , 默认false
+	Path        string      `yaml:"path" json:"path"`               // 日志存放路径, 默认 empty
+	Writer      []io.Writer `yaml:"-" json:"-"`                     // 当 adapter=custom使用,如为writer为空,将使用os.Stdout
 	// see lumberjack.Logger
 	FileName   string `yaml:"fileName" json:"fileName"`     // 文件名,空字符使用默认    默认<processname>-lumberjack.log
 	MaxSize    int    `yaml:"maxSize" json:"maxSize"`       // 每个日志文件最大尺寸(MB) 默认100MB,
@@ -121,7 +123,7 @@ func toEncodeLevel(l string) zapcore.LevelEncoder {
 }
 
 func toWriter(c *Config) zapcore.WriteSyncer {
-	switch strings.ToLower(c.Writer) {
+	switch strings.ToLower(c.Adapter) {
 	case "file":
 		return zapcore.AddSync(&lumberjack.Logger{ // 文件切割
 			Filename:   filepath.Join(c.Path, c.FileName),
@@ -140,6 +142,19 @@ func toWriter(c *Config) zapcore.WriteSyncer {
 			LocalTime:  c.LocalTime,
 			Compress:   c.Compress,
 		}))
+	case "custom":
+		ws := make([]zapcore.WriteSyncer, 0, len(c.Writer))
+
+		for _, writer := range c.Writer {
+			ws = append(ws, zapcore.AddSync(writer))
+		}
+		if len(ws) == 0 {
+			return zapcore.AddSync(os.Stdout)
+		}
+		if len(ws) == 1 {
+			return ws[0]
+		}
+		return zapcore.NewMultiWriteSyncer(ws...)
 	case "console":
 		fallthrough
 	default:

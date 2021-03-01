@@ -31,7 +31,6 @@ import (
 
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
-
 	"github.com/thinkgos/jocasta/pkg/izap"
 	"github.com/thinkgos/jocasta/services"
 )
@@ -88,7 +87,7 @@ func init() {
 }
 
 func preRun(cmd *cobra.Command, args []string) {
-	logger := izap.New(izap.Config{Level: "debug", Writer: "console", Stack: true})
+	logger := izap.New(izap.Config{Level: "debug", Adapter: "console", Stack: true})
 	izap.ReplaceGlobals(logger)
 
 	execName := os.Args[0]

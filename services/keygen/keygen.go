@@ -103,8 +103,8 @@ func randCommonName() string {
 		".vc", ".ve", ".vg", ".vi", ".vn", ".vu", ".wf", ".ws", ".ye", ".yt",
 		".yu", ".yr", ".za", ".zm", ".zw",
 	}
-	return strings.ToLower(extrand.RandString(int(extrand.RandInt64(4)%10)) +
-		domainSuffixList[int(extrand.RandInt64(4))%len(domainSuffixList)])
+	return strings.ToLower(extrand.AlphaDigit(extrand.Intx(1000, 10000)%10) +
+		domainSuffixList[extrand.Intx(1000, 10000)%len(domainSuffixList)])
 }
 
 func randCountry() string {
@@ -126,5 +126,5 @@ func randCountry() string {
 		"TW", "TZ", "UA", "UG", "US", "UY", "UZ", "VC", "VE", "VN", "YE", "YU",
 		"ZA", "ZM", "ZR", "ZW",
 	}
-	return countryList[int(extrand.RandInt64(4))%len(countryList)]
+	return countryList[extrand.Intx(1000, 10000)%len(countryList)]
 }

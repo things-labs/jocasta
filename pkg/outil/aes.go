@@ -10,8 +10,8 @@ import (
 
 func NewAesCFB(key []byte) (encrypt.BlockCrypt, error) {
 	bsc := encrypt.BlockStreamCipher{
-		cipher.NewCFBEncrypter,
-		cipher.NewCFBDecrypter,
+		NewEncrypt: cipher.NewCFBEncrypter,
+		NewDecrypt: cipher.NewCFBDecrypter,
 	}
 	return bsc.New(key, aes.NewCipher)
 }
