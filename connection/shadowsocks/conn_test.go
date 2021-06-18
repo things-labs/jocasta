@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/things-go/encrypt"
 	"github.com/thinkgos/jocasta/internal/mock"
-	"github.com/thinkgos/x/lib/encrypt"
 )
 
 func TestConn(t *testing.T) {

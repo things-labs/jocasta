@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/thinkgos/jocasta/pkg/tip"
+	"github.com/thinkgos/jocasta/pkg/builder"
 )
 
 var versionCmd = &cobra.Command{
@@ -13,7 +13,7 @@ var versionCmd = &cobra.Command{
 		if forever {
 			return
 		}
-		tip.PrintVersion()
+		builder.PrintVersion()
 	},
 }
 

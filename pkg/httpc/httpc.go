@@ -2,18 +2,18 @@ package httpc
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
 	"net/url"
 	"strings"
 
-	"github.com/thinkgos/x/extbase64"
+	"github.com/thinkgos/x/lib/logger"
 
 	"github.com/thinkgos/jocasta/connection/sni"
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/pkg/outil"
-	"github.com/thinkgos/x/lib/logger"
 )
 
 type Request struct {
@@ -117,12 +117,12 @@ func (sf *Request) GetProxyAuthUserPassPair() (string, error) {
 		return "", fmt.Errorf("authorization data error,ERR:%s", authorization)
 	}
 
-	user, err := extbase64.DecodeString(basic[1])
+	user, err := base64.StdEncoding.DecodeString(basic[1])
 	if err != nil {
 		sf.conn.Close()
 		return "", fmt.Errorf("authorization data parse error,ERR:%s", err)
 	}
-	return user, nil
+	return string(user), nil
 }
 
 func (sf *Request) GetProxyAuthUserPass() (string, string, error) {

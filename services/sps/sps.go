@@ -14,7 +14,7 @@ import (
 	"time"
 
 	cmap "github.com/orcaman/concurrent-map"
-	"github.com/thinkgos/meter"
+	"github.com/things-go/meter"
 	"github.com/thinkgos/x/extbase64"
 	"github.com/thinkgos/x/extcert"
 	"github.com/thinkgos/x/extnet"

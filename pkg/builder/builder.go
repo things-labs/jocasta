@@ -1,12 +1,28 @@
-package tip
+package builder
 
 import (
-	"html/template"
 	"os"
 	"runtime"
+	"text/template"
 
 	"github.com/denisbrodbeck/machineid"
-	"github.com/thinkgos/x/builder"
+)
+
+var (
+	// BuildTime 编译日期 由外部ldflags指定
+	BuildTime = "unknown"
+	// GitCommit git提交版本(短) 由外部ldflags指定
+	GitCommit = "unknown"
+	// GitFullCommit git提交版本(完整) 由外部ldflags指定
+	GitFullCommit = "unknown"
+	// Version 版本 由外部ldflags指定
+	Version = "unknown"
+	// APIVersion api版本 由外部ldflags指定
+	APIVersion = "unknown"
+	// Model 型号 由外部ldflags指定
+	Model = "unknown"
+	// Name 应用名称 由外部ldflags指定
+	Name = "unknown"
 )
 
 const versionTpl = `  Name:             {{.Name}}
@@ -23,7 +39,7 @@ const versionTpl = `  Name:             {{.Name}}
 `
 
 // Version 版本信息
-type Version struct {
+type Ver struct {
 	Name          string
 	Model         string
 	Version       string
@@ -41,15 +57,15 @@ type Version struct {
 // PrintVersion 打印版本信息至os.Stdout
 func PrintVersion() {
 	mid, _ := machineid.ID()
-	v := Version{
-		builder.Name,
-		builder.Model,
-		builder.Version,
-		builder.APIVersion,
+	v := Ver{
+		Name,
+		Model,
+		Version,
+		APIVersion,
 		runtime.Version(),
-		builder.GitCommit,
-		builder.GitFullCommit,
-		builder.BuildTime,
+		GitCommit,
+		GitFullCommit,
+		BuildTime,
 		runtime.GOOS,
 		runtime.GOARCH,
 		runtime.NumCPU(),

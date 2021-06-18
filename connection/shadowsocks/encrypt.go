@@ -6,7 +6,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/thinkgos/x/lib/encrypt"
+	"github.com/things-go/encrypt"
 )
 
 // Cipher cipher

@@ -17,9 +17,11 @@ require (
 	github.com/orcaman/concurrent-map v0.0.0-20210106121528-16402b402231
 	github.com/panjf2000/ants/v2 v2.4.3
 	github.com/rs/xid v1.2.1
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
+	github.com/things-go/encrypt v0.0.1
+	github.com/things-go/meter v0.0.1
+	github.com/things-go/x v0.0.4
 	github.com/thinkgos/go-socks5 v0.2.2
-	github.com/thinkgos/meter v0.0.10
 	github.com/thinkgos/x v0.3.0
 	github.com/tjfoc/gmsm v1.4.0 // indirect
 	github.com/xtaci/kcp-go/v5 v5.6.1
@@ -27,11 +29,11 @@ require (
 	go.uber.org/atomic v1.7.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210228012217-479acdf4ea46 // indirect
+	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 	golang.org/x/tools v0.0.0-20201218024724-ae774e9781d2 // indirect
 	google.golang.org/protobuf v1.25.0

@@ -12,10 +12,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/things-go/encrypt"
+	"github.com/things-go/x/extstr"
 	"github.com/thinkgos/x/extcert"
 	"github.com/thinkgos/x/extnet"
-	"github.com/thinkgos/x/extstr"
-	"github.com/thinkgos/x/lib/encrypt"
 	"github.com/thinkgos/x/lib/logger"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"

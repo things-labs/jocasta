@@ -21,11 +21,11 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/time/rate"
 
-	"github.com/thinkgos/meter"
+	"github.com/things-go/meter"
+	"github.com/things-go/x/extstr"
 	"github.com/thinkgos/x/extnet"
 	"github.com/thinkgos/x/extnet/connection/ccrypt"
 	"github.com/thinkgos/x/extnet/connection/ciol"
-	"github.com/thinkgos/x/extstr"
 	"github.com/thinkgos/x/lib/logger"
 	"github.com/thinkgos/x/lib/ternary"
 

@@ -11,8 +11,8 @@ import (
 	"github.com/thinkgos/x/extcert"
 	"github.com/thinkgos/x/extnet"
 
+	"github.com/things-go/encrypt"
 	"github.com/thinkgos/jocasta/cs"
-	"github.com/thinkgos/x/lib/encrypt"
 )
 
 func Test_InvalidProtocol(t *testing.T) {

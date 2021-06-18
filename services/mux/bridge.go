@@ -12,10 +12,10 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
+	"github.com/things-go/encrypt"
+	"github.com/things-go/x/extstr"
 	"github.com/thinkgos/x/extcert"
 	"github.com/thinkgos/x/extnet"
-	"github.com/thinkgos/x/extstr"
-	"github.com/thinkgos/x/lib/encrypt"
 	"github.com/thinkgos/x/lib/logger"
 	"github.com/xtaci/smux"
 
