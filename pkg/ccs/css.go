@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/thinkgos/jocasta/pkg/gopool"
 	"github.com/thinkgos/x/extnet"
-	"github.com/thinkgos/x/gopool"
 
 	"github.com/thinkgos/jocasta/cs"
 )

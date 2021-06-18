@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/thinkgos/x/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/logger"
 
 	"github.com/thinkgos/jocasta/connection/sni"
 	"github.com/thinkgos/jocasta/core/basicAuth"

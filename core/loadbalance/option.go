@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/thinkgos/jocasta/core/idns"
-	"github.com/thinkgos/x/gopool"
-	"github.com/thinkgos/x/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/gopool"
+	"github.com/thinkgos/jocasta/pkg/logger"
 )
 
 // Option 配置选项

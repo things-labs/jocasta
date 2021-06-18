@@ -9,7 +9,7 @@ import (
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/thinkgos/x/lib/logger"
+	"github.com/thinkgos/jocasta/pkg/logger"
 )
 
 func TestItem_isNeedLivenessProde(t *testing.T) {

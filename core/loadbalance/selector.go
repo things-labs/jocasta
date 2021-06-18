@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/thinkgos/x/extmath"
+	"github.com/things-go/x/extmath"
 )
 
 func init() {

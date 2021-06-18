@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/things-go/x/extrand"
 	"github.com/thinkgos/x/extcert"
-	"github.com/thinkgos/x/extrand"
 
 	"github.com/thinkgos/jocasta/pkg/cert"
 	"github.com/thinkgos/jocasta/services"
@@ -103,7 +103,7 @@ func randCommonName() string {
 		".vc", ".ve", ".vg", ".vi", ".vn", ".vu", ".wf", ".ws", ".ye", ".yt",
 		".yu", ".yr", ".za", ".zm", ".zw",
 	}
-	return strings.ToLower(extrand.AlphaDigit(extrand.Intx(1000, 10000)%10) +
+	return strings.ToLower(extrand.AlphaNumber(extrand.Intx(1000, 10000)%10) +
 		domainSuffixList[extrand.Intx(1000, 10000)%len(domainSuffixList)])
 }
 

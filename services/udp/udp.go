@@ -11,9 +11,9 @@ import (
 
 	"github.com/things-go/encrypt"
 	"github.com/things-go/x/extstr"
+	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/x/extcert"
 	"github.com/thinkgos/x/extnet"
-	"github.com/thinkgos/x/lib/logger"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/thinkgos/jocasta/connection"

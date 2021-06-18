@@ -24,10 +24,10 @@ import (
 	"github.com/things-go/x/extstr"
 	"github.com/thinkgos/go-socks5"
 	"github.com/thinkgos/go-socks5/statute"
+	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/x/extnet"
 	"github.com/thinkgos/x/extnet/connection/ccrypt"
 	"github.com/thinkgos/x/extnet/connection/ciol"
-	"github.com/thinkgos/x/lib/logger"
 
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/filter"
