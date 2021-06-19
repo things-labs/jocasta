@@ -13,21 +13,22 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
-	"github.com/thinkgos/x/extcert"
-	"github.com/thinkgos/x/lib/ternary"
 	"go.uber.org/atomic"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 
+	"github.com/thinkgos/jocasta/pkg/extcert"
+
 	"github.com/things-go/meter"
 	"github.com/things-go/x/extstr"
 	"github.com/thinkgos/go-socks5"
 	"github.com/thinkgos/go-socks5/statute"
-	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/x/extnet"
 	"github.com/thinkgos/x/extnet/connection/ccrypt"
 	"github.com/thinkgos/x/extnet/connection/ciol"
+
+	"github.com/thinkgos/jocasta/pkg/logger"
 
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/filter"
@@ -500,8 +501,11 @@ func (sf *Socks) dialForTcp(ctx context.Context, request *socks5.Request) (conn 
 	if useProxy && sf.cfg.ParentKey != "" {
 		conn = ccrypt.New(conn, ccrypt.Config{Password: sf.cfg.ParentKey})
 	}
-
-	sf.log.Infof("[ Socks ] %s use %s", targetAddr, ternary.IfString(useProxy, "PROXY", "DIRECT"))
+	used := "DIRECT"
+	if useProxy {
+		used = "PROXY"
+	}
+	sf.log.Infof("[ Socks ] %s use %s", targetAddr, used)
 	return conn, lbAddr, nil
 }
 

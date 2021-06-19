@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/thinkgos/jocasta/pkg/extcert"
 	"github.com/thinkgos/jocasta/pkg/logger"
-	"github.com/thinkgos/x/extcert"
 	"github.com/thinkgos/x/extnet"
 	"github.com/xtaci/smux"
 

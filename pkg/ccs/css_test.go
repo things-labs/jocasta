@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thinkgos/go-socks5"
-	"github.com/thinkgos/x/extcert"
+	"github.com/thinkgos/jocasta/pkg/extcert"
 	"github.com/thinkgos/x/extnet"
 
 	"github.com/things-go/encrypt"

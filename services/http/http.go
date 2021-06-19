@@ -6,28 +6,23 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/url"
 	"runtime/debug"
 	"strconv"
-	"sync/atomic"
-
-	"net"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
-	"github.com/thinkgos/x/extcert"
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/time/rate"
-
 	"github.com/things-go/meter"
 	"github.com/things-go/x/extstr"
-	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/x/extnet"
 	"github.com/thinkgos/x/extnet/connection/ccrypt"
 	"github.com/thinkgos/x/extnet/connection/ciol"
-	"github.com/thinkgos/x/lib/ternary"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/time/rate"
 
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/filter"
@@ -36,7 +31,9 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/enet"
+	"github.com/thinkgos/jocasta/pkg/extcert"
 	"github.com/thinkgos/jocasta/pkg/httpc"
+	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
@@ -460,7 +457,11 @@ func (sf *HTTP) handle(inConn net.Conn) {
 		}
 	}
 
-	sf.log.Infof("< %s > use %s", targetDomainAddr, ternary.IfString(useProxy, "PROXY", "DIRECT"))
+	used := "DIRECT"
+	if useProxy {
+		used = "PROXY"
+	}
+	sf.log.Infof("< %s > use %s", targetDomainAddr, used)
 
 	if sf.cfg.rateLimit > 0 {
 		targetConn = ciol.New(targetConn, ciol.WithReadLimiter(sf.cfg.rateLimit))

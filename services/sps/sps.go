@@ -15,9 +15,9 @@ import (
 
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/things-go/meter"
+	"github.com/thinkgos/jocasta/pkg/extcert"
 	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/x/extbase64"
-	"github.com/thinkgos/x/extcert"
 	"github.com/thinkgos/x/extnet"
 	"github.com/thinkgos/x/extnet/connection/cbuffered"
 	"github.com/thinkgos/x/extnet/connection/ccrypt"

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/things-go/x/extrand"
-	"github.com/thinkgos/x/extcert"
+	"github.com/thinkgos/jocasta/pkg/extcert"
 
 	"github.com/thinkgos/jocasta/pkg/cert"
 	"github.com/thinkgos/jocasta/services"
