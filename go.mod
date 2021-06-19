@@ -7,6 +7,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/golang/protobuf v1.4.3
+	github.com/golang/snappy v0.0.3
 	github.com/klauspost/cpuid/v2 v2.0.4 // indirect
 	github.com/klauspost/reedsolomon v1.9.11 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -22,7 +23,6 @@ require (
 	github.com/things-go/meter v0.0.1
 	github.com/things-go/x v0.0.4
 	github.com/thinkgos/go-socks5 v0.2.2
-	github.com/thinkgos/x v0.3.0
 	github.com/tjfoc/gmsm v1.4.0 // indirect
 	github.com/xtaci/kcp-go/v5 v5.6.1
 	github.com/xtaci/smux v1.5.15

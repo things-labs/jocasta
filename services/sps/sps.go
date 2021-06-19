@@ -15,16 +15,13 @@ import (
 
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/things-go/meter"
-	"github.com/thinkgos/jocasta/pkg/extcert"
-	"github.com/thinkgos/jocasta/pkg/logger"
-	"github.com/thinkgos/x/extbase64"
-	"github.com/thinkgos/x/extnet"
-	"github.com/thinkgos/x/extnet/connection/cbuffered"
-	"github.com/thinkgos/x/extnet/connection/ccrypt"
-	"github.com/thinkgos/x/extnet/connection/ciol"
 	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 
+	"github.com/thinkgos/jocasta/connection"
+	"github.com/thinkgos/jocasta/connection/cbuffered"
+	"github.com/thinkgos/jocasta/connection/ccrypt"
+	"github.com/thinkgos/jocasta/connection/ciol"
 	"github.com/thinkgos/jocasta/connection/shadowsocks"
 	"github.com/thinkgos/jocasta/connection/sni"
 	"github.com/thinkgos/jocasta/core/basicAuth"
@@ -34,7 +31,9 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/enet"
+	"github.com/thinkgos/jocasta/pkg/extcert"
 	"github.com/thinkgos/jocasta/pkg/httpc"
+	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
 )
@@ -205,11 +204,12 @@ func (sf *SPS) InitService() (err error) {
 			var _addrInfo []string
 			if strings.Contains(addr, "#") {
 				_s := addr[:strings.Index(addr, "#")]
-				_auth, err := extbase64.DecodeString(_s)
+				b, err := base64.StdEncoding.DecodeString(_s)
 				if err != nil {
 					sf.log.Errorf("decoding parent auth data [ %s ] fail , error : %s", _s, err)
 					return err
 				}
+				_auth := string(b)
 				_addrInfo = strings.Split(addr[strings.Index(addr, "#")+1:], "@")
 				if sf.cfg.ParentServiceType == "ss" {
 					_s := strings.Split(_auth, ":")
@@ -295,7 +295,7 @@ func (sf *SPS) Start() (err error) {
 					KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 				},
 				GoPool:      sword.GoPool,
-				AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.LocalCompress)},
+				AdornChains: connection.AdornConnsChain{connection.AdornSnappy(sf.cfg.LocalCompress)},
 				Handler:     cs.HandlerFunc(sf.handle),
 			}
 
@@ -666,7 +666,7 @@ func (sf *SPS) dialParent(address string) (net.Conn, error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:   sf.proxyURL,
 		},
-		AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
+		AdornChains: connection.AdornConnsChain{connection.AdornSnappy(sf.cfg.ParentCompress)},
 	}
 	conn, err := d.Dial("tcp", address)
 	if err != nil {

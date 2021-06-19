@@ -12,15 +12,15 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/thinkgos/jocasta/pkg/extcert"
-	"github.com/thinkgos/jocasta/pkg/logger"
-	"github.com/thinkgos/x/extnet"
 	"github.com/xtaci/smux"
 
+	"github.com/things-go/x/extnet"
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
+	"github.com/thinkgos/jocasta/pkg/extcert"
+	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/pkg/through"
 	"github.com/thinkgos/jocasta/pkg/through/ddt"
@@ -393,7 +393,7 @@ func (sf *Client) dialParent(address string) (net.Conn, error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:   sf.proxyURL,
 		},
-		AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.Compress)},
+		AdornChains: connection.AdornConnsChain{connection.AdornSnappy(sf.cfg.Compress)},
 	}
 	return d.Dial("tcp", address)
 }

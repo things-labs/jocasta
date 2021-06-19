@@ -18,18 +18,15 @@ import (
 	"golang.org/x/net/proxy"
 	"golang.org/x/time/rate"
 
-	"github.com/thinkgos/jocasta/pkg/extcert"
-
 	"github.com/things-go/meter"
+	"github.com/things-go/x/extnet"
 	"github.com/things-go/x/extstr"
 	"github.com/thinkgos/go-socks5"
 	"github.com/thinkgos/go-socks5/statute"
-	"github.com/thinkgos/x/extnet"
-	"github.com/thinkgos/x/extnet/connection/ccrypt"
-	"github.com/thinkgos/x/extnet/connection/ciol"
 
-	"github.com/thinkgos/jocasta/pkg/logger"
-
+	connection2 "github.com/thinkgos/jocasta/connection"
+	ccrypt "github.com/thinkgos/jocasta/connection/ccrypt"
+	ciol "github.com/thinkgos/jocasta/connection/ciol"
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/filter"
 	"github.com/thinkgos/jocasta/core/idns"
@@ -37,6 +34,8 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/enet"
+	"github.com/thinkgos/jocasta/pkg/extcert"
+	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
@@ -336,7 +335,7 @@ func (sf *Socks) Start() (err error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sword.GoPool,
-		AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.LocalCompress)},
+		AdornChains: connection2.AdornConnsChain{connection2.AdornSnappy(sf.cfg.LocalCompress)},
 		Handler:     cs.HandlerFunc(sf.handle),
 	}
 
@@ -560,7 +559,7 @@ func (sf *Socks) dialParent(targetAddr string) (outConn net.Conn, err error) {
 				StcpConfig: sf.cfg.STCPConfig,
 				KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			},
-			AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
+			AdornChains: connection2.AdornConnsChain{connection2.AdornSnappy(sf.cfg.ParentCompress)},
 		}
 		outConn, err = d.Dial("tcp", targetAddr)
 	case "ssh":

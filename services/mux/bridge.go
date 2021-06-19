@@ -14,15 +14,14 @@ import (
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/things-go/encrypt"
 	"github.com/things-go/x/extstr"
-	"github.com/thinkgos/jocasta/pkg/extcert"
-	"github.com/thinkgos/jocasta/pkg/logger"
-	"github.com/thinkgos/x/extnet"
 	"github.com/xtaci/smux"
 
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
+	"github.com/thinkgos/jocasta/pkg/extcert"
+	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/pkg/through"
 	"github.com/thinkgos/jocasta/services"
@@ -131,7 +130,7 @@ func (sf *Bridge) Start() (err error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sword.GoPool,
-		AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.Compress)},
+		AdornChains: connection.AdornConnsChain{connection.AdornSnappy(sf.cfg.Compress)},
 		Handler:     cs.HandlerFunc(sf.handler),
 	}
 

@@ -4,14 +4,15 @@ import (
 	"context"
 	"net"
 
-	"github.com/thinkgos/x/extnet"
 	"github.com/xtaci/kcp-go/v5"
+
+	"github.com/thinkgos/jocasta/connection"
 )
 
 // KCPClient KCP client dialer
 type KCPClient struct {
 	Config      KcpConfig
-	AfterChains extnet.AdornConnsChain
+	AfterChains connection.AdornConnsChain
 }
 
 // Dial connects to the address on the named network.

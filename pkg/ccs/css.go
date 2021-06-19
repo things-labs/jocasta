@@ -8,10 +8,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/thinkgos/jocasta/pkg/gopool"
-	"github.com/thinkgos/x/extnet"
-
+	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/cs"
+	"github.com/thinkgos/jocasta/pkg/gopool"
 )
 
 // Config config
@@ -30,7 +29,7 @@ type Config struct {
 type Dialer struct {
 	Protocol    string
 	Timeout     time.Duration
-	AdornChains extnet.AdornConnsChain
+	AdornChains connection.AdornConnsChain
 	Config
 }
 
@@ -41,8 +40,8 @@ func (sf *Dialer) Dial(network, addr string) (net.Conn, error) {
 
 // DialContext connects to the address on the named network using the provided context.
 func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
-	var d extnet.ContextDialer
-	var forward extnet.Dialer
+	var d connection.ContextDialer
+	var forward connection.Dialer
 
 	if sf.ProxyURL != nil {
 		switch sf.ProxyURL.Scheme {
@@ -65,7 +64,7 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 
 	switch sf.Protocol {
 	case "tcp":
-		d = &extnet.Client{
+		d = &connection.Client{
 			Timeout:     sf.Timeout,
 			AdornChains: sf.AdornChains,
 			Forward:     forward,
@@ -75,18 +74,18 @@ func (sf *Dialer) DialContext(ctx context.Context, network, addr string) (net.Co
 		if err != nil {
 			return nil, err
 		}
-		d = &extnet.Client{
+		d = &connection.Client{
 			Timeout:     sf.Timeout,
-			AdornChains: append([]extnet.AdornConn{extnet.BaseAdornTLSClient(tlsConfig)}, sf.AdornChains...),
+			AdornChains: append([]connection.AdornConn{connection.BaseAdornTLSClient(tlsConfig)}, sf.AdornChains...),
 			Forward:     forward,
 		}
 	case "stcp":
 		if ok := sf.StcpConfig.Valid(); !ok {
 			return nil, errors.New("invalid stcp config")
 		}
-		d = &extnet.Client{
+		d = &connection.Client{
 			Timeout:     sf.Timeout,
-			AdornChains: append([]extnet.AdornConn{extnet.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password)}, sf.AdornChains...),
+			AdornChains: append([]connection.AdornConn{connection.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password)}, sf.AdornChains...),
 			Forward:     forward,
 		}
 	case "kcp":
@@ -106,7 +105,7 @@ type Server struct {
 	Addr     string
 	Config
 	GoPool      gopool.Pool
-	AdornChains extnet.AdornConnsChain
+	AdornChains connection.AdornConnsChain
 	Handler     cs.Handler
 }
 
@@ -114,18 +113,18 @@ type Server struct {
 func (sf *Server) Listen() (net.Listener, error) {
 	switch sf.Protocol {
 	case "tcp":
-		return extnet.Listen("tcp", sf.Addr, sf.AdornChains...)
+		return connection.Listen("tcp", sf.Addr, sf.AdornChains...)
 	case "tls":
 		tlsConfig, err := sf.TLSConfig.ServerConfig()
 		if err != nil {
 			return nil, err
 		}
-		return extnet.Listen("tcp", sf.Addr, append([]extnet.AdornConn{extnet.BaseAdornTLSServer(tlsConfig)}, sf.AdornChains...)...)
+		return connection.Listen("tcp", sf.Addr, append([]connection.AdornConn{connection.BaseAdornTLSServer(tlsConfig)}, sf.AdornChains...)...)
 	case "stcp":
 		if ok := sf.StcpConfig.Valid(); !ok {
 			return nil, errors.New("invalid stcp config")
 		}
-		return extnet.Listen("tcp", sf.Addr, append([]extnet.AdornConn{extnet.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password)}, sf.AdornChains...)...)
+		return connection.Listen("tcp", sf.Addr, append([]connection.AdornConn{connection.BaseAdornStcp(sf.StcpConfig.Method, sf.StcpConfig.Password)}, sf.AdornChains...)...)
 	case "kcp":
 		return cs.ListenKCP("", sf.Addr, sf.KcpConfig, sf.AdornChains...)
 	default:

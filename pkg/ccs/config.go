@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/thinkgos/x/extssh"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/internal/bytesconv"
+	"github.com/thinkgos/jocasta/pkg/extssh"
 )
 
 // FilterConfig filter config

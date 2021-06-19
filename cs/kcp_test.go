@@ -5,7 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/thinkgos/x/extnet"
+
+	"github.com/thinkgos/jocasta/connection"
 )
 
 func TestKcp(t *testing.T) {
@@ -41,7 +42,7 @@ func TestKcp(t *testing.T) {
 				require.NoError(t, err)
 
 				// server
-				ln, err := ListenKCP("", "127.0.0.1:0", config, extnet.AdornSnappy(compress))
+				ln, err := ListenKCP("", "127.0.0.1:0", config, connection.AdornSnappy(compress))
 				require.NoError(t, err)
 				defer ln.Close()
 				go func() {
@@ -69,7 +70,7 @@ func TestKcp(t *testing.T) {
 				// client
 				d := &KCPClient{
 					Config:      config,
-					AfterChains: extnet.AdornConnsChain{extnet.AdornSnappy(compress)},
+					AfterChains: connection.AdornConnsChain{connection.AdornSnappy(compress)},
 				}
 				cli, err := d.Dial("", ln.Addr().String())
 				require.NoError(t, err)

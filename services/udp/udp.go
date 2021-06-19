@@ -10,10 +10,8 @@ import (
 	"time"
 
 	"github.com/things-go/encrypt"
+	"github.com/things-go/x/extnet"
 	"github.com/things-go/x/extstr"
-	"github.com/thinkgos/jocasta/pkg/extcert"
-	"github.com/thinkgos/jocasta/pkg/logger"
-	"github.com/thinkgos/x/extnet"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/thinkgos/jocasta/connection"
@@ -22,6 +20,8 @@ import (
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/enet"
+	"github.com/thinkgos/jocasta/pkg/extcert"
+	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
@@ -346,7 +346,7 @@ func (sf *UDP) dialParent(address string) (net.Conn, error) {
 			StcpConfig: sf.cfg.STCPConfig,
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
-		AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
+		AdornChains: connection.AdornConnsChain{connection.AdornSnappy(sf.cfg.ParentCompress)},
 	}
 	return d.Dial("tcp", address)
 }

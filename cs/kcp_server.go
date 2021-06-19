@@ -3,9 +3,10 @@ package cs
 import (
 	"net"
 
-	"github.com/thinkgos/x/extnet"
 	"github.com/xtaci/kcp-go/v5"
 	"go.uber.org/multierr"
+
+	"github.com/thinkgos/jocasta/connection"
 )
 
 // ListenKCP 传输,可选snappy压缩
@@ -13,11 +14,11 @@ import (
 type kcpListen struct {
 	net.Listener
 	config      KcpConfig
-	afterChains extnet.AdornConnsChain
+	afterChains connection.AdornConnsChain
 }
 
 // ListenKCP listen
-func ListenKCP(_, addr string, config KcpConfig, AfterChains ...extnet.AdornConn) (net.Listener, error) {
+func ListenKCP(_, addr string, config KcpConfig, AfterChains ...connection.AdornConn) (net.Listener, error) {
 	ln, err := kcp.ListenWithOptions(addr, config.Block, config.DataShard, config.ParityShard)
 	if err != nil {
 		return nil, err

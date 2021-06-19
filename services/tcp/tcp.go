@@ -14,18 +14,18 @@ import (
 
 	"github.com/things-go/encrypt"
 	"github.com/things-go/x/extstr"
-	"github.com/thinkgos/jocasta/pkg/extcert"
-	"github.com/thinkgos/jocasta/pkg/logger"
-	"github.com/thinkgos/x/extnet"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 
+	"github.com/things-go/x/extnet"
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/core/idns"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
 	"github.com/thinkgos/jocasta/pkg/enet"
+	"github.com/thinkgos/jocasta/pkg/extcert"
+	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/services"
@@ -172,7 +172,7 @@ func (sf *TCP) Start() (err error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 		},
 		GoPool:      sword.GoPool,
-		AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.LocalCompress)},
+		AdornChains: connection.AdornConnsChain{connection.AdornSnappy(sf.cfg.LocalCompress)},
 		Handler:     cs.HandlerFunc(sf.handler),
 	}
 	ln, err := srv.Listen()
@@ -375,7 +375,7 @@ func (sf *TCP) dialParent(address string) (net.Conn, error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:   sf.proxyURL,
 		},
-		AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
+		AdornChains: connection.AdornConnsChain{connection.AdornSnappy(sf.cfg.ParentCompress)},
 	}
 	return d.Dial("tcp", address)
 }

@@ -15,14 +15,14 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/xtaci/smux"
 
-	"github.com/thinkgos/jocasta/pkg/extcert"
-	"github.com/thinkgos/jocasta/pkg/logger"
-	"github.com/thinkgos/x/extnet"
+	"github.com/things-go/x/extnet"
 
 	"github.com/thinkgos/jocasta/connection"
 	"github.com/thinkgos/jocasta/core/captain"
 	"github.com/thinkgos/jocasta/cs"
 	"github.com/thinkgos/jocasta/pkg/ccs"
+	"github.com/thinkgos/jocasta/pkg/extcert"
+	"github.com/thinkgos/jocasta/pkg/logger"
 	"github.com/thinkgos/jocasta/pkg/outil"
 	"github.com/thinkgos/jocasta/pkg/sword"
 	"github.com/thinkgos/jocasta/pkg/through"
@@ -199,7 +199,7 @@ func (sf *Server) Start() (err error) {
 		})
 		localhostAddr = udpConn.LocalAddr().String()
 	} else {
-		ln, err := extnet.Listen("tcp", sf.cfg.local, extnet.AdornSnappy(false))
+		ln, err := connection.Listen("tcp", sf.cfg.local, connection.AdornSnappy(false))
 		if err != nil {
 			return err
 		}
@@ -358,7 +358,7 @@ func (sf *Server) dialParent() (net.Conn, error) {
 			KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			ProxyURL:   sf.proxyURL,
 		},
-		AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.Compress)},
+		AdornChains: connection.AdornConnsChain{connection.AdornSnappy(sf.cfg.Compress)},
 	}
 	return d.Dial("tcp", sf.cfg.Parent)
 }

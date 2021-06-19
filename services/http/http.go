@@ -17,13 +17,14 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/things-go/meter"
+	"github.com/things-go/x/extnet"
 	"github.com/things-go/x/extstr"
-	"github.com/thinkgos/x/extnet"
-	"github.com/thinkgos/x/extnet/connection/ccrypt"
-	"github.com/thinkgos/x/extnet/connection/ciol"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/time/rate"
 
+	"github.com/thinkgos/jocasta/connection"
+	"github.com/thinkgos/jocasta/connection/ccrypt"
+	"github.com/thinkgos/jocasta/connection/ciol"
 	"github.com/thinkgos/jocasta/core/basicAuth"
 	"github.com/thinkgos/jocasta/core/filter"
 	"github.com/thinkgos/jocasta/core/idns"
@@ -337,7 +338,7 @@ func (sf *HTTP) Start() (err error) {
 				KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 			},
 			GoPool:      sword.GoPool,
-			AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.LocalCompress)},
+			AdornChains: connection.AdornConnsChain{connection.AdornSnappy(sf.cfg.LocalCompress)},
 			Handler:     cs.HandlerFunc(sf.handle),
 		}
 		sc, err := srv.Listen()
@@ -544,7 +545,7 @@ func (sf *HTTP) dialParent(address string) (outConn net.Conn, err error) {
 				KcpConfig:  sf.cfg.SKCPConfig.KcpConfig,
 				ProxyURL:   sf.proxyURL,
 			},
-			AdornChains: extnet.AdornConnsChain{extnet.AdornSnappy(sf.cfg.ParentCompress)},
+			AdornChains: connection.AdornConnsChain{connection.AdornSnappy(sf.cfg.ParentCompress)},
 		}
 		outConn, err = d.Dial("tcp", address)
 	case "ssh":
